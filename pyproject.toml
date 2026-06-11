@@ -1,0 +1,53 @@
+# AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:6f314576dc1d
+# NOTE: customized for agentforge-graph — deps + extras edited from the
+# scaffold default. Managed-file upgrades will treat this as forked.
+[project]
+name = "agentforge-graph"
+version = "0.0.0"
+description = "Code Knowledge Graph (CKG) engine + agent toolset, built on AgentForge."
+requires-python = ">=3.13"
+dependencies = [
+    # --- AgentForge framework (runtime + provider + serving) ---
+    "agentforge-py",                       # core contracts + Agent runtime + CLI
+    "agentforge-anthropic[anthropic]",     # LLM provider for enrichment (feat-010, feat-012)
+    "agentforge-mcp",                      # MCP serving layer (feat-008)
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+# Deterministic graph engine (feat-002/003/005/007). Heavy native wheels
+# (pyarrow, onnxruntime) — installed as features land: `uv sync --extra engine`.
+engine = [
+    "tree-sitter>=0.23",                   # parsing core (feat-002)
+    "tree-sitter-language-pack>=0.9",      # 100+ grammars incl. the v0.1 top-10 (feat-002)
+    "kuzu>=0.6",                           # embedded graph store, default (feat-003 / ADR-0006)
+    "lancedb>=0.15",                       # embedded vector store, default (feat-003)
+    "fastembed>=0.4",                      # local embeddings, default (feat-005)
+    "networkx>=3.3",                       # PageRank for the repo map (feat-007)
+]
+# Optional reranker (feat-006, OFF by default — pulls torch). `--extra rerank`.
+rerank = ["agentforge-reranker-sentence-transformers"]
+# Opt-in graph-store server backend (feat-003 / ADR-0006). `--extra neo4j`.
+neo4j = ["agentforge-memory-neo4j"]
+# Opt-in hosted embeddings (feat-005). `--extra voyage`.
+voyage = ["agentforge-voyage"]
+# Opt-in observability (OpenTelemetry tracing). `--extra otel`.
+otel = ["agentforge-otel"]
+# Test + lint toolchain.
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.7",
+    "mypy>=1.13",
+]
+
+[project.scripts]
+ckg = "agentforge_graph.main:main"             # primary CLI (feat-002/008: index, serve-mcp, …)
+agentforge-graph = "agentforge_graph.main:main"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agentforge_graph"]

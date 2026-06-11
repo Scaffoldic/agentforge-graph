@@ -1,0 +1,69 @@
+<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:baeef86ba55c -->
+# agentforge-graph — runbook index
+
+This directory carries the AgentForge runbooks for
+**agentforge-graph**. Every runbook is task-oriented: one job,
+one ~5-minute read, ready-to-copy code.
+
+## Day-1 reading
+
+| # | Title |
+|---|---|
+| 01 | [Set up a new agent](./01-set-up-new-agent.md) |
+| 02 | [Add a tool](./02-add-a-tool.md) |
+| 05 | [Write prompts](./05-write-prompts.md) |
+| 06 | [Test your agent](./06-test-your-agent.md) |
+
+## When you need it
+
+| # | Title |
+|---|---|
+| 03 | [Add a pipeline task](./03-add-a-pipeline-task.md) |
+| 04 | [Pick a reasoning strategy](./04-pick-reasoning-strategy.md) |
+| 07 | [Debug a run](./07-debug-a-run.md) |
+| 08 | [Add memory / persistence](./08-add-memory.md) |
+| 09 | [Add MCP servers](./09-add-mcp.md) |
+| 10 | [Add evaluators](./10-add-evaluators.md) |
+| 11 | [Add safety guardrails](./11-add-safety-guardrails.md) |
+| 12 | [Add observability](./12-add-observability.md) |
+| 13 | [Configure multi-provider](./13-configure-multi-provider.md) |
+
+## Retrieval & RAG
+
+| # | Title |
+|---|---|
+| 17 | [Add a reranker](./17-add-reranker.md) |
+| 18 | [Add hybrid search (BM25 + vector)](./18-add-hybrid-search.md) |
+| 19 | [Add GraphRAG (graph-augmented retrieval)](./19-add-graphrag.md) |
+
+## Streaming & schema
+
+| # | Title |
+|---|---|
+| 20 | [Apply schema migrations](./20-apply-schema-migrations.md) |
+| 21 | [Use streaming guardrails (sentence-window)](./21-use-streaming-guardrails.md) |
+
+## Operations
+
+| # | Title |
+|---|---|
+| 14 | [Deploy your agent](./14-deploy-your-agent.md) |
+| 15 | [Upgrade your agent](./15-upgrade-your-agent.md) |
+| 16 | [Configuration reference](./16-configuration-reference.md) |
+
+## Conventions
+
+- Every runbook is managed by the framework — opening it for
+  edit, you'll see a `<!-- agentforge:end-managed -->` marker.
+  Add project-specific notes below it; `agentforge upgrade`
+  preserves your section.
+- AI assistants read `AGENTS.md` at the project root before
+  suggesting changes. The runbooks are the long-form companion
+  to that file.
+- `agentforge docs` opens any runbook by topic (e.g.
+  `agentforge docs add-tool` jumps to runbook 02).
+
+<!-- agentforge:end-managed -->
+
+<!-- agentforge:custom -->
+<!-- agentforge:end-custom -->

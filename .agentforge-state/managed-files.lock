@@ -1,0 +1,170 @@
+.cursorrules:
+  forked: false
+  hash: 8a75b914bdf3cadbde5693497f0c1812a67ee01fde9e2166e97006a299b78962
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+.env.example:
+  forked: false
+  hash: 45e023968759bfc3b10eee810fe2cde2033e8f80c998db5eda156b7ec1eccbe5
+  source_module: template:minimal
+  source_version: 0.2.4
+.github/copilot-instructions.md:
+  forked: false
+  hash: 23c6e939d9d162837a85f0e3859f8e5808327aa77380d2a8e07f5b8c91d423e2
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+.gitignore:
+  forked: false
+  hash: e2e64343502ba0a2753b9b76908c3861fcdcafa1f4052c9da02be123f3d7404a
+  source_module: template:minimal
+  source_version: 0.2.4
+.gitkeep:
+  forked: false
+  hash: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+AGENTS.md:
+  forked: false
+  hash: c2f4dad7b549ce1f78d932e03c00159080caa1569a25be4a03f2e33d795fe8e2
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+CLAUDE.md:
+  forked: false
+  hash: 9120f1c4a7740f3147e85b6010ea0c0cd12d09e886b496fd6d0b958e2239b469
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+README.md:
+  forked: false
+  hash: c474ab3012ec420a13389cd5cbfeebc1d69ee35b4f9ad0c6fb84a0404d820303
+  source_module: template:minimal
+  source_version: 0.2.4
+agentforge.yaml:
+  forked: false
+  hash: 3f971e1f7bac5a4d647849d5f6fcdf7b9cb7ad2e399247b38d66c726918e6d98
+  source_module: template:minimal
+  source_version: 0.2.4
+docs/runbooks/01-set-up-new-agent.md:
+  forked: false
+  hash: 9767d5fccc9a78206289504337f26b3ebfd18a62c4ec68c75d5684e64f2ff0d3
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/02-add-a-tool.md:
+  forked: false
+  hash: 54e75ed0aa463dcc143fbee577746b7d853ca19c7b31d4ed91557f2afb1b5f03
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/03-add-a-pipeline-task.md:
+  forked: false
+  hash: e02a38df57668ab1873d35c83c666bc0b3e4f01f9836babe1eb780eb3a3e3d0b
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/04-pick-reasoning-strategy.md:
+  forked: false
+  hash: abe78f8b53fe324f2b86c0a7c69822425c3e267ed232c83021baca0cf6eb804b
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/05-write-prompts.md:
+  forked: false
+  hash: 248e76f52c90220d05d1bb2ad1976643d8e68896e5888e9da4b5ccdbf25ccaae
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/06-test-your-agent.md:
+  forked: false
+  hash: 81af251a9a4ce45d3b80bf07ffd88173926363fa2e27d7c958279c3b760fdd9b
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/07-debug-a-run.md:
+  forked: false
+  hash: 336052b797bc5f39d29ed754fec76e37c50511515a765fbe874cacb1dd06165f
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/08-add-memory.md:
+  forked: false
+  hash: 34357485fbb087775cfd99e55500515795e7ff4207b1257b9b66b77b55e82ea5
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/09-add-mcp.md:
+  forked: false
+  hash: 3e945da99f484716937036b6dd4686a3f84b3784c877e3ef01166ea1b7399cb2
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/10-add-evaluators.md:
+  forked: false
+  hash: acfbdccaaad2ffb9c6fdd7a99de9a42a5fac365585d5cb7fd3e8230ee77bbf26
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/11-add-safety-guardrails.md:
+  forked: false
+  hash: c52053398767e28ec3d6c1e334a7b8fdf9359276ab3248ebdda956d0ec610daf
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/12-add-observability.md:
+  forked: false
+  hash: b9ce79b8f258b393fd9fc5d9aa4f453503399b3415ac893af3cfd158271302ec
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/13-configure-multi-provider.md:
+  forked: false
+  hash: 3587a253001bab61486c59c6f40e29a60b26c0ee0deed2167fa62e6de9cb04f7
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/14-deploy-your-agent.md:
+  forked: false
+  hash: e036df7d4cf3f2d144fb8dd05b747539483b507340fc3ea474c4d1e016424b29
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/15-upgrade-your-agent.md:
+  forked: false
+  hash: 81034a5ee4c294ab12d356461a75f065cb6c2cb42dcc23cc71ce05d0b11098ee
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/16-configuration-reference.md:
+  forked: false
+  hash: e2cf5067d2fb8ef6ba9e3c1f0f7a39f63082b9685ee687385a0bf2d115b014b6
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/17-add-reranker.md:
+  forked: false
+  hash: 2718f76d448ecbe0831c09bcd8431e914b911d487ef50dbb09a4c06bc7bfc36b
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/18-add-hybrid-search.md:
+  forked: false
+  hash: 4f5a8eabfd560ef02552ff24ce9f75288f87a096750cb04e6eb457989e954ba1
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/19-add-graphrag.md:
+  forked: false
+  hash: 39504e95e5eee24c3e533ceaacbb1479406c36d83969d53aca2fe1d06fb69a8f
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/20-apply-schema-migrations.md:
+  forked: false
+  hash: eef758aedb2670f7cbdbb1222b06f8f41e4a786852f344199bf1f5ec63ce2f24
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/21-use-streaming-guardrails.md:
+  forked: false
+  hash: 66b694aabc6e09a4c599d4e347044f8b21ce0c24feaea3157349a667e428d518
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+docs/runbooks/README.md:
+  forked: false
+  hash: baeef86ba55cd2185c5ae2fa3b070771dd90e6e19fa9826472ea5f7772b7b249
+  source_module: template:minimal:_shared
+  source_version: 0.2.4
+pyproject.toml:
+  forked: false
+  hash: 6f314576dc1d2b62ea17fe94d39b0a69d98bda996c89685ee084539312387d95
+  source_module: template:minimal
+  source_version: 0.2.4
+src/agentforge_graph/__init__.py:
+  forked: false
+  hash: b6f9eb202d197dad3ae57d0defe4396b9e14ff0b56a7949cf760492c452a5401
+  source_module: template:minimal
+  source_version: 0.2.4
+src/agentforge_graph/main.py:
+  forked: false
+  hash: c05d490b5a1c7dd8ab3bda75558a7083cf22c8676f872476cb50c087edfbc020
+  source_module: template:minimal
+  source_version: 0.2.4

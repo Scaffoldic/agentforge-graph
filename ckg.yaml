@@ -1,0 +1,51 @@
+# agentforge-graph engine config — read by the agentforge_graph package
+# (NOT by the AgentForge framework; see agentforge.yaml for framework config).
+#
+# This is the starting config; each feature's full schema lands with the
+# feature (see docs/features/). Keys map to ADRs/specs as noted.
+
+store:                          # feat-003 / ADR-0006 — embedded-first, pluggable
+  path: ".ckg"                  # gitignored index dir at repo root
+  graph:
+    driver: "kuzu"              # default embedded graph store; opt-in: neo4j
+    config: {}
+  vectors:
+    driver: "lancedb"           # default embedded vector store
+    config: {}
+
+ingest:                         # feat-002 / ADR-0009 — top-10 languages, A/B tiers
+  languages: auto               # auto-detect; packs: py, ts, js, java, go, c#, rust, ruby, php, c++
+  exclude:
+    - "**/node_modules/**"
+    - "**/.venv/**"
+    - "**/dist/**"
+    - "**/.git/**"
+  max_file_kb: 512
+  lsp_assist: off               # opt-in resolution escalation (Tier B / C++)
+
+chunking:                       # feat-005 / ADR-0007 — AST-aware (cAST)
+  max_tokens: 512
+  min_tokens: 64
+
+embed:                          # feat-005
+  driver: "fastembed"           # local default; opt-in hosted: voyage
+  model: "code-default"
+  batch_size: 64
+
+retrieve:                       # feat-006 / ADR-0008 — hybrid (vector -> graph)
+  k: 8
+  depth: 1
+  decay: 0.6
+  rerank: off                   # opt-in: install `rerank` extra, then set a driver
+
+serve:                          # feat-008 — MCP guardrails
+  max_depth: 3
+  max_k: 50
+  response_token_cap: 6000
+  refresh_on_call: off
+
+# Higher-layer features — config lands when the feature ships:
+# temporal:   (feat-009)   enabled, history_backfill, retention_commits
+# knowledge:  (feat-010)   adr_globs, doc_globs, commit_messages, infer_governs
+# frameworks: (feat-011)   enabled: auto, packs
+# enrich:     (feat-012)   model, summaries, patterns, budget_usd

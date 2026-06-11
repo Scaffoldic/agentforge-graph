@@ -1,0 +1,8 @@
+# AgentForge scaffold answers — DO NOT EDIT MANUALLY.
+# Used by `agentforge upgrade` to re-render managed template files.
+_template_name: minimal
+_template_version: 0.2.4
+project_name: Agentforge Graph
+project_slug: agentforge-graph
+llm_provider: anthropic
+description: An AgentForge agent (minimal).

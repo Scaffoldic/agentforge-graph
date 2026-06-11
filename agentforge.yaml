@@ -1,0 +1,24 @@
+# AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:3f971e1f7bac
+# NOTE: customized for agentforge-graph. Framework config only — this agent's
+# own engine config lives in `ckg.yaml` (the framework validator is strict and
+# rejects unknown top-level keys, by design).
+agent:
+  name: "agentforge-graph"
+  # Cheap tier for enrichment (feat-012); summaries/pattern tags run here.
+  model: "anthropic:claude-haiku-4-5"
+  strategy: "react"
+  budget:
+    usd: 2.0
+  max_iterations: 25
+
+logging:
+  level: "INFO"
+  format: "text"
+
+# Installed AgentForge modules. MCP serving (feat-008): `ckg serve-mcp`
+# exposes the graph tools; expose_local_tools lets Claude Code call in.
+modules:
+  protocols:
+    - name: mcp
+      config:
+        expose_local_tools: true

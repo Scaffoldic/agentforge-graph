@@ -1,0 +1,19 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# CKG index artifacts (derivable; never committed — ADR-0006)
+.ckg/
+
+# Local-only framework learnings (issues, hacks, upgrade notes)
+docs/framework/
+
+# macOS
+.DS_Store
+
+# Keep .agentforge-state checked in — it tracks framework managed
+# files for upgrade.
