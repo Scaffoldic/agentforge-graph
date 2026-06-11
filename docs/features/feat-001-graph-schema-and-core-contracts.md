@@ -230,6 +230,8 @@ by design so a future TS port shares IDs.
 
 ## 10. References
 
+- Design: [`../design/design-001-core-contracts-module.md`](../design/design-001-core-contracts-module.md)
+  — the *how* (file layout, exact types, resolved §8 questions, chunk plan).
 - Research: [`../open-source-ckg-research.md`](../open-source-ckg-research.md)
   §2.1 (CPG node/edge vocabulary), §2.3 (SCIP symbol IDs), §2.6
   (cognee schema), §3.2 (incremental designs).

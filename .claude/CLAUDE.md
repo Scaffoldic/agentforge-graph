@@ -19,7 +19,11 @@
    status board + dependency DAG; tells you what's ready to pick.
 5. [`../docs/features/README.md`](../docs/features/README.md) +
    the active [`../docs/features/feat-NNN-*.md`](../docs/features/) spec.
-6. [`../docs/adr/`](../docs/adr/) — the 9 architecture decisions.
+6. [`../docs/design/`](../docs/design/) — **one design doc per feature**
+   (`design-NNN-slug.md` mirrors `feat-NNN`). The *how* (file layout,
+   exact types, resolved decisions, chunk plan); written and approved
+   in the design stage before any code.
+7. [`../docs/adr/`](../docs/adr/) — the 9 architecture decisions.
 7. [`../docs/open-source-ckg-research.md`](../docs/open-source-ckg-research.md)
    — the research that motivates the design.
 
