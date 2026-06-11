@@ -23,7 +23,7 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 
 | ID | Title | Layer | Target | Status | Depends on | Blocks | Ready? |
 |---|---|---|---|---|---|---|---|
-| [001](feat-001-graph-schema-and-core-contracts.md) | Graph schema & core contracts | 0 core | 0.1 | proposed | — | all | ✅ **now** |
+| [001](feat-001-graph-schema-and-core-contracts.md) | Graph schema & core contracts | 0 core | 0.1 | in-progress (PR pending) | — | all | 🔨 building |
 | [002](feat-002-tree-sitter-ingestion.md) | Tree-sitter ingestion (10 langs) | 0 core | 0.1 | proposed | 001 | 004,005,007,011 | ⛔ needs 001 |
 | [003](feat-003-graph-storage-adapters.md) | Graph & vector storage adapters | 0 core | 0.1 | proposed | 001 | 004,005,007 | ⛔ needs 001 |
 | [005](feat-005-ast-chunking-and-embeddings.md) | AST chunking & embeddings | 1 serve | 0.1 | proposed | 002,003 | 006,010 | ⛔ |

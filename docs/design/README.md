@@ -29,6 +29,6 @@ history. Supersede with a new doc; never delete.
 
 | Design | Feature | Status |
 |---|---|---|
-| [design-001-core-contracts-module](design-001-core-contracts-module.md) | feat-001 | draft |
+| [design-001-core-contracts-module](design-001-core-contracts-module.md) | feat-001 | accepted |
 
 _(Add a row per feature as its design is written.)_

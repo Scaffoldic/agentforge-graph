@@ -12,7 +12,7 @@
 | Field | Value |
 |---|---|
 | **Title** | feat-001 core contracts module |
-| **Status** | draft |
+| **Status** | accepted |
 | **Owner** | kjoshi |
 | **Created** | 2026-06-11 |
 | **Last updated** | 2026-06-11 |
@@ -307,8 +307,9 @@ don't break importers.
 
 1. ~~Overload disambiguator rule~~ → resolved §4.4 (SCIP `(+N)`).
 2. ~~Minimal `GraphQuery` shape~~ → resolved §4.5.
-3. `SourceFile` — carry `bytes` or decoded `text`? **Lean:** both,
-   `text` lazily decoded; finalize in chunk 1. (non-blocking)
+3. ~~`SourceFile` — carry `bytes` or decoded `text`?~~ → resolved:
+   `text` + `content_hash` (decoding is the extractor's caller's job;
+   tree-sitter takes bytes in feat-002 but core stays text-first).
 
 ## 9. Decision log
 
@@ -317,6 +318,8 @@ don't break importers.
 | 2026-06-11 | SCIP `(+N)` overload disambiguator; `local(<hash>)` for anon | Stable for the common case; matches a proven scheme |
 | 2026-06-11 | `GraphQuery` = flat filter object, not an AST | Covers 0.1 consumers; extends without breaking |
 | 2026-06-11 | Pydantic frozen models, validation in ctor | The ADR-0004 enforcement point |
+| 2026-06-11 | Added `GraphStore.add(items)` | Enrichers/cross-file facts need a write path not tied to a file; conformance "enrichment survives re-upsert" requires it |
+| 2026-06-11 | `SourceFile` carries `text` (not bytes) | Core stays text-first; feat-002 decodes for tree-sitter |
 
 ## 10. Chunk plan (the single feat-001 PR)
 
