@@ -2,6 +2,8 @@
 <!-- NOTE: customized for agentforge-graph (forked from the scaffold README). -->
 # agentforge-graph
 
+[![CI](https://github.com/Scaffoldic/agentforge-grpah/actions/workflows/ci.yml/badge.svg)](https://github.com/Scaffoldic/agentforge-grpah/actions/workflows/ci.yml)
+
 A **Code Knowledge Graph (CKG)** engine + agent toolset, built on the
 [AgentForge](https://pypi.org/project/agentforge-py/) framework. It
 indexes a repository into a typed, provenance-tracked graph and serves
