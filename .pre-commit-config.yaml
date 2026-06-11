@@ -1,0 +1,29 @@
+# Pre-commit gate for agentforge-graph. Run manually / in CI:
+#   uv run pre-commit run --all-files
+# (Local git-hook install is optional; chunked commits validate via the
+# same tools run directly: uv run ruff check / mypy / pytest.)
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+      - id: mypy
+        name: mypy --strict (src)
+        entry: uv run mypy
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: pytest
+        name: pytest + coverage
+        entry: uv run pytest
+        language: system
+        pass_filenames: false
+        types: [python]
