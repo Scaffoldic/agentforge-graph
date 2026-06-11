@@ -13,9 +13,8 @@ from __future__ import annotations
 import asyncio
 import sys
 
-from dotenv import load_dotenv
-
 from agentforge import Agent
+from dotenv import load_dotenv
 
 load_dotenv()
 
