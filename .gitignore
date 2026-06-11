@@ -12,6 +12,9 @@ __pycache__/
 # Local-only framework learnings (issues, hacks, upgrade notes)
 docs/framework/
 
+# AI-assistant per-session working state (local-only, not published)
+.claude/state/
+
 # macOS
 .DS_Store
 
