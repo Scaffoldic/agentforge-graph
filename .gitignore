@@ -5,6 +5,8 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.coverage
+htmlcov/
 
 # CKG index artifacts (derivable; never committed — ADR-0006)
 .ckg/
