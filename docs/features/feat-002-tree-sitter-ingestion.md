@@ -215,4 +215,27 @@ n/a (agent is Python; *indexed* languages are the pack list above).
 
 ## Implementation status
 
-Not started.
+**Shipped (Python pack)** — design:
+`docs/design/design-002-tree-sitter-ingestion.md` (accepted).
+`agentforge_graph.ingest` ships the full pipeline for **Python (Tier A)**:
+
+- `RepoSource` (file discovery, excludes/includes, size limit, hashing) +
+  `LanguagePack`/`PackRegistry` + the Python pack (`structure.scm` /
+  `references.scm`).
+- `TreeSitterExtractor` (pass 1): File/Class/Function/Method nodes with
+  nested SCIP descriptors + `CONTAINS`; method promotion; `(+N)` overloads;
+  imports/refs recorded as node attrs. Passes `ExtractorConformance`.
+- `ImportResolver` (pass 2): `IMPORTS` (in-repo + external `Package` nodes)
+  and unique-match `CALLS`; ambiguous/external-only calls left unresolved
+  and tallied (never guessed). `parsed` vs `resolved` provenance.
+- `IngestPipeline` (threaded extract → upsert → resolve) + `CodeGraph`
+  facade (`index`/`open`/`stats`) + the **`ckg index`** CLI (rewrote the
+  scaffold `main.py`).
+- 64 tests for this feature; whole-package coverage ~98% (≥90 floor),
+  `mypy --strict`, ruff. CI runs `--extra engine`.
+
+**Follow-up PRs** (same harness): the other nine packs — ts, js, java, go,
+c#, rust, ruby, php (Tier A) and c++ (Tier B). **Deferrals** (design §3/§8):
+LSP-assist; incremental/watch (feat-004); cross-run edge-dedup in resolve
+(feat-004 will scope + clear). Parser/query objects are rebuilt per file for
+thread-safety — a parser pool is a later optimization.
