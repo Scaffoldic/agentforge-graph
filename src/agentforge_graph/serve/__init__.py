@@ -9,5 +9,11 @@ an MCP stdio server (``serve_mcp``) from one definition. This package imports
 from __future__ import annotations
 
 from .engine import TOOL_API_VERSION
+from .server import build_mcp_server, code_graph_tools, serve_mcp
 
-__all__ = ["TOOL_API_VERSION"]
+__all__ = [
+    "TOOL_API_VERSION",
+    "code_graph_tools",
+    "serve_mcp",
+    "build_mcp_server",
+]

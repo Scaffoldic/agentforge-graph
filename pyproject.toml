@@ -10,7 +10,7 @@ dependencies = [
     # --- AgentForge framework (runtime + provider + serving) ---
     "agentforge-py",                       # core contracts + Agent runtime + CLI
     "agentforge-anthropic[anthropic]",     # LLM provider for enrichment (feat-010, feat-012)
-    "agentforge-mcp",                      # MCP serving layer (feat-008)
+    "agentforge-mcp[mcp]",                 # MCP serving layer + mcp SDK (feat-008)
     "python-dotenv>=1.0",
     "pyyaml>=6",                           # read ckg.yaml engine config (feat-003+)
 ]
