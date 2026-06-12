@@ -8,5 +8,7 @@ summary. Deterministic, LLM-free; imports nothing from ``agentforge``
 from __future__ import annotations
 
 from .rank import RankedSymbol
+from .render import render_map
+from .repomap import RepoMap
 
-__all__ = ["RankedSymbol"]
+__all__ = ["RankedSymbol", "RepoMap", "render_map"]
