@@ -106,6 +106,19 @@ class GraphStoreConformance:
         two_hop = {n.id for n in await store.neighbors(file_id, [EdgeKind.CONTAINS], depth=2)}
         assert method_id in two_hop
 
+    async def test_adjacent_directed(self, store: GraphStore) -> None:
+        sg = make_sample_subgraph()  # File -CONTAINS-> Class -CONTAINS-> Method
+        await store.upsert(sg)
+        file_id, class_id, method_id = (n.id for n in sg.nodes)
+        out = await store.adjacent(class_id, [EdgeKind.CONTAINS], "out")
+        assert [(e.src, e.dst) for e in out] == [(class_id, method_id)]
+        incoming = await store.adjacent(class_id, [EdgeKind.CONTAINS], "in")
+        assert [(e.src, e.dst) for e in incoming] == [(file_id, class_id)]
+        both = await store.adjacent(class_id, [EdgeKind.CONTAINS], "both")
+        assert {(e.src, e.dst) for e in both} == {(file_id, class_id), (class_id, method_id)}
+        # kind filter excludes non-matching edges
+        assert await store.adjacent(class_id, [EdgeKind.CALLS], "both") == []
+
 
 # Distinct kinds so a kind-filter discriminates; refs are valid SymbolIDs.
 _SAMPLE_KINDS = (NodeKind.CHUNK, NodeKind.DOC_CHUNK, NodeKind.SUMMARY)

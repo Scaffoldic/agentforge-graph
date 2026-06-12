@@ -15,7 +15,7 @@ module imports nothing from ``agentforge``).
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Literal
 
 from .kinds import EdgeKind
 from .models import (
@@ -28,6 +28,9 @@ from .models import (
     ScoredRef,
     SourceFile,
 )
+
+# Direction of a 1-hop edge walk: out = node is src, in = node is dst.
+Direction = Literal["out", "in", "both"]
 
 
 class Extractor(ABC):
@@ -78,6 +81,18 @@ class GraphStore(ABC):
     @abstractmethod
     async def get(self, node_id: str) -> Node | None:
         """Fetch a node by id, or ``None``."""
+
+    @abstractmethod
+    async def adjacent(
+        self,
+        node_id: str,
+        kinds: list[EdgeKind] | None = None,
+        direction: Direction = "both",
+    ) -> list[Edge]:
+        """The 1-hop edges touching ``node_id`` (``out``: it is the src;
+        ``in``: it is the dst; ``both``), optionally filtered by edge kind.
+        Returns full ``Edge`` objects, so the caller sees each edge's kind,
+        direction and provenance (feat-006 retrieval scoring)."""
 
     @abstractmethod
     async def close(self) -> None:
