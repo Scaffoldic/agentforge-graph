@@ -15,9 +15,11 @@ from .errors import (
     StoreError,
 )
 from .kuzu_store import KuzuGraphStore
+from .lance_store import LanceVectorStore
 
 __all__ = [
     "KuzuGraphStore",
+    "LanceVectorStore",
     "StoreError",
     "StoreConfigError",
     "DriverNotFound",
