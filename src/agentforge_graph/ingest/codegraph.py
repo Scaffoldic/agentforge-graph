@@ -142,5 +142,10 @@ class CodeGraph:
             raise RuntimeError("no index report: open() does not index — use index()")
         return self._report
 
+    def embed_stats(self) -> EmbedReport:
+        if self._embed_report is None:
+            raise RuntimeError("no embed report: call embed() first")
+        return self._embed_report
+
     async def close(self) -> None:
         await self._store.close()

@@ -1,7 +1,8 @@
 """The ``ckg`` command-line interface.
 
-v0.1 ships ``ckg index``; ``serve-mcp`` and friends land in feat-008. This
-layer is framework-free — indexing drives the deterministic engine only.
+v0.1 ships ``ckg index`` and ``ckg embed``; ``serve-mcp`` and friends land in
+feat-008. This layer is framework-free — it drives the deterministic engine
+(embedding uses the configured driver: Bedrock by default, ``fake`` for tests).
 """
 
 from __future__ import annotations
@@ -10,6 +11,7 @@ import argparse
 import asyncio
 from collections.abc import Sequence
 
+from agentforge_graph.embed import EmbedReport
 from agentforge_graph.ingest import CodeGraph
 from agentforge_graph.ingest.report import IndexReport
 
@@ -37,6 +39,13 @@ def _format_report(report: IndexReport) -> str:
     return "\n".join(lines)
 
 
+def _format_embed(report: EmbedReport) -> str:
+    return (
+        f"embedded {report.embedded} chunks across {report.files} files "
+        f"({report.skipped_unchanged} unchanged) — model {report.model}, dim {report.dim}"
+    )
+
+
 async def _index(args: argparse.Namespace) -> int:
     cg = await CodeGraph.index(
         repo_path=args.path,
@@ -44,9 +53,21 @@ async def _index(args: argparse.Namespace) -> int:
         config=args.config,
         include=args.include or None,
         exclude=args.exclude or None,
+        embed=args.embed,
     )
     try:
         print(_format_report(cg.stats()))
+        if args.embed:
+            print(_format_embed(cg.embed_stats()))
+    finally:
+        await cg.close()
+    return 0
+
+
+async def _embed(args: argparse.Namespace) -> int:
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config, languages=args.lang or None)
+    try:
+        print(_format_embed(await cg.embed()))
     finally:
         await cg.close()
     return 0
@@ -66,7 +87,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--exclude", action="append", help="also exclude paths matching GLOB (repeatable)"
     )
     idx.add_argument("--config", default=None, help="path to ckg.yaml")
+    idx.add_argument("--embed", action="store_true", help="also chunk + embed after indexing")
     idx.set_defaults(func=_index)
+
+    emb = sub.add_parser("embed", help="chunk + embed an already-indexed repository")
+    emb.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    emb.add_argument("--lang", action="append", help="restrict to a language (repeatable)")
+    emb.add_argument("--config", default=None, help="path to ckg.yaml")
+    emb.set_defaults(func=_embed)
     return parser
 
 
