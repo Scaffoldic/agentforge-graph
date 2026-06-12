@@ -47,6 +47,11 @@ retrieve:                       # feat-006 / ADR-0008 — hybrid (vector -> grap
     parsed: 0.5
     llm: 0.3
 
+repomap:                        # feat-007 — Aider-style PageRank repo map
+  default_budget: 2000
+  damping: 0.85
+  kinds: ["Class", "Function", "Method"]
+
 serve:                          # feat-008 — MCP guardrails
   max_depth: 3
   max_k: 50
