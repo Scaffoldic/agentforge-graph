@@ -76,7 +76,7 @@ plugins = ["pydantic.mypy"]
 # Native engine deps ship no type stubs; keep our own code strict by
 # ignoring only the missing third-party imports at the boundary.
 [[tool.mypy.overrides]]
-module = ["kuzu.*", "lancedb.*", "pyarrow.*", "boto3.*", "botocore.*"]
+module = ["kuzu.*", "lancedb.*", "pyarrow.*", "boto3.*", "botocore.*", "networkx.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
