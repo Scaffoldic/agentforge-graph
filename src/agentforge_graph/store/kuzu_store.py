@@ -185,8 +185,7 @@ class KuzuGraphStore(GraphStore):
                 self._merge_node(node, origin_path=path)
             # drop file-owned nodes that vanished from the new subgraph
             self._conn.execute(
-                "MATCH (n:CkgNode) WHERE n.origin_path = $p AND NOT n.id IN $keep "
-                "DETACH DELETE n",
+                "MATCH (n:CkgNode) WHERE n.origin_path = $p AND NOT n.id IN $keep DETACH DELETE n",
                 {"p": path, "keep": new_ids},
             )
             # replace this file's edges
@@ -298,9 +297,7 @@ class KuzuGraphStore(GraphStore):
         async with self._lock:
             return await asyncio.to_thread(self._neighbors_sync, node_id, kinds, depth)
 
-    def _neighbors_sync(
-        self, node_id: str, kinds: list[EdgeKind] | None, depth: int
-    ) -> list[Node]:
+    def _neighbors_sync(self, node_id: str, kinds: list[EdgeKind] | None, depth: int) -> list[Node]:
         # Iterative 1-hop BFS (undirected, kind-filtered), mirroring the
         # InMemory reference; depth is small (<= serve.max_depth).
         kind_values = [k.value for k in kinds] if kinds is not None else None
@@ -335,9 +332,7 @@ class KuzuGraphStore(GraphStore):
             return await asyncio.to_thread(self._get_sync, node_id)
 
     def _get_sync(self, node_id: str) -> Node | None:
-        result = self._conn.execute(
-            "MATCH (n:CkgNode {id: $id}) RETURN n", {"id": node_id}
-        )
+        result = self._conn.execute("MATCH (n:CkgNode {id: $id}) RETURN n", {"id": node_id})
         rows = _rows(result)
         return _node_from_row(rows[0][0]) if rows else None
 

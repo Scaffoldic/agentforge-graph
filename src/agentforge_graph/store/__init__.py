@@ -14,12 +14,17 @@ from .errors import (
     StoreConfigError,
     StoreError,
 )
+from .facade import Store
 from .kuzu_store import KuzuGraphStore
 from .lance_store import LanceVectorStore
+from .registry import graph_driver, vector_driver
 
 __all__ = [
+    "Store",
     "KuzuGraphStore",
     "LanceVectorStore",
+    "graph_driver",
+    "vector_driver",
     "StoreError",
     "StoreConfigError",
     "DriverNotFound",

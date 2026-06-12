@@ -138,9 +138,7 @@ async def test_stale_node_pruned_on_upsert(store: KuzuGraphStore) -> None:
     await store.upsert(sg)
     method_id = sg.nodes[2].id
     # re-upsert a smaller subgraph for the same path (method gone)
-    smaller = FileSubgraph(
-        path=sg.path, content_hash="h2", nodes=sg.nodes[:2], edges=sg.edges[:1]
-    )
+    smaller = FileSubgraph(path=sg.path, content_hash="h2", nodes=sg.nodes[:2], edges=sg.edges[:1])
     await store.upsert(smaller)
     assert await store.get(method_id) is None
     assert await store.get(sg.nodes[0].id) is not None
