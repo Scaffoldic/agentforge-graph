@@ -8,6 +8,7 @@ file-isolated *extract* then graph-only *resolve*. Imports nothing from
 
 from __future__ import annotations
 
+from .extractor import TreeSitterExtractor
 from .pack import DescriptorRules, LanguagePack, PackRegistry
 from .source import RepoSource
 
@@ -16,4 +17,5 @@ __all__ = [
     "LanguagePack",
     "DescriptorRules",
     "PackRegistry",
+    "TreeSitterExtractor",
 ]
