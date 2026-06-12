@@ -173,4 +173,26 @@ n/a.
 
 ## Implementation status
 
-Not started.
+**Shipped (Python)** — design: `docs/design/design-007-repo-map.md`
+(accepted). `agentforge_graph.repomap` ships:
+
+- **`rank_symbols`** — projects a provenance-weighted symbol→symbol digraph
+  (CALLS/REFERENCES/INHERITS from `store.adjacent`) and ranks it with a
+  small dependency-free power-iteration **personalized PageRank** (networkx's
+  `pagerank` pulls scipy — not worth it). `focus` = personalized teleport
+  over the focus symbol set (a path expands to its symbols); `scope`
+  restricts by path prefix.
+- **`render_map`** — top symbols' signatures grouped by file (files ordered
+  by their top symbol's rank), whole signatures only, budget genuinely never
+  exceeded, truncation note (`… N more symbols below the budget`).
+- **`RepoMap`** facade (`ranked_symbols` / `render`) + **`CodeGraph.repo_map`**
+  + **`ckg map`** CLI.
+- The extractor now stores `attrs["signature"]` (the def/class line) on
+  symbol nodes (the gap the spec assumed feat-002 filled; re-index to
+  populate).
+- ~97% coverage; `mypy --strict`, ruff.
+
+**Decisions / deferrals** (design §8/§9): signature captured at extract time
+(re-index needed); symbol digraph uses CALLS/REFERENCES/INHERITS (file-level
+IMPORTS excluded at 0.1); projection recomputes per call (caching/invalidation
+is feat-004); LLM summaries are feat-012.
