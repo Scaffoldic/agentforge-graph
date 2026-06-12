@@ -54,6 +54,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agentforge_graph"]
+# Tree-sitter query packs are read at runtime via __file__; ship them.
+artifacts = ["src/agentforge_graph/ingest/packs/**/*.scm"]
 
 [tool.ruff]
 line-length = 100
