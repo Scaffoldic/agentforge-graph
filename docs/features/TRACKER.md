@@ -12,7 +12,8 @@ pick, and milestones. Specs live alongside in
 > in `.claude/state/current.md` once the project is scaffolded — this
 > tracker is the planning/dependency view, not the live work log.
 
-_Last updated: 2026-06-11 · all features `proposed`, nothing started._
+_Last updated: 2026-06-12 · feat-001 shipped (PR #1 merged); feat-003 in
+PR. feat-002 is now ready (deps on 001 only)._
 
 ---
 
@@ -23,9 +24,9 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 
 | ID | Title | Layer | Target | Status | Depends on | Blocks | Ready? |
 |---|---|---|---|---|---|---|---|
-| [001](feat-001-graph-schema-and-core-contracts.md) | Graph schema & core contracts | 0 core | 0.1 | in-progress (PR pending) | — | all | 🔨 building |
-| [002](feat-002-tree-sitter-ingestion.md) | Tree-sitter ingestion (10 langs) | 0 core | 0.1 | proposed | 001 | 004,005,007,011 | ⛔ needs 001 |
-| [003](feat-003-graph-storage-adapters.md) | Graph & vector storage adapters | 0 core | 0.1 | proposed | 001 | 004,005,007 | ⛔ needs 001 |
+| [001](feat-001-graph-schema-and-core-contracts.md) | Graph schema & core contracts | 0 core | 0.1 | shipped | — | all | ✅ |
+| [002](feat-002-tree-sitter-ingestion.md) | Tree-sitter ingestion (10 langs) | 0 core | 0.1 | proposed | 001 | 004,005,007,011 | ✅ ready |
+| [003](feat-003-graph-storage-adapters.md) | Graph & vector storage adapters | 0 core | 0.1 | in-progress (PR pending) | 001 | 004,005,007 | 🔨 building |
 | [005](feat-005-ast-chunking-and-embeddings.md) | AST chunking & embeddings | 1 serve | 0.1 | proposed | 002,003 | 006,010 | ⛔ |
 | [007](feat-007-repo-map-summarization.md) | Budget-aware repo map | 1 serve | 0.1 | proposed | 002,003 | 008 | ⛔ |
 | [006](feat-006-hybrid-retrieval.md) | Hybrid retrieval (vector+graph) | 1 serve | 0.1 | proposed | 005 | 008,010,012 | ⛔ |
@@ -160,6 +161,10 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-12** — feat-001 shipped (PR #1 merged). feat-003 (graph &
+  vector storage adapters) implemented and in PR: Kuzu + LanceDB embedded
+  adapters, `Store` facade, `VectorStore` contract added to core. feat-002
+  is the next ready pick.
 - **2026-06-11** — Tracker created. 12 specs drafted (`proposed`).
   v0.1 indexed-language scope set to top 10 (Python, TS, JS, Java, Go,
   C#, Rust, Ruby, PHP, C++) with A/B support tiers. Decision to

@@ -190,4 +190,28 @@ n/a.
 
 ## Implementation status
 
-Not started.
+**Shipped** (design: `docs/design/design-003-graph-storage-adapters.md`,
+accepted). `agentforge_graph.store` ships:
+
+- **`KuzuGraphStore`** — default embedded `GraphStore`, passing feat-001's
+  `GraphStoreConformance` unchanged. Generic `CkgNode`/`CkgEdge` tables
+  (kind as a column, `attrs` as JSON) so unknown kinds round-trip without
+  DDL change (ADR-0005); `upsert` MERGEs file nodes by id so enrichment
+  edges survive re-index; `origin_path` drives `delete_file`. Sync Kuzu
+  calls run via `asyncio.to_thread` under a lock, one transaction per write.
+- **`LanceVectorStore`** — default embedded `VectorStore` (+ a new
+  `VectorStore`/`Embedded`/`ScoredRef` contract in `core`), async-native.
+  Lazy table, dimension fixed on first upsert; `filter` targets first-class
+  columns (ref/kind/path).
+- **`Store` facade** — resolves drivers from `ckg.yaml` (`config.py` +
+  `registry.py`), creates `.ckg/{graph.kuzu,vectors.lance,meta.json}`,
+  fails at startup on unknown driver / schema mismatch, and `expand()`s
+  vector hits into the graph (the feat-006 join).
+
+Tests: conformance against both adapters + internals, facade/config
+fail-at-startup, and a store layering check (no `agentforge` imports).
+≥90% coverage floor, `mypy --strict`, ruff — green in CI (`--extra engine`).
+
+**Deviations / deferrals** (logged in the design decision log): SQLite
+fallback and Neo4j/FalkorDB deferred as entry-point fast-follows;
+`CodeGraph.open` deferred to feat-002 (`Store.open` is the entry point now).
