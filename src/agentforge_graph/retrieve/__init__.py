@@ -8,5 +8,14 @@ nothing from ``agentforge`` (ADR-0001).
 from __future__ import annotations
 
 from .pack import ContextItem, ContextPack
+from .rerank import NoopReranker, Reranker
+from .retriever import Mode, Retriever
 
-__all__ = ["ContextItem", "ContextPack"]
+__all__ = [
+    "ContextItem",
+    "ContextPack",
+    "Retriever",
+    "Mode",
+    "Reranker",
+    "NoopReranker",
+]
