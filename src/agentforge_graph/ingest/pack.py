@@ -10,6 +10,9 @@ edge kind means the same thing in every language.
 
 from __future__ import annotations
 
+import posixpath
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from agentforge_graph.core import NodeKind
@@ -36,16 +39,40 @@ class LanguagePack(BaseModel):
     structure_queries: str  # .scm: defs/classes/imports
     reference_queries: str  # .scm: calls/attribute refs
     descriptor_rules: DescriptorRules = Field(default_factory=DescriptorRules)
+    # How imports name modules: "dotted" (Python `a.b.c`) or "relative"
+    # (TS/JS path specifiers like `./util`). Drives module_path + resolve_import.
+    module_style: Literal["dotted", "relative"] = "dotted"
+
+    def _strip_ext(self, path: str) -> str:
+        for ext in self.extensions:
+            if path.endswith(ext):
+                return path[: -len(ext)]
+        return path
 
     def module_path(self, repo_relative_path: str) -> str:
-        """Map a file path to this language's import module name. Default is
-        Python-style dotted modules (``a/b/c.py`` -> ``a.b.c``, dropping a
-        trailing ``__init__``); other packs override."""
-        parts = repo_relative_path.removesuffix(f".{self.extensions[0].lstrip('.')}")
-        segs = [s for s in parts.split("/") if s]
+        """The module key a file is imported as. ``dotted``: ``a/b/c.py`` ->
+        ``a.b.c`` (drops a trailing ``__init__``). ``relative``: the
+        extension-stripped path, ``a/b/c.ts`` -> ``a/b/c``."""
+        no_ext = self._strip_ext(repo_relative_path)
+        if self.module_style == "relative":
+            return no_ext
+        segs = [s for s in no_ext.split("/") if s]
         if segs and segs[-1] == "__init__":
             segs = segs[:-1]
         return ".".join(segs)
+
+    def resolve_import(self, importer_path: str, raw_module: str) -> str:
+        """Map an import as written in ``importer_path`` to a module key
+        comparable to ``module_path``. ``dotted``: identity. ``relative``: a
+        ``./``/``../`` specifier is resolved against the importer's directory;
+        a bare specifier (``react``) stays as-is (external)."""
+        if self.module_style == "dotted":
+            return raw_module
+        target = self._strip_ext(raw_module)
+        if target.startswith("./") or target.startswith("../"):
+            base = posixpath.dirname(importer_path)
+            return posixpath.normpath(posixpath.join(base, target))
+        return target
 
 
 class PackRegistry:

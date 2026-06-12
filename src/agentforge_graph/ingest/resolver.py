@@ -93,19 +93,23 @@ class ImportResolver:
         # --- imports -> IMPORTS edges + per-file name bindings ---
         for f in files:
             ps = SymbolID.parse(f.id)
+            pack = self.registry.for_slug(ps.lang)
             binding = bindings.setdefault(f.id, {})
             for imp in f.attrs.get("imports", []):
                 module = imp.get("module", "")
                 names = imp.get("names", [])
                 if not module:
                     continue
-                if module in module_to_file:
+                # Resolve the import as written (relative path / dotted module)
+                # to a key comparable to the module index.
+                key = pack.resolve_import(ps.path, module) if pack else module
+                if key in module_to_file:
                     if _is_target(ps.path) and _add_edge(
-                        f.id, module_to_file[module], EdgeKind.IMPORTS
+                        f.id, module_to_file[key], EdgeKind.IMPORTS
                     ):
                         stats.imports_resolved += 1
                     for nm in names:
-                        tgt = exports.get(module, {}).get(nm)
+                        tgt = exports.get(key, {}).get(nm)
                         if tgt:
                             binding[nm] = tgt
                 else:
