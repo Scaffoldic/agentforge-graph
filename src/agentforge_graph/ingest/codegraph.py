@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from agentforge_graph.store import Store
 
@@ -19,7 +20,9 @@ from .pipeline import IngestPipeline
 from .report import IndexReport
 from .source import RepoSource
 
-# IngestConfig is read for excludes/limits; keep the import local-ish to the call.
+if TYPE_CHECKING:
+    # embed imports ingest, so only reference its types under TYPE_CHECKING.
+    from agentforge_graph.embed import EmbedReport
 
 
 def _git_commit(repo_path: str | Path) -> str:
@@ -43,10 +46,41 @@ def _registry_for(languages: str | list[str] | None) -> PackRegistry:
     return PackRegistry(packs)
 
 
+def _source_registry(
+    repo_path: str | Path,
+    config: str | Path | None,
+    languages: str | list[str] | None,
+    include: list[str] | None = None,
+    exclude: list[str] | None = None,
+) -> tuple[RepoSource, PackRegistry]:
+    from agentforge_graph.config import IngestConfig
+
+    ingest = IngestConfig.load(config)
+    registry = _registry_for(languages if languages is not None else ingest.languages)
+    source = RepoSource(
+        repo_path,
+        include=include,
+        exclude=ingest.exclude + (exclude or []),
+        max_file_kb=ingest.max_file_kb,
+    )
+    return source, registry
+
+
 class CodeGraph:
-    def __init__(self, store: Store, report: IndexReport | None = None) -> None:
+    def __init__(
+        self,
+        store: Store,
+        repo_path: str | Path = ".",
+        config: str | Path | None = None,
+        languages: str | list[str] | None = None,
+        report: IndexReport | None = None,
+    ) -> None:
         self._store = store
+        self._repo_path = repo_path
+        self._config = config
+        self._languages = languages
         self._report = report
+        self._embed_report: EmbedReport | None = None
 
     @classmethod
     async def index(
@@ -56,26 +90,48 @@ class CodeGraph:
         config: str | Path | None = None,
         include: list[str] | None = None,
         exclude: list[str] | None = None,
+        embed: bool = False,
     ) -> CodeGraph:
-        from agentforge_graph.config import IngestConfig
-
         store = await Store.open(repo_path, config)
-        ingest = IngestConfig.load(config)
-        registry = _registry_for(languages if languages is not None else ingest.languages)
-        source = RepoSource(
-            repo_path,
-            include=include,
-            exclude=ingest.exclude + (exclude or []),
-            max_file_kb=ingest.max_file_kb,
-        )
+        source, registry = _source_registry(repo_path, config, languages, include, exclude)
         repo = Path(repo_path).resolve().name
         pipeline = IngestPipeline(repo=repo, commit=_git_commit(repo_path))
         report = await pipeline.run(source, store.graph, registry)
-        return cls(store, report)
+        cg = cls(store, repo_path, config, languages, report)
+        if embed:
+            await cg.embed()
+        return cg
 
     @classmethod
-    async def open(cls, repo_path: str | Path = ".", config: str | Path | None = None) -> CodeGraph:
-        return cls(await Store.open(repo_path, config))
+    async def open(
+        cls,
+        repo_path: str | Path = ".",
+        config: str | Path | None = None,
+        languages: str | list[str] | None = None,
+    ) -> CodeGraph:
+        return cls(await Store.open(repo_path, config), repo_path, config, languages)
+
+    async def embed(self, embedder: object | None = None) -> EmbedReport:
+        """Chunk and embed everything indexed. Builds the embedder from
+        ``EmbedConfig`` if not supplied."""
+        from agentforge_graph.chunking import CASTChunker
+        from agentforge_graph.config import ChunkingConfig, EmbedConfig
+        from agentforge_graph.embed import Embedder, EmbedPipeline, embedder_from_config
+
+        chunking = ChunkingConfig.load(self._config)
+        emb = (
+            embedder
+            if isinstance(embedder, Embedder)
+            else embedder_from_config(EmbedConfig.load(self._config))
+        )
+        source, registry = _source_registry(self._repo_path, self._config, self._languages)
+        pipeline = EmbedPipeline(
+            CASTChunker(chunking.max_tokens, chunking.min_tokens),
+            emb,
+            commit=_git_commit(self._repo_path),
+        )
+        self._embed_report = await pipeline.run(self._store, source, registry)
+        return self._embed_report
 
     @property
     def store(self) -> Store:
@@ -85,6 +141,11 @@ class CodeGraph:
         if self._report is None:
             raise RuntimeError("no index report: open() does not index — use index()")
         return self._report
+
+    def embed_stats(self) -> EmbedReport:
+        if self._embed_report is None:
+            raise RuntimeError("no embed report: call embed() first")
+        return self._embed_report
 
     async def close(self) -> None:
         await self._store.close()

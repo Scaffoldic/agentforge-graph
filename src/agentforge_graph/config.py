@@ -84,3 +84,24 @@ class IngestConfig(_Block):
     exclude: list[str] = Field(default_factory=lambda: list(DEFAULT_EXCLUDES))
     max_file_kb: int = 512
     lsp_assist: bool = False  # opt-in resolution escalation (Tier B); inert at 0.1
+
+
+class ChunkingConfig(_Block):
+    """The ``chunking:`` block of ckg.yaml (feat-005 / ADR-0007)."""
+
+    KEY: ClassVar[str] = "chunking"
+    max_tokens: int = 512
+    min_tokens: int = 64
+
+
+class EmbedConfig(_Block):
+    """The ``embed:`` block of ckg.yaml (feat-005). Default driver is
+    ``bedrock`` (Cohere embed-v4); tests/CI use ``fake``."""
+
+    KEY: ClassVar[str] = "embed"
+    driver: str = "bedrock"  # bedrock | fake  (fastembed/voyage later)
+    model: str = "cohere.embed-v4:0"
+    region: str = "us-east-1"
+    dim: int = 1024
+    batch_size: int = 96
+    assume_role_arn: str = ""  # set for CI; empty = default AWS credential chain

@@ -27,10 +27,13 @@ chunking:                       # feat-005 / ADR-0007 — AST-aware (cAST)
   max_tokens: 512
   min_tokens: 64
 
-embed:                          # feat-005
-  driver: "fastembed"           # local default; opt-in hosted: voyage
-  model: "code-default"
-  batch_size: 64
+embed:                          # feat-005 — AWS Bedrock (Cohere embed-v4)
+  driver: "bedrock"             # bedrock | fake  (fastembed/voyage are later drivers)
+  model: "cohere.embed-v4:0"
+  region: "us-east-1"
+  dim: 1024
+  batch_size: 96
+  assume_role_arn: ""           # set for CI (OIDC assume-role); empty = default AWS creds
 
 retrieve:                       # feat-006 / ADR-0008 — hybrid (vector -> graph)
   k: 8

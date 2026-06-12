@@ -190,4 +190,29 @@ n/a.
 
 ## Implementation status
 
-Not started.
+**Shipped (Python; Bedrock embeddings)** — design:
+`docs/design/design-005-ast-chunking-and-embeddings.md` (accepted).
+`agentforge_graph.chunking` + `agentforge_graph.embed` ship:
+
+- **`CASTChunker`** — split-then-merge over the symbol spans feat-002
+  extracted (no re-parse): a symbol that fits is never split or fused;
+  oversized symbols recurse (class → per-method → line windows); gaps merge
+  up to budget. `Chunk` → `CHUNK` nodes + `CHUNK_OF` edges (span-overlap
+  linking; gap chunks link the File node).
+- **`Embedder`** ABC + **`FakeEmbedder`** (deterministic, CI default) +
+  **`BedrockEmbedder`** (Cohere `cohere.embed-v4:0`, 1024-dim, via boto3 in
+  a `bedrock` extra; optional STS assume-role for CI).
+- **`EmbedPipeline`** + **`CodeGraph.embed()`** + **`ckg embed`** /
+  `ckg index --embed`. Coarse hash-skip incrementality (unchanged chunk set
+  → no re-embed); per-file clean-replace of vectors.
+- A vector hit expands into the graph via `CHUNK_OF` (`Store.expand`) — the
+  feat-006 entry point.
+- ~97% whole-package coverage with the fake embedder; the Bedrock path is an
+  **env-gated live test** (`CKG_LIVE_BEDROCK=1`); `mypy --strict`, ruff.
+
+**Decisions / deferrals** (design §8/§9): **Voyage is not on Bedrock** →
+Cohere embed-v4 (memory `embeddings-bedrock`); chunk from symbol spans, not
+a re-parse; embeddings opt-in (cost/creds); token budget via heuristic;
+`DirtySet` incrementality and re-chunk cleanup of stale CHUNK nodes are
+feat-004. Markdown/doc chunking is feat-010. CI gains AWS once the user
+wires the assume-role ARN.

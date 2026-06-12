@@ -32,6 +32,8 @@ rerank = ["agentforge-reranker-sentence-transformers"]
 neo4j = ["agentforge-memory-neo4j"]
 # Opt-in hosted embeddings (feat-005). `--extra voyage`.
 voyage = ["agentforge-voyage"]
+# AWS Bedrock embeddings (feat-005, Cohere embed-v4). `--extra bedrock`.
+bedrock = ["boto3>=1.35"]
 # Opt-in observability (OpenTelemetry tracing). `--extra otel`.
 otel = ["agentforge-otel"]
 # Test + lint toolchain.
@@ -74,7 +76,7 @@ plugins = ["pydantic.mypy"]
 # Native engine deps ship no type stubs; keep our own code strict by
 # ignoring only the missing third-party imports at the boundary.
 [[tool.mypy.overrides]]
-module = ["kuzu.*", "lancedb.*", "pyarrow.*"]
+module = ["kuzu.*", "lancedb.*", "pyarrow.*", "boto3.*", "botocore.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
