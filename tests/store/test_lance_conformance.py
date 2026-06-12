@@ -63,3 +63,17 @@ async def test_unfilterable_column_rejected(vectors: LanceVectorStore) -> None:
 async def test_close_is_idempotent(vectors: LanceVectorStore) -> None:
     await vectors.close()
     await vectors.close()
+
+
+async def test_vectors_persist_across_reopen(tmp_path: Path) -> None:
+    path = tmp_path / "vectors.lance"
+    items = make_sample_embeddings()
+    v1 = await LanceVectorStore.open(path)
+    await v1.upsert(items)
+    await v1.close()
+    v2 = await LanceVectorStore.open(path)  # fresh handle: must find the table
+    try:
+        hits = await v2.search(items[0].vector, k=1)
+        assert hits and hits[0].ref == items[0].ref
+    finally:
+        await v2.close()

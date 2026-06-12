@@ -57,7 +57,8 @@ async def test_repo_map_tool(engine: _Engine) -> None:
 async def test_search_tool_returns_pack_json(engine: _Engine) -> None:
     out = await CkgSearch(engine).run(query="circle area", k=2, mode="context")
     data = json.loads(out)
-    assert "items" in data
+    assert data["items"]  # vectors persisted + searchable after reopen
+    assert any(i["kind"] == "Chunk" for i in data["items"])
     assert data["tool_api_version"] == "1.0"
     assert "dirty" in data
     assert "truncated" in data
