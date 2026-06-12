@@ -230,6 +230,8 @@ by design so a future TS port shares IDs.
 
 ## 10. References
 
+- Design: [`../design/design-001-core-contracts-module.md`](../design/design-001-core-contracts-module.md)
+  — the *how* (file layout, exact types, resolved §8 questions, chunk plan).
 - Research: [`../open-source-ckg-research.md`](../open-source-ckg-research.md)
   §2.1 (CPG node/edge vocabulary), §2.3 (SCIP symbol IDs), §2.6
   (cognee schema), §3.2 (incremental designs).
@@ -240,4 +242,22 @@ by design so a future TS port shares IDs.
 
 ## Implementation status
 
-Not started.
+**In progress** on `feat/001-graph-schema-and-core-contracts` (PR pending).
+
+Shipped in `agentforge_graph.core`:
+- `NodeKind` / `EdgeKind` — full reserved vocabulary locked at 0.1 (ADR-0005).
+- `Provenance` (+ `Source`) — validated at construction; `confidence < 1.0`
+  only for `source=llm` (ADR-0004).
+- `SymbolID` + `Descriptor` — SCIP-style grammar, deterministic and
+  round-tripping, OS-normalized paths, `(+N)` overload disambiguator,
+  `local(<hash>)` for anonymous symbols (ADR-0003).
+- `Node`, `Edge`, `FileSubgraph`, `SourceFile`, `GraphQuery`, `QueryResult`.
+- ABCs `Extractor`, `GraphStore` (incl. `add()` for enrichment/cross-file
+  facts), `Enricher`.
+- `conformance.py` — `GraphStoreConformance` / `ExtractorConformance` reused
+  by feat-002/003.
+
+Validated: ruff + `mypy --strict` clean, 39 tests, 100% coverage on core.
+Deviation from design: added `GraphStore.add()` (enrichment write path) — the
+design listed enrichment survival as a conformance test but no method to write
+non-file-bound facts; recorded in the design decision log.

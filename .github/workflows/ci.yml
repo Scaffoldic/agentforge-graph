@@ -1,0 +1,52 @@
+name: CI
+
+# Runs the exact local gate on every PR to main (and on main itself):
+# ruff lint + format, mypy --strict, and pytest with a >=90% coverage floor.
+# The coverage threshold is enforced by `--cov-fail-under=90` in pyproject's
+# [tool.pytest.ini_options]; CI just runs `pytest`, so local and CI agree.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Opt JS actions into Node 24 now (Node 20 is force-removed from runners
+# 2026-06-16). Drop this once the actions ship Node-24-native majors.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: lint · type · test (>=90% cov)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies (base + dev)
+        # Add `--extra engine` here when feat-002 lands (tree-sitter et al.).
+        run: uv sync --extra dev
+
+      - name: Ruff lint
+        run: uv run ruff check
+
+      - name: Ruff format check
+        run: uv run ruff format --check
+
+      - name: Mypy (strict)
+        run: uv run mypy
+
+      - name: Tests + coverage (fails under 90%)
+        run: uv run pytest
