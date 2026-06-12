@@ -132,3 +132,13 @@ class RepoMapConfig(_Block):
     damping: float = 0.85
     kinds: list[str] = Field(default_factory=lambda: ["Class", "Function", "Method"])
     edge_weights: dict[str, float] = Field(default_factory=_default_edge_weights)
+
+
+class ServeConfig(_Block):
+    """The ``serve:`` block of ckg.yaml (feat-008 — MCP guardrails)."""
+
+    KEY: ClassVar[str] = "serve"
+    max_depth: int = 3
+    max_k: int = 50
+    response_token_cap: int = 6000
+    refresh_on_call: bool = False
