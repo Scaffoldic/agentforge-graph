@@ -54,6 +54,8 @@ class CodeGraph:
         repo_path: str | Path = ".",
         languages: str | list[str] | None = None,
         config: str | Path | None = None,
+        include: list[str] | None = None,
+        exclude: list[str] | None = None,
     ) -> CodeGraph:
         from agentforge_graph.config import IngestConfig
 
@@ -61,7 +63,10 @@ class CodeGraph:
         ingest = IngestConfig.load(config)
         registry = _registry_for(languages if languages is not None else ingest.languages)
         source = RepoSource(
-            repo_path, exclude=ingest.exclude, max_file_kb=ingest.max_file_kb
+            repo_path,
+            include=include,
+            exclude=ingest.exclude + (exclude or []),
+            max_file_kb=ingest.max_file_kb,
         )
         repo = Path(repo_path).resolve().name
         pipeline = IngestPipeline(repo=repo, commit=_git_commit(repo_path))

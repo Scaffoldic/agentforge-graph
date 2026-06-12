@@ -1,6 +1,6 @@
 # AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:b6f9eb202d19
-"""My Agent: An AgentForge agent."""
+"""agentforge-graph: a Code Knowledge Graph (CKG) engine + agent toolset."""
 
-from agentforge_graph.main import run_agent
+from agentforge_graph.cli import main
 
-__all__ = ["run_agent"]
+__all__ = ["main"]

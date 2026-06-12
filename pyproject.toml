@@ -81,10 +81,3 @@ ignore_missing_imports = true
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "--cov=agentforge_graph --cov-report=term-missing --cov-fail-under=90"
-
-[tool.coverage.run]
-# main.py is the AGENTFORGE-managed scaffold CLI: it drives a live `Agent`
-# (an LLM call), so it can't be unit-tested. It's rewritten into real,
-# testable `ckg` subcommands by feat-002 (index) and feat-008 (serve-mcp);
-# drop this omit when those land.
-omit = ["src/agentforge_graph/main.py"]
