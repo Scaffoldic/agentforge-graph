@@ -100,3 +100,30 @@ class QueryResult(BaseModel):
     nodes: list[Node] = Field(default_factory=list)
     edges: list[Edge] = Field(default_factory=list)
     truncated: bool = False  # True if `limit` clipped the result
+
+
+class Embedded(BaseModel):
+    """A vector plus the symbol/chunk it represents — the ``VectorStore``
+    write unit. ``ref`` is the id of the node the vector stands in for
+    (a Chunk, DocChunk, Summary…); the producer is feat-005."""
+
+    ref: str  # symbol/chunk id this vector represents
+    vector: list[float]
+    kind: NodeKind
+    attrs: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("vector")
+    @classmethod
+    def _non_empty(cls, v: list[float]) -> list[float]:
+        if not v:
+            raise ValueError("vector must be non-empty")
+        return v
+
+
+class ScoredRef(BaseModel):
+    """A vector-search hit: a ref and its similarity score (higher =
+    closer). feat-006 expands these into a graph neighborhood."""
+
+    ref: str
+    score: float
+    attrs: dict[str, Any] = Field(default_factory=dict)

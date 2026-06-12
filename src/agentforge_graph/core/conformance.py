@@ -10,9 +10,9 @@ this module never imports pytest, keeping the core import light).
 
 from __future__ import annotations
 
-from .contracts import Extractor, GraphStore
+from .contracts import Extractor, GraphStore, VectorStore
 from .kinds import EdgeKind, NodeKind
-from .models import Edge, FileSubgraph, GraphQuery, Node, SourceFile
+from .models import Edge, Embedded, FileSubgraph, GraphQuery, Node, SourceFile
 from .provenance import Provenance
 from .symbols import Descriptor, SymbolID
 
@@ -105,6 +105,60 @@ class GraphStoreConformance:
         assert class_id in one_hop
         two_hop = {n.id for n in await store.neighbors(file_id, [EdgeKind.CONTAINS], depth=2)}
         assert method_id in two_hop
+
+
+def make_sample_embeddings(dim: int = 8) -> list[Embedded]:
+    """Three tiny orthogonal-ish vectors of dimension ``dim`` over distinct
+    kinds, for exercising a ``VectorStore`` without a real embedder."""
+    base = SymbolID.for_symbol(_LANG, _REPO, _PATH, Descriptor.type("Auth"))
+    return [
+        Embedded(
+            ref=f"{base}chunk{i}.",
+            vector=[1.0 if j == i else 0.0 for j in range(dim)],
+            kind=NodeKind.CHUNK,
+            attrs={"path": _PATH, "ordinal": i},
+        )
+        for i in range(3)
+    ]
+
+
+class VectorStoreConformance:
+    """Subclass in a feat-003 vector adapter; provide an async ``vectors``
+    fixture yielding a fresh, empty ``VectorStore``."""
+
+    async def test_upsert_then_search_finds_nearest(self, vectors: VectorStore) -> None:
+        items = make_sample_embeddings()
+        await vectors.upsert(items)
+        hits = await vectors.search(items[1].vector, k=1)
+        assert hits
+        assert hits[0].ref == items[1].ref
+
+    async def test_reupsert_is_idempotent(self, vectors: VectorStore) -> None:
+        items = make_sample_embeddings()
+        await vectors.upsert(items)
+        await vectors.upsert(items)
+        hits = await vectors.search(items[0].vector, k=10)
+        assert len({h.ref for h in hits}) == len(items)
+
+    async def test_search_respects_k(self, vectors: VectorStore) -> None:
+        items = make_sample_embeddings()
+        await vectors.upsert(items)
+        hits = await vectors.search(items[0].vector, k=2)
+        assert len(hits) <= 2
+
+    async def test_filter_constrains_results(self, vectors: VectorStore) -> None:
+        items = make_sample_embeddings()
+        await vectors.upsert(items)
+        hits = await vectors.search(items[0].vector, k=10, filter={"ordinal": 0})
+        assert all(h.ref == items[0].ref for h in hits)
+        assert hits
+
+    async def test_delete_where_removes(self, vectors: VectorStore) -> None:
+        items = make_sample_embeddings()
+        await vectors.upsert(items)
+        await vectors.delete_where({"ordinal": 1})
+        hits = await vectors.search(items[1].vector, k=10)
+        assert items[1].ref not in {h.ref for h in hits}
 
 
 class ExtractorConformance:
