@@ -18,10 +18,11 @@ from .scoring import dedupe_max, edge_weight, step_score
 
 Mode = Literal["context", "impact", "definition", "similar"]
 
-# Trust order for the min_provenance filter: resolved facts outrank parsed;
-# llm is second-class (ADR-0004 / spec §2). Distinct from GraphQuery.min_source.
-_RANK: dict[Source, int] = {Source.LLM: 0, Source.PARSED: 1, Source.MANUAL: 2, Source.RESOLVED: 3}
-_FLOOR: dict[str, int] = {"parsed": 1, "resolved": 3}
+# Trust order for the min_provenance filter: llm < parsed < resolved <= manual
+# (human-asserted facts are trusted; ADR-0004 / spec §2). Distinct from
+# GraphQuery.min_source and from the scoring edge_weights.
+_RANK: dict[Source, int] = {Source.LLM: 0, Source.PARSED: 1, Source.RESOLVED: 2, Source.MANUAL: 3}
+_FLOOR: dict[str, int] = {"parsed": 1, "resolved": 2}
 
 _MODE_EDGES: dict[Mode, tuple[list[EdgeKind], Direction]] = {
     "context": (
