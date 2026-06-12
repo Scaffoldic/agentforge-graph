@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from .extractor import TreeSitterExtractor
 from .pack import DescriptorRules, LanguagePack, PackRegistry
+from .report import IndexReport, ResolveStats
+from .resolver import ImportResolver
 from .source import RepoSource
 
 __all__ = [
@@ -18,4 +20,7 @@ __all__ = [
     "DescriptorRules",
     "PackRegistry",
     "TreeSitterExtractor",
+    "ImportResolver",
+    "IndexReport",
+    "ResolveStats",
 ]

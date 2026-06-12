@@ -55,8 +55,10 @@ class PackRegistry:
         self._packs = list(packs)
         self._by_ext: dict[str, LanguagePack] = {}
         self._by_lang: dict[str, LanguagePack] = {}
+        self._by_slug: dict[str, LanguagePack] = {}
         for pack in packs:
             self._by_lang[pack.language] = pack
+            self._by_slug[pack.lang_slug] = pack
             for ext in pack.extensions:
                 self._by_ext[ext] = pack
 
@@ -69,3 +71,6 @@ class PackRegistry:
 
     def for_language(self, name: str) -> LanguagePack | None:
         return self._by_lang.get(name)
+
+    def for_slug(self, slug: str) -> LanguagePack | None:
+        return self._by_slug.get(slug)
