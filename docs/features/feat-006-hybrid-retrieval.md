@@ -186,4 +186,29 @@ n/a.
 
 ## Implementation status
 
-Not started.
+**Shipped (Python)** — design:
+`docs/design/design-006-hybrid-retrieval.md` (accepted).
+`agentforge_graph.retrieve` ships:
+
+- **`Retriever.retrieve(query|symbol, mode, …)`** — vector entry → typed
+  graph BFS → provenance-weighted merge. Four modes: **context** (hits +
+  neighborhood), **impact** (reverse CALLS/IMPORTS/IMPLEMENTS), **definition**
+  (symbol + chunks/members), **similar** (pure vector). Per-hop
+  `decay × edge_weight(provenance)`, fan-out cap (noted, not silent),
+  `min_provenance` / `include_llm_facts` filters, dedupe max-wins, why-traces.
+- **`ContextPack`** — `render(budget_tokens)` (whole chunks, signature
+  fallback, never split) + `to_dict()`.
+- **`GraphStore.adjacent(node_id, kinds, direction)`** added to the contract
+  (Kuzu + in-memory reference + conformance) — directed, edge-returning
+  traversal the retriever's BFS and scoring need.
+- **`Reranker`** Protocol + `NoopReranker` (rerank `off` at 0.1; concrete
+  cross-encoder is a later out-of-core adapter).
+- **`CodeGraph.retrieve()`** + **`ckg query`** CLI.
+- ~97% coverage with the FakeEmbedder; an **env-gated live relevance smoke**
+  (`CKG_LIVE_BEDROCK`) — verified locally: "compute the area of a circle"
+  surfaces the `area` code via real Cohere embeddings. `mypy --strict`, ruff.
+
+**Decisions / deferrals** (design §8/§9): added `GraphStore.adjacent`
+(directed/edge-aware traversal); reranker is a hook (concrete impl
+out-of-core, ADR-0001); no LLM in the retrieval path (llm-derived nodes
+returned but flagged); chunk `code` now stored on CHUNK nodes for rendering.
