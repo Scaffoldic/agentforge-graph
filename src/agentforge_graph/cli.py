@@ -73,6 +73,18 @@ async def _embed(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _map(args: argparse.Namespace) -> int:
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        text = await cg.repo_map(
+            budget_tokens=args.budget, focus=args.focus or None, scope=args.scope
+        )
+        print(text if text else "(empty map)")
+    finally:
+        await cg.close()
+    return 0
+
+
 async def _query(args: argparse.Namespace) -> int:
     cg = await CodeGraph.open(repo_path=args.path, config=args.config)
     try:
@@ -124,6 +136,16 @@ def build_parser() -> argparse.ArgumentParser:
     qry.add_argument("--budget", type=int, default=4000, help="render token budget (default: 4000)")
     qry.add_argument("--config", default=None, help="path to ckg.yaml")
     qry.set_defaults(func=_query)
+
+    mp = sub.add_parser("map", help="print a budget-aware, centrality-ranked repo map")
+    mp.add_argument("--path", default=".", help="repository path (default: .)")
+    mp.add_argument("--budget", type=int, default=2000, help="token budget (default: 2000)")
+    mp.add_argument(
+        "--focus", action="append", help="path or symbol id to focus ranking (repeatable)"
+    )
+    mp.add_argument("--scope", default=None, help="restrict to a path subtree")
+    mp.add_argument("--config", default=None, help="path to ckg.yaml")
+    mp.set_defaults(func=_map)
     return parser
 
 

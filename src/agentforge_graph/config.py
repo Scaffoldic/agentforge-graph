@@ -122,3 +122,13 @@ class RetrieveConfig(_Block):
     fanout_cap: int = 25  # max neighbors expanded per hop (overflow noted, not silent)
     rerank: str = "off"  # off | <reranker ref>  (off at 0.1)
     edge_weights: dict[str, float] = Field(default_factory=_default_edge_weights)
+
+
+class RepoMapConfig(_Block):
+    """The ``repomap:`` block of ckg.yaml (feat-007)."""
+
+    KEY: ClassVar[str] = "repomap"
+    default_budget: int = 2000
+    damping: float = 0.85
+    kinds: list[str] = Field(default_factory=lambda: ["Class", "Function", "Method"])
+    edge_weights: dict[str, float] = Field(default_factory=_default_edge_weights)

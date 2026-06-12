@@ -23,6 +23,7 @@ from .source import RepoSource
 if TYPE_CHECKING:
     # embed/retrieve import ingest, so reference their types under TYPE_CHECKING.
     from agentforge_graph.embed import EmbedReport
+    from agentforge_graph.repomap import RankedSymbol
     from agentforge_graph.retrieve import ContextPack
     from agentforge_graph.retrieve.retriever import Mode
 
@@ -156,6 +157,28 @@ class CodeGraph:
         )
         retriever = Retriever(self._store, emb, RetrieveConfig.load(self._config))
         return await retriever.retrieve(query=query, symbol=symbol, mode=mode, k=k, depth=depth)
+
+    async def repo_map(
+        self,
+        budget_tokens: int | None = None,
+        focus: list[str] | None = None,
+        scope: str | None = None,
+    ) -> str:
+        """Budget-aware, centrality-ranked repo map (feat-007)."""
+        from agentforge_graph.config import RepoMapConfig
+        from agentforge_graph.repomap import RepoMap
+
+        rm = RepoMap(self._store, RepoMapConfig.load(self._config))
+        return await rm.render(budget_tokens=budget_tokens, focus=focus, scope=scope)
+
+    async def ranked_symbols(
+        self, k: int = 100, focus: list[str] | None = None
+    ) -> list[RankedSymbol]:
+        from agentforge_graph.config import RepoMapConfig
+        from agentforge_graph.repomap import RepoMap
+
+        rm = RepoMap(self._store, RepoMapConfig.load(self._config))
+        return await rm.ranked_symbols(k=k, focus=focus)
 
     @property
     def store(self) -> Store:

@@ -68,6 +68,12 @@ def _span(node: TSNode) -> tuple[int, int]:
     return (node.start_point[0] + 1, node.end_point[0] + 1)
 
 
+def _signature(node: TSNode, src: bytes) -> str:
+    """The symbol's first source line (the def/class header), trimmed."""
+    text = _text(node, src)
+    return text.splitlines()[0].strip() if text else ""
+
+
 class TreeSitterExtractor(Extractor):
     """Extracts a ``FileSubgraph`` from one source file, in isolation."""
 
@@ -110,7 +116,7 @@ class TreeSitterExtractor(Extractor):
 
         edges: list[Edge] = []
         for d in defs:
-            attrs: dict[str, Any] = {}
+            attrs: dict[str, Any] = {"signature": _signature(d.node, src)}
             if d.symbol_id in refs:
                 attrs["refs"] = refs[d.symbol_id]
             nodes.append(
