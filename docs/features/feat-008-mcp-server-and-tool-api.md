@@ -168,4 +168,31 @@ n/a (MCP is the cross-language surface).
 
 ## Implementation status
 
-Not started.
+**Shipped — v0.1 MVP exit** (Python). Design:
+`docs/design/design-008-mcp-server-and-tool-api.md` (accepted).
+`agentforge_graph.serve` ships:
+
+- **The six v1 tools** (`ckg_repo_map`, `ckg_search`, `ckg_symbol`,
+  `ckg_impact`, `ckg_neighbors`, `ckg_status`) as AgentForge `Tool`
+  subclasses over a shared lazy `_Engine`. Read-only; clamp `depth`/`k` to
+  `ServeConfig`; return JSON (text for the map) with an
+  `indexed_commit`+`dirty`+`truncated` envelope; `response_token_cap` trims
+  tails with a note.
+- **One definition, two bindings**: `code_graph_tools(repo)` for
+  `Agent(tools=…)` and `serve_mcp(repo)` (`MCPServer.from_stdio`, the same
+  `Tool` instances). **`ckg serve-mcp`** console entry.
+- `agentforge-mcp[mcp]` base dep (the official `mcp` SDK).
+- ~98% coverage; per-tool JSON-schema snapshot (drift fails CI); guardrail +
+  reopen tests; env-gated agent-in-the-loop (`CKG_LIVE_AGENT`). `mypy
+  --strict`, ruff.
+
+This package is the deliberate ADR-0001 **framework layer** (it imports
+`agentforge`/`agentforge-mcp`); the engine packages stay framework-free.
+
+**Reserved tools** register when their feature ships: `ckg_decisions`
+(feat-010), `ckg_routes` (feat-011), `ckg_explain` (feat-012). **Deferrals**:
+write tools, HTTP/SSE transport, auto-index daemon. A LanceDB reopen bug in
+feat-003 (paginated `list_tables()`) was found and fixed here.
+
+**v0.1 MVP is complete**: `ckg index . && ckg embed . && ckg query …`, and
+`claude mcp add ckg -- ckg serve-mcp --repo .`.

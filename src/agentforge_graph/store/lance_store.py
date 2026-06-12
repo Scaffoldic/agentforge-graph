@@ -84,9 +84,16 @@ class LanceVectorStore(VectorStore):
         return cls(db, p)
 
     async def _table(self) -> Any:
-        if self._tbl is None and _TABLE in await self._db.list_tables():
+        if self._tbl is None and _TABLE in await self._table_names():
             self._tbl = await self._db.open_table(_TABLE)
         return self._tbl
+
+    async def _table_names(self) -> list[str]:
+        # LanceDB's async list_tables() returns a paginated result object
+        # (.tables + .page_token), not a plain list of names.
+        result = await self._db.list_tables()
+        names = getattr(result, "tables", result)
+        return list(names)
 
     async def upsert(self, items: list[Embedded]) -> None:
         if not items:

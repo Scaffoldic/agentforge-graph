@@ -1,8 +1,7 @@
-"""The ``ckg`` command-line interface.
-
-v0.1 ships ``ckg index`` and ``ckg embed``; ``serve-mcp`` and friends land in
-feat-008. This layer is framework-free — it drives the deterministic engine
-(embedding uses the configured driver: Bedrock by default, ``fake`` for tests).
+"""The ``ckg`` command-line interface: ``index``, ``embed``, ``query``,
+``map``, and ``serve-mcp``. The engine commands are framework-free (embedding
+uses the configured driver: Bedrock by default, ``fake`` for tests);
+``serve-mcp`` lazily loads the framework/MCP layer.
 """
 
 from __future__ import annotations
@@ -70,6 +69,15 @@ async def _embed(args: argparse.Namespace) -> int:
         print(_format_embed(await cg.embed()))
     finally:
         await cg.close()
+    return 0
+
+
+async def _serve_mcp(args: argparse.Namespace) -> int:
+    # lazy import: keeps the engine commands (index/embed/query/map) free of
+    # the framework/MCP SDK.
+    from agentforge_graph.serve import serve_mcp
+
+    await serve_mcp(repo_path=args.repo, config=args.config, refresh_on_call=args.refresh_on_call)
     return 0
 
 
@@ -146,6 +154,16 @@ def build_parser() -> argparse.ArgumentParser:
     mp.add_argument("--scope", default=None, help="restrict to a path subtree")
     mp.add_argument("--config", default=None, help="path to ckg.yaml")
     mp.set_defaults(func=_map)
+
+    srv = sub.add_parser("serve-mcp", help="run the MCP stdio server exposing the CKG tools")
+    srv.add_argument("--repo", default=".", help="repository path (default: .)")
+    srv.add_argument("--config", default=None, help="path to ckg.yaml")
+    srv.add_argument(
+        "--refresh-on-call",
+        action="store_true",
+        help="(0.1: no-op) refresh the index on tool calls",
+    )
+    srv.set_defaults(func=_serve_mcp)
     return parser
 
 
