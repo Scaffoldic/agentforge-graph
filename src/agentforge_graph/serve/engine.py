@@ -69,6 +69,17 @@ class _Engine:
             self._repomap = RepoMap(cg.store, RepoMapConfig.load(self.config))
         return self._repomap
 
+    async def staleness(self) -> dict[str, Any]:
+        """Cheap envelope: indexed commit + dirty flag (one-node lookup)."""
+        cg = await self.code_graph()
+        one = (await cg.store.graph.query(GraphQuery(limit=1))).nodes
+        indexed_commit = one[0].provenance.commit if one else ""
+        head = _git_head(self.repo_path)
+        return {
+            "indexed_commit": indexed_commit,
+            "dirty": bool(head) and bool(indexed_commit) and head != indexed_commit,
+        }
+
     async def status(self) -> dict[str, Any]:
         cg = await self.code_graph()
         nodes = (await cg.store.graph.query(GraphQuery(limit=_ALL))).nodes
