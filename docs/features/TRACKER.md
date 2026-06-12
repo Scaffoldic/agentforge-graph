@@ -12,9 +12,9 @@ pick, and milestones. Specs live alongside in
 > in `.claude/state/current.md` once the project is scaffolded — this
 > tracker is the planning/dependency view, not the live work log.
 
-_Last updated: 2026-06-12 · feat-001 + feat-003 shipped; feat-002 (Python
-pack) in PR. feat-005 (chunking) + feat-007 (repo map) become ready once
-feat-002 ships (both depend on {002, 003})._
+_Last updated: 2026-06-12 · feat-001/002/003 shipped; feat-005 (chunking +
+Bedrock embeddings) in PR. feat-006 (hybrid retrieval) becomes ready once
+feat-005 ships; feat-007 (repo map) is ready now._
 
 ---
 
@@ -28,7 +28,7 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 | [001](feat-001-graph-schema-and-core-contracts.md) | Graph schema & core contracts | 0 core | 0.1 | shipped | — | all | ✅ |
 | [002](feat-002-tree-sitter-ingestion.md) | Tree-sitter ingestion (Python; rest follow-up) | 0 core | 0.1 | in-progress (PR pending) | 001 | 004,005,007,011 | 🔨 building |
 | [003](feat-003-graph-storage-adapters.md) | Graph & vector storage adapters | 0 core | 0.1 | shipped | 001 | 004,005,007 | ✅ |
-| [005](feat-005-ast-chunking-and-embeddings.md) | AST chunking & embeddings | 1 serve | 0.1 | proposed | 002,003 | 006,010 | ⛔ |
+| [005](feat-005-ast-chunking-and-embeddings.md) | AST chunking & embeddings | 1 serve | 0.1 | in-progress (PR pending) | 002,003 | 006,010 | 🔨 building |
 | [007](feat-007-repo-map-summarization.md) | Budget-aware repo map | 1 serve | 0.1 | proposed | 002,003 | 008 | ⛔ |
 | [006](feat-006-hybrid-retrieval.md) | Hybrid retrieval (vector+graph) | 1 serve | 0.1 | proposed | 005 | 008,010,012 | ⛔ |
 | [008](feat-008-mcp-server-and-tool-api.md) | MCP server & tool API | 1 serve | 0.1 | proposed | 006,007 | — | ⛔ |
@@ -162,12 +162,17 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-12** — feat-002 shipped. feat-005 (AST chunking & embeddings)
+  implemented and in PR: `CASTChunker`, `Embedder` (fake + AWS Bedrock
+  Cohere embed-v4), `EmbedPipeline`, `CodeGraph.embed`, `ckg embed`. Chunk↔
+  symbol linking via `CHUNK_OF`; vector hit → graph expansion. Embeddings
+  default to Bedrock (fake for CI; live test env-gated). Next ready: feat-006
+  (hybrid retrieval), feat-007 (repo map).
 - **2026-06-12** — feat-001 + feat-003 shipped. feat-002 (tree-sitter
   ingestion) implemented for **Python** and in PR: RepoSource + language
   packs, two-pass extractor/resolver, `IngestPipeline`, `CodeGraph` facade,
   `ckg index` CLI. The other nine language packs are follow-up PRs over the
-  same harness. Next ready picks after merge: feat-005 (chunking) and
-  feat-007 (repo map).
+  same harness.
 - **2026-06-12** — feat-001 shipped (PR #1 merged). feat-003 (graph &
   vector storage adapters) implemented and in PR: Kuzu + LanceDB embedded
   adapters, `Store` facade, `VectorStore` contract added to core.
