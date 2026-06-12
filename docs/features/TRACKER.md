@@ -12,9 +12,9 @@ pick, and milestones. Specs live alongside in
 > in `.claude/state/current.md` once the project is scaffolded — this
 > tracker is the planning/dependency view, not the live work log.
 
-_Last updated: 2026-06-12 · feat-001/002/003 shipped; feat-005 (chunking +
-Bedrock embeddings) in PR. feat-006 (hybrid retrieval) becomes ready once
-feat-005 ships; feat-007 (repo map) is ready now._
+_Last updated: 2026-06-12 · feat-001/002/003/005 shipped; feat-006 (hybrid
+retrieval) in PR. MVP critical path `001→002→005→006→008` — only **feat-008
+(MCP server)** remains. feat-007 (repo map) ready alongside._
 
 ---
 
@@ -28,9 +28,9 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 | [001](feat-001-graph-schema-and-core-contracts.md) | Graph schema & core contracts | 0 core | 0.1 | shipped | — | all | ✅ |
 | [002](feat-002-tree-sitter-ingestion.md) | Tree-sitter ingestion (Python; rest follow-up) | 0 core | 0.1 | in-progress (PR pending) | 001 | 004,005,007,011 | 🔨 building |
 | [003](feat-003-graph-storage-adapters.md) | Graph & vector storage adapters | 0 core | 0.1 | shipped | 001 | 004,005,007 | ✅ |
-| [005](feat-005-ast-chunking-and-embeddings.md) | AST chunking & embeddings | 1 serve | 0.1 | in-progress (PR pending) | 002,003 | 006,010 | 🔨 building |
-| [007](feat-007-repo-map-summarization.md) | Budget-aware repo map | 1 serve | 0.1 | proposed | 002,003 | 008 | ⛔ |
-| [006](feat-006-hybrid-retrieval.md) | Hybrid retrieval (vector+graph) | 1 serve | 0.1 | proposed | 005 | 008,010,012 | ⛔ |
+| [005](feat-005-ast-chunking-and-embeddings.md) | AST chunking & embeddings | 1 serve | 0.1 | shipped | 002,003 | 006,010 | ✅ |
+| [007](feat-007-repo-map-summarization.md) | Budget-aware repo map | 1 serve | 0.1 | proposed | 002,003 | 008 | ✅ ready |
+| [006](feat-006-hybrid-retrieval.md) | Hybrid retrieval (vector+graph) | 1 serve | 0.1 | in-progress (PR pending) | 005 | 008,010,012 | 🔨 building |
 | [008](feat-008-mcp-server-and-tool-api.md) | MCP server & tool API | 1 serve | 0.1 | proposed | 006,007 | — | ⛔ |
 | [004](feat-004-incremental-indexing.md) | Incremental indexing | 2 incr | 0.2 | proposed | 002,003 | 009 | ⛔ |
 | [009](feat-009-temporal-evolution-layer.md) | Temporal / git evolution | 2 incr | 0.3 | proposed | 004 | — | ⛔ |
@@ -162,6 +162,11 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-12** — feat-005 shipped. feat-006 (hybrid retrieval) implemented
+  and in PR: `Retriever` (context/impact/definition/similar modes),
+  `ContextPack`, `GraphStore.adjacent` (directed traversal added to the
+  contract), `CodeGraph.retrieve`, `ckg query`. Live relevance verified on
+  real Bedrock. MVP critical path now only needs feat-008 (MCP server).
 - **2026-06-12** — feat-002 shipped. feat-005 (AST chunking & embeddings)
   implemented and in PR: `CASTChunker`, `Embedder` (fake + AWS Bedrock
   Cohere embed-v4), `EmbedPipeline`, `CodeGraph.embed`, `ckg embed`. Chunk↔

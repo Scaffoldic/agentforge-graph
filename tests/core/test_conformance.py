@@ -111,6 +111,26 @@ class InMemoryGraphStore(GraphStore):
     async def get(self, node_id: str) -> Node | None:
         return self._nodes.get(node_id)
 
+    async def adjacent(
+        self,
+        node_id: str,
+        kinds: list[EdgeKind] | None = None,
+        direction: str = "both",
+    ) -> list[Edge]:
+        kindset = set(kinds) if kinds is not None else None
+        out: list[Edge] = []
+        for e in self._edges:
+            if kindset is not None and e.kind not in kindset:
+                continue
+            if (
+                direction in ("out", "both")
+                and e.src == node_id
+                or direction in ("in", "both")
+                and e.dst == node_id
+            ):
+                out.append(e)
+        return out
+
     async def close(self) -> None:
         return None
 

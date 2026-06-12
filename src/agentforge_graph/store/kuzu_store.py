@@ -23,6 +23,7 @@ from typing import Any
 import kuzu
 
 from agentforge_graph.core import (
+    Direction,
     Edge,
     EdgeKind,
     FileSubgraph,
@@ -110,6 +111,16 @@ def _prov_from_row(d: dict[str, Any]) -> Provenance:
         extractor=d["prov_extractor"],
         commit=d["prov_commit"],
         confidence=d["prov_confidence"],
+    )
+
+
+def _edge_from_rel(rel: dict[str, Any], src: str, dst: str) -> Edge:
+    return Edge(
+        src=src,
+        dst=dst,
+        kind=EdgeKind(rel["kind"]),
+        attrs=_load_attrs(rel["attrs"]),
+        provenance=_prov_from_row(rel),
     )
 
 
@@ -335,6 +346,38 @@ class KuzuGraphStore(GraphStore):
         result = self._conn.execute("MATCH (n:CkgNode {id: $id}) RETURN n", {"id": node_id})
         rows = _rows(result)
         return _node_from_row(rows[0][0]) if rows else None
+
+    async def adjacent(
+        self,
+        node_id: str,
+        kinds: list[EdgeKind] | None = None,
+        direction: Direction = "both",
+    ) -> list[Edge]:
+        async with self._lock:
+            return await asyncio.to_thread(self._adjacent_sync, node_id, kinds, direction)
+
+    def _adjacent_sync(
+        self, node_id: str, kinds: list[EdgeKind] | None, direction: Direction
+    ) -> list[Edge]:
+        params: dict[str, Any] = {"id": node_id}
+        where = ""
+        if kinds is not None:
+            where = " WHERE e.kind IN $kinds"
+            params["kinds"] = [k.value for k in kinds]
+        edges: list[Edge] = []
+        if direction in ("out", "both"):
+            res = self._conn.execute(
+                f"MATCH (a:CkgNode {{id: $id}})-[e:CkgEdge]->(b:CkgNode){where} RETURN e, b.id",
+                params,
+            )
+            edges += [_edge_from_rel(row[0], node_id, row[1]) for row in _rows(res)]
+        if direction in ("in", "both"):
+            res = self._conn.execute(
+                f"MATCH (a:CkgNode {{id: $id}})<-[e:CkgEdge]-(b:CkgNode){where} RETURN e, b.id",
+                params,
+            )
+            edges += [_edge_from_rel(row[0], row[1], node_id) for row in _rows(res)]
+        return edges
 
     async def close(self) -> None:
         async with self._lock:

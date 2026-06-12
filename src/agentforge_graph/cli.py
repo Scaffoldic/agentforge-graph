@@ -73,6 +73,19 @@ async def _embed(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _query(args: argparse.Namespace) -> int:
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        pack = await cg.retrieve(
+            query=args.query, symbol=args.symbol, mode=args.mode, k=args.k, depth=args.depth
+        )
+        rendered = pack.render(args.budget)
+        print(rendered if rendered else "(no results)")
+    finally:
+        await cg.close()
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ckg", description="Code Knowledge Graph engine")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -95,6 +108,22 @@ def build_parser() -> argparse.ArgumentParser:
     emb.add_argument("--lang", action="append", help="restrict to a language (repeatable)")
     emb.add_argument("--config", default=None, help="path to ckg.yaml")
     emb.set_defaults(func=_embed)
+
+    qry = sub.add_parser("query", help="retrieve connected context for a question")
+    qry.add_argument("query", nargs="?", default=None, help="natural-language query")
+    qry.add_argument("--path", default=".", help="repository path (default: .)")
+    qry.add_argument("--symbol", default=None, help="anchor at an exact symbol id")
+    qry.add_argument(
+        "--mode",
+        default="context",
+        choices=["context", "impact", "definition", "similar"],
+        help="retrieval mode (default: context)",
+    )
+    qry.add_argument("--k", type=int, default=8, help="vector hits (default: 8)")
+    qry.add_argument("--depth", type=int, default=1, help="graph expansion hops (default: 1)")
+    qry.add_argument("--budget", type=int, default=4000, help="render token budget (default: 4000)")
+    qry.add_argument("--config", default=None, help="path to ckg.yaml")
+    qry.set_defaults(func=_query)
     return parser
 
 

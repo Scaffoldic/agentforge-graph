@@ -21,8 +21,10 @@ from .report import IndexReport
 from .source import RepoSource
 
 if TYPE_CHECKING:
-    # embed imports ingest, so only reference its types under TYPE_CHECKING.
+    # embed/retrieve import ingest, so reference their types under TYPE_CHECKING.
     from agentforge_graph.embed import EmbedReport
+    from agentforge_graph.retrieve import ContextPack
+    from agentforge_graph.retrieve.retriever import Mode
 
 
 def _git_commit(repo_path: str | Path) -> str:
@@ -132,6 +134,28 @@ class CodeGraph:
         )
         self._embed_report = await pipeline.run(self._store, source, registry)
         return self._embed_report
+
+    async def retrieve(
+        self,
+        query: str | None = None,
+        symbol: str | None = None,
+        mode: Mode = "context",
+        k: int | None = None,
+        depth: int | None = None,
+        embedder: object | None = None,
+    ) -> ContextPack:
+        """Hybrid retrieval (feat-006): vector entry + graph expansion."""
+        from agentforge_graph.config import EmbedConfig, RetrieveConfig
+        from agentforge_graph.embed import Embedder, embedder_from_config
+        from agentforge_graph.retrieve import Retriever
+
+        emb = (
+            embedder
+            if isinstance(embedder, Embedder)
+            else embedder_from_config(EmbedConfig.load(self._config))
+        )
+        retriever = Retriever(self._store, emb, RetrieveConfig.load(self._config))
+        return await retriever.retrieve(query=query, symbol=symbol, mode=mode, k=k, depth=depth)
 
     @property
     def store(self) -> Store:

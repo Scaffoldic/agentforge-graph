@@ -105,3 +105,20 @@ class EmbedConfig(_Block):
     dim: int = 1024
     batch_size: int = 96
     assume_role_arn: str = ""  # set for CI; empty = default AWS credential chain
+
+
+def _default_edge_weights() -> dict[str, float]:
+    # By provenance: resolved facts outrank parsed; llm is second-class (ADR-0004).
+    return {"resolved": 1.0, "manual": 0.8, "parsed": 0.5, "llm": 0.3}
+
+
+class RetrieveConfig(_Block):
+    """The ``retrieve:`` block of ckg.yaml (feat-006 / ADR-0008)."""
+
+    KEY: ClassVar[str] = "retrieve"
+    k: int = 8
+    depth: int = 1
+    decay: float = 0.6
+    fanout_cap: int = 25  # max neighbors expanded per hop (overflow noted, not silent)
+    rerank: str = "off"  # off | <reranker ref>  (off at 0.1)
+    edge_weights: dict[str, float] = Field(default_factory=_default_edge_weights)

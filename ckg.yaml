@@ -39,7 +39,13 @@ retrieve:                       # feat-006 / ADR-0008 — hybrid (vector -> grap
   k: 8
   depth: 1
   decay: 0.6
-  rerank: off                   # opt-in: install `rerank` extra, then set a driver
+  fanout_cap: 25                # max neighbors expanded per hop (overflow noted)
+  rerank: off                   # off | <reranker ref> (concrete reranker is post-0.1)
+  edge_weights:                 # provenance-weighted scoring (ADR-0004)
+    resolved: 1.0
+    manual: 0.8
+    parsed: 0.5
+    llm: 0.3
 
 serve:                          # feat-008 — MCP guardrails
   max_depth: 3

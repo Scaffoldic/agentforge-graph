@@ -79,6 +79,7 @@ class EmbedPipeline:
                             "token_count": ch.token_count,
                             "content_hash": ch.content_hash,
                             "seq": ch.seq,
+                            "code": ch.code,  # carried for retrieval rendering (feat-006)
                         },
                         provenance=prov,
                     )

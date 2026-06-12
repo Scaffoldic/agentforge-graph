@@ -9,7 +9,7 @@ core and is usable standalone.
 
 from __future__ import annotations
 
-from .contracts import Enricher, Extractor, GraphStore, VectorStore
+from .contracts import Direction, Enricher, Extractor, GraphStore, VectorStore
 from .kinds import EdgeKind, NodeKind
 from .models import (
     Edge,
@@ -50,4 +50,5 @@ __all__ = [
     "GraphStore",
     "VectorStore",
     "Enricher",
+    "Direction",
 ]
