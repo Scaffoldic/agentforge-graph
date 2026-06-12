@@ -6,8 +6,9 @@ from __future__ import annotations
 from agentforge_graph.ingest.pack import PackRegistry
 
 from .python import PYTHON_PACK
+from .typescript import TYPESCRIPT_PACK
 
-BUILTIN_PACKS = [PYTHON_PACK]
+BUILTIN_PACKS = [PYTHON_PACK, TYPESCRIPT_PACK]
 
 
 def builtin_registry() -> PackRegistry:

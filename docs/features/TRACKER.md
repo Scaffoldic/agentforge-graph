@@ -132,6 +132,11 @@ suite, so packs can land on separate PRs (`feat/002-pack-go`, etc.)
 without serializing the whole feature. **v0.2 candidates:** Kotlin,
 Swift, C, Scala.
 
+**Shipped packs:** Python (with feat-002), **TypeScript**
+(`feat/002-pack-ts` — added `LanguagePack.module_style` so the resolver
+handles relative path imports, not just dotted modules). Remaining v0.1
+packs: js, java, go, c#, rust, ruby, php (Tier A), c++ (Tier B).
+
 ---
 
 ## Project bootstrap (pre-feature, not numbered)
