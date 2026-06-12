@@ -1,8 +1,7 @@
-"""The ``ckg`` command-line interface.
-
-v0.1 ships ``ckg index`` and ``ckg embed``; ``serve-mcp`` and friends land in
-feat-008. This layer is framework-free — it drives the deterministic engine
-(embedding uses the configured driver: Bedrock by default, ``fake`` for tests).
+"""The ``ckg`` command-line interface: ``index``, ``embed``, ``query``,
+``map``, and ``serve-mcp``. The engine commands are framework-free (embedding
+uses the configured driver: Bedrock by default, ``fake`` for tests);
+``serve-mcp`` lazily loads the framework/MCP layer.
 """
 
 from __future__ import annotations

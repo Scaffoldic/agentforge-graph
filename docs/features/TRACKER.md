@@ -12,8 +12,9 @@ pick, and milestones. Specs live alongside in
 > in `.claude/state/current.md` once the project is scaffolded — this
 > tracker is the planning/dependency view, not the live work log.
 
-_Last updated: 2026-06-12 · feat-001/002/003/005/006 shipped; feat-007 (repo
-map) in PR. Only **feat-008 (MCP server)** remains for the v0.1 MVP._
+_Last updated: 2026-06-12 · **v0.1 MVP COMPLETE** — feat-001/002/003/005/006/
+007/008 all shipped. `ckg index → embed → query/map`, served over MCP. Next:
+the other nine language packs + features 004/009/010/011/012._
 
 ---
 
@@ -30,7 +31,7 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 | [005](feat-005-ast-chunking-and-embeddings.md) | AST chunking & embeddings | 1 serve | 0.1 | shipped | 002,003 | 006,010 | ✅ |
 | [007](feat-007-repo-map-summarization.md) | Budget-aware repo map | 1 serve | 0.1 | in-progress (PR pending) | 002,003 | 008 | 🔨 building |
 | [006](feat-006-hybrid-retrieval.md) | Hybrid retrieval (vector+graph) | 1 serve | 0.1 | shipped | 005 | 008,010,012 | ✅ |
-| [008](feat-008-mcp-server-and-tool-api.md) | MCP server & tool API | 1 serve | 0.1 | proposed | 006,007 | — | ⛔ |
+| [008](feat-008-mcp-server-and-tool-api.md) | MCP server & tool API | 1 serve | 0.1 | shipped | 006,007 | — | ✅ |
 | [004](feat-004-incremental-indexing.md) | Incremental indexing | 2 incr | 0.2 | proposed | 002,003 | 009 | ⛔ |
 | [009](feat-009-temporal-evolution-layer.md) | Temporal / git evolution | 2 incr | 0.3 | proposed | 004 | — | ⛔ |
 | [010](feat-010-adr-and-docs-ingestion.md) | ADR & docs ingestion | 3 diff | 0.3 | proposed | 005,006 | — | ⛔ |
@@ -161,6 +162,12 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-12** — **v0.1 MVP COMPLETE.** feat-007 shipped; feat-008 (MCP
+  server & tool API) implemented and in PR: six read-only tools
+  (repo_map/search/symbol/impact/neighbors/status) bound as AgentForge
+  `Tool`s + an MCP stdio server from one definition, `ckg serve-mcp`. Found
+  and fixed a LanceDB reopen bug in feat-003. The 0.1 exit criterion is met
+  for Python: `ckg index → embed → query/map`, driven from an agent over MCP.
 - **2026-06-12** — feat-006 shipped. feat-007 (budget-aware repo map)
   implemented and in PR: personalized PageRank (dependency-free), budget
   render, `RepoMap`, `CodeGraph.repo_map`, `ckg map`. Extractor now stores

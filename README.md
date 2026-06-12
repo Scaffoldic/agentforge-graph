@@ -10,8 +10,40 @@ indexes a repository into a typed, provenance-tracked graph and serves
 it to LLM agents (Claude Code, Cursor, custom AgentForge agents) over
 MCP.
 
-> **Status:** scaffolded, specs + ADRs written, no features implemented
-> yet. Start with feat-001 (see the tracker).
+> **Status: v0.1 MVP shipped** (Python). The full pipeline works
+> end-to-end — `index → embed → query/map`, served to agents over MCP.
+> feat-001/002/003/005/006/007/008 are merged; the other nine language
+> packs and features 004/009/010/011/012 are next. See the tracker.
+
+## Usage (v0.1, Python)
+
+```bash
+uv sync --extra engine --extra bedrock      # graph engine + Bedrock embeddings
+ckg index .                                 # repo → typed graph (files/classes/functions/calls)
+ckg embed .                                 # AST chunks → embeddings (Cohere embed-v4 on Bedrock)
+ckg map --budget 2000                       # centrality-ranked repo orientation
+ckg query "how are tokens validated"        # ranked, connected context
+ckg query --symbol "<id>" --mode impact     # reverse dependencies ("who calls this")
+```
+
+Serve it to Claude Code (or any MCP client) as tools — `ckg_repo_map`,
+`ckg_search`, `ckg_symbol`, `ckg_impact`, `ckg_neighbors`, `ckg_status`:
+
+```bash
+claude mcp add ckg -- ckg serve-mcp --repo .
+```
+
+Or use it as a native AgentForge toolset:
+
+```python
+from agentforge import Agent
+from agentforge_graph.serve import code_graph_tools
+
+agent = Agent(model="anthropic:claude-sonnet-4-6", tools=code_graph_tools("."))
+```
+
+Embeddings use AWS Bedrock (Cohere `embed-v4`) via your configured AWS
+credentials; set `embed.driver: fake` in `ckg.yaml` for offline/dev use.
 
 ## Documentation map
 
@@ -46,8 +78,9 @@ Two files, deliberately separate:
 
 | Install | Provides | Spec |
 |---|---|---|
-| base (`uv sync`) | `agentforge-py`, `agentforge-anthropic`, `agentforge-mcp` | runtime, enrichment LLM, MCP serving |
+| base (`uv sync`) | `agentforge-py`, `agentforge-anthropic`, `agentforge-mcp[mcp]` | runtime, enrichment LLM, MCP serving |
 | `--extra engine` | tree-sitter (+10 grammars), kuzu, lancedb, fastembed, networkx | feat-002/003/005/007 |
+| `--extra bedrock` | `boto3` | feat-005 AWS Bedrock embeddings (Cohere embed-v4) |
 | `--extra rerank` | `agentforge-reranker-sentence-transformers` | feat-006 (off by default) |
 | `--extra neo4j` | `agentforge-memory-neo4j` | feat-003 opt-in graph server |
 | `--extra voyage` | `agentforge-voyage` | feat-005 hosted embeddings |
