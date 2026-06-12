@@ -10,12 +10,16 @@ from __future__ import annotations
 from .base import Embedder, InputType
 from .bedrock import BedrockEmbedder
 from .fake import FakeEmbedder
+from .pipeline import EmbedPipeline
 from .registry import embedder_from_config
+from .report import EmbedReport
 
 __all__ = [
     "Embedder",
     "InputType",
     "FakeEmbedder",
     "BedrockEmbedder",
+    "EmbedPipeline",
+    "EmbedReport",
     "embedder_from_config",
 ]
