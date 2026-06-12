@@ -67,7 +67,13 @@ strict = true
 files = ["src"]
 plugins = ["pydantic.mypy"]
 
+# Native engine deps ship no type stubs; keep our own code strict by
+# ignoring only the missing third-party imports at the boundary.
+[[tool.mypy.overrides]]
+module = ["kuzu.*", "lancedb.*", "pyarrow.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "--cov=agentforge_graph.core --cov-report=term-missing --cov-fail-under=90"
+addopts = "--cov=agentforge_graph --cov-report=term-missing --cov-fail-under=90"
