@@ -15,9 +15,19 @@ module imports nothing from ``agentforge``).
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 from .kinds import EdgeKind
-from .models import Edge, FileSubgraph, GraphQuery, Node, QueryResult, SourceFile
+from .models import (
+    Edge,
+    Embedded,
+    FileSubgraph,
+    GraphQuery,
+    Node,
+    QueryResult,
+    ScoredRef,
+    SourceFile,
+)
 
 
 class Extractor(ABC):
@@ -68,6 +78,35 @@ class GraphStore(ABC):
     @abstractmethod
     async def get(self, node_id: str) -> Node | None:
         """Fetch a node by id, or ``None``."""
+
+    @abstractmethod
+    async def close(self) -> None:
+        """Release resources. Safe to call more than once."""
+
+
+class VectorStore(ABC):
+    """Vector persistence + similarity search. feat-003 ships the LanceDB
+    adapter; feat-005 produces the ``Embedded`` items it stores. A peer of
+    ``GraphStore`` — the ``Store`` facade (feat-003) owns one of each and
+    joins them (vector hit -> graph expansion) for retrieval (feat-006)."""
+
+    @abstractmethod
+    async def upsert(self, items: list[Embedded]) -> None:
+        """Insert/replace vectors keyed by ``Embedded.ref``."""
+
+    @abstractmethod
+    async def search(
+        self,
+        vector: list[float],
+        k: int,
+        filter: dict[str, Any] | None = None,
+    ) -> list[ScoredRef]:
+        """Top-``k`` nearest refs, optionally constrained by an attribute
+        ``filter`` (e.g. ``{"kind": "Chunk"}``)."""
+
+    @abstractmethod
+    async def delete_where(self, filter: dict[str, Any]) -> None:
+        """Drop vectors matching ``filter`` (feat-004 invalidation)."""
 
     @abstractmethod
     async def close(self) -> None:

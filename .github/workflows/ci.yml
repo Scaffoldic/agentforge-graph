@@ -35,9 +35,10 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Sync dependencies (base + dev)
-        # Add `--extra engine` here when feat-002 lands (tree-sitter et al.).
-        run: uv sync --extra dev
+      - name: Sync dependencies (base + dev + engine)
+        # feat-003 is the first feature needing native wheels (kuzu, lancedb)
+        # from the `engine` extra; tree-sitter (feat-002) rides the same extra.
+        run: uv sync --extra dev --extra engine
 
       - name: Ruff lint
         run: uv run ruff check

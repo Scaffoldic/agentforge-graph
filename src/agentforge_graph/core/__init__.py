@@ -9,14 +9,16 @@ core and is usable standalone.
 
 from __future__ import annotations
 
-from .contracts import Enricher, Extractor, GraphStore
+from .contracts import Enricher, Extractor, GraphStore, VectorStore
 from .kinds import EdgeKind, NodeKind
 from .models import (
     Edge,
+    Embedded,
     FileSubgraph,
     GraphQuery,
     Node,
     QueryResult,
+    ScoredRef,
     SourceFile,
 )
 from .provenance import Provenance, Source
@@ -41,8 +43,11 @@ __all__ = [
     "SourceFile",
     "GraphQuery",
     "QueryResult",
+    "Embedded",
+    "ScoredRef",
     # contracts
     "Extractor",
     "GraphStore",
+    "VectorStore",
     "Enricher",
 ]

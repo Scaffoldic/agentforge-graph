@@ -12,6 +12,7 @@ dependencies = [
     "agentforge-anthropic[anthropic]",     # LLM provider for enrichment (feat-010, feat-012)
     "agentforge-mcp",                      # MCP serving layer (feat-008)
     "python-dotenv>=1.0",
+    "pyyaml>=6",                           # read ckg.yaml engine config (feat-003+)
 ]
 
 [project.optional-dependencies]
@@ -40,6 +41,7 @@ dev = [
     "pytest-cov>=5",
     "ruff>=0.7",
     "mypy>=1.13",
+    "types-pyyaml>=6",                      # stubs for strict mypy over yaml
 ]
 
 [project.scripts]
@@ -67,7 +69,20 @@ strict = true
 files = ["src"]
 plugins = ["pydantic.mypy"]
 
+# Native engine deps ship no type stubs; keep our own code strict by
+# ignoring only the missing third-party imports at the boundary.
+[[tool.mypy.overrides]]
+module = ["kuzu.*", "lancedb.*", "pyarrow.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "--cov=agentforge_graph.core --cov-report=term-missing --cov-fail-under=90"
+addopts = "--cov=agentforge_graph --cov-report=term-missing --cov-fail-under=90"
+
+[tool.coverage.run]
+# main.py is the AGENTFORGE-managed scaffold CLI: it drives a live `Agent`
+# (an LLM call), so it can't be unit-tested. It's rewritten into real,
+# testable `ckg` subcommands by feat-002 (index) and feat-008 (serve-mcp);
+# drop this omit when those land.
+omit = ["src/agentforge_graph/main.py"]
