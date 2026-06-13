@@ -32,7 +32,7 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 | [007](feat-007-repo-map-summarization.md) | Budget-aware repo map | 1 serve | 0.1 | in-progress (PR pending) | 002,003 | 008 | 🔨 building |
 | [006](feat-006-hybrid-retrieval.md) | Hybrid retrieval (vector+graph) | 1 serve | 0.1 | shipped | 005 | 008,010,012 | ✅ |
 | [008](feat-008-mcp-server-and-tool-api.md) | MCP server & tool API | 1 serve | 0.1 | shipped | 006,007 | — | ✅ |
-| [004](feat-004-incremental-indexing.md) | Incremental indexing | 2 incr | 0.2 | proposed | 002,003 | 009 | ⛔ |
+| [004](feat-004-incremental-indexing.md) | Incremental indexing | 2 incr | 0.2 | shipped | 002,003 | 009 | ✅ |
 | [009](feat-009-temporal-evolution-layer.md) | Temporal / git evolution | 2 incr | 0.3 | proposed | 004 | — | ⛔ |
 | [010](feat-010-adr-and-docs-ingestion.md) | ADR & docs ingestion | 3 diff | 0.3 | proposed | 005,006 | — | ⛔ |
 | [011](feat-011-framework-extractors.md) | Framework-aware extractors | 3 diff | 0.4 | proposed | 002 | — | ⛔ |

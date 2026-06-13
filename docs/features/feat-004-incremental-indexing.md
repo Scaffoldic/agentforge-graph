@@ -178,4 +178,22 @@ n/a.
 
 ## Implementation status
 
-Not started.
+**Shipped** (branch `feat/004-incremental-indexing`). `agentforge_graph.ingest.incremental`:
+`IndexMeta` (atomic `.ckg/meta.json` manifest — commit, per-pack fingerprint,
+per-file content-hash map), `ChangeDetector`/`ChangeSet` (content-hash diff as
+source of truth, git used to refine renames), `IncrementalIndexer.refresh`
+(delete → scoped re-extract → scoped re-resolve), and `DirtySet` (`.ckg/dirty.json`,
+the enricher staleness API; embeddings is the first consumer via
+`CodeGraph.embed(only_dirty=True)`).
+
+`ckg index` is incremental by default; `ckg index --full` forces a rebuild
+(also forced automatically on a pack-fingerprint or schema bump); `ckg status`
+reports indexed vs HEAD commit, dirty flag, and node counts.
+
+Enabling change in the engine: resolver edges now carry an `origin_path` (their
+source file), and `GraphStore.clear_resolved(paths)` invalidates exactly a
+re-resolve scope (and GCs orphaned external packages). Correctness is held by an
+**equivalence property test** — `refresh(diff)` produces the same graph as a
+full re-index across add/modify/rename/delete edit scripts. ≥97% coverage on the
+new package; `mypy --strict` + ruff clean. See
+`docs/design/design-004-incremental-indexing.md`.
