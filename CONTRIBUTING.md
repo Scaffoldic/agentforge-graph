@@ -88,10 +88,17 @@ the framework, you're in the wrong layer.
 4. Users select it with `store.graph.driver: <name>` in `ckg.yaml`.
 
 ### Add a model provider (OpenAI, local, …)
-Implement `Embedder` (`embed/base.py`) and/or `PatternJudge` / `Summarizer`
-(`enrich/judge.py`, `enrich/summarizer.py`). The engine and orchestration don't
-change. Wire it where the Bedrock adapter is built (`embed/registry.py`,
-`CodeGraph.enrich/summarize`).
+The model layer is a provider registry (ENH-003), mirroring storage drivers — no
+core change needed:
+1. Implement `Embedder` (`embed/base.py`) and/or `PatternJudge` / `Summarizer`
+   (`enrich/judge.py`, `enrich/summarizer.py`).
+2. Expose a builder `(EmbedConfig|EnrichConfig) -> instance` under the matching
+   entry-point group: `agentforge_graph.embedder_providers`,
+   `agentforge_graph.judge_providers`, or `agentforge_graph.summarizer_providers`
+   (or add it to the built-ins in `embed/registry.py` / `enrich/registry.py`).
+3. Users select it from `ckg.yaml`: `embed.driver: <name>` (embeddings) or
+   `enrich.provider: <name>` (judge + summarizer). `scripted` is the built-in
+   credential-free provider for offline runs.
 
 ### Add an MCP tool
 Subclass `_CkgTool` in `serve/tools.py`, declare `name`/`description`/

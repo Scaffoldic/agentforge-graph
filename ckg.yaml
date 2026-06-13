@@ -30,7 +30,7 @@ chunking:                       # feat-005 / ADR-0007 — AST-aware (cAST)
   min_tokens: 64
 
 embed:                          # feat-005 — AWS Bedrock (Cohere embed-v4)
-  driver: "bedrock"             # bedrock | fake  (fastembed/voyage are later drivers)
+  driver: "bedrock"             # bedrock | fake | <entry-point> (ENH-003 provider registry)
   model: "cohere.embed-v4:0"
   region: "us-east-1"
   dim: 1024
@@ -77,6 +77,7 @@ knowledge:                      # feat-010 — ADR & docs ingestion
 
 enrich:                         # feat-012 — LLM enrichment (pattern tagging)
   enabled: on                   # never runs implicitly — `ckg enrich` only
+  provider: "bedrock"           # ENH-003: bedrock | scripted | <entry-point>; selects judge+summarizer
   model: "us.anthropic.claude-haiku-4-5-20251001-v1:0"  # Bedrock inference profile (cheap tier)
   region: "us-east-1"
   assume_role_arn: ""           # set for CI (OIDC assume-role); empty = default AWS creds
