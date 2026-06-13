@@ -89,12 +89,16 @@ class KnowledgeIngestor:
 
     # --- discovery & indices ---------------------------------------------
 
-    @staticmethod
-    def _discover(root: Path, adr_globs: list[str]) -> list[tuple[str, str]]:
+    # Index/landing/template pages that live under the ADR globs but are not
+    # decisions (BUG-003).
+    _NON_ADR_STEMS = {"readme", "index", "template", "_template", "0000-template"}
+
+    @classmethod
+    def _discover(cls, root: Path, adr_globs: list[str]) -> list[tuple[str, str]]:
         seen: dict[str, str] = {}
         for pattern in adr_globs:
             for path in sorted(root.glob(pattern)):
-                if not path.is_file():
+                if not path.is_file() or path.stem.lower() in cls._NON_ADR_STEMS:
                     continue
                 rel = path.relative_to(root).as_posix()
                 if rel not in seen:
