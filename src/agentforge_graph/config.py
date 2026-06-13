@@ -155,6 +155,25 @@ class FrameworksConfig(_Block):
     packs: list[str] = Field(default_factory=list)  # force-enable, e.g. ["fastapi"]
 
 
+class EnrichConfig(_Block):
+    """The ``enrich:`` block of ckg.yaml (feat-012 — LLM enrichment).
+
+    Anthropic Claude runs on **AWS Bedrock** (same credential path as the Cohere
+    embedder); ``model`` is a Bedrock model id. Never runs implicitly — only
+    ``ckg enrich`` / ``CodeGraph.enrich()``."""
+
+    KEY: ClassVar[str] = "enrich"
+    enabled: bool = True
+    # Bedrock inference-profile id (the `us.` prefix; on-demand isn't supported
+    # for the bare 4.5 model id). Cheap tier.
+    model: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    region: str = "us-east-1"
+    assume_role_arn: str = ""  # set for CI; empty = default AWS credential chain
+    budget_usd: float = 2.0  # per-run LLM judge cap (breaker)
+    confidence_floor: float = 0.7  # drop tags below this
+    taxonomy: str = "v1"
+
+
 def _default_adr_globs() -> list[str]:
     return ["docs/adr/**/*.md", "docs/decisions/**/*.md"]
 
