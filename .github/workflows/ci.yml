@@ -1,14 +1,13 @@
 name: CI
 
-# Runs the exact local gate on every PR to main (and on main itself):
-# ruff lint + format, mypy --strict, and pytest with a >=90% coverage floor.
-# The coverage threshold is enforced by `--cov-fail-under=90` in pyproject's
-# [tool.pytest.ini_options]; CI just runs `pytest`, so local and CI agree.
+# Runs the exact local gate on every PR to main: ruff lint + format,
+# mypy --strict, and pytest with a >=90% coverage floor. The coverage threshold
+# is enforced by `--cov-fail-under=90` in pyproject's [tool.pytest.ini_options];
+# CI just runs `pytest`, so local and CI agree. Only on PRs — the PR gate already
+# validated the merge result, so re-running on push to main is redundant.
 
 on:
   pull_request:
-    branches: [main]
-  push:
     branches: [main]
 
 concurrency:
