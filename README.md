@@ -203,5 +203,7 @@ This repo is built to be worked on **with** AI agents. Start here:
 
 ## License
 
-> **TBD — to be set before public release.** (Choose e.g. Apache-2.0 or MIT and
-> add a `LICENSE` file.) Until then, all rights reserved.
+[**Apache-2.0**](LICENSE) — permissive, with an explicit patent grant and
+patent-retaliation clause. See [`LICENSE`](LICENSE) for the full text and
+[`NOTICE`](NOTICE) for attribution. Aligns with AgentForge, which is also
+Apache-2.0.
