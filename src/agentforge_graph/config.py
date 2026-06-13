@@ -164,6 +164,9 @@ class EnrichConfig(_Block):
 
     KEY: ClassVar[str] = "enrich"
     enabled: bool = True
+    # ENH-003: provider for BOTH judge + summarizer. bedrock | scripted |
+    # <entry-point>. `scripted` is the credential-free deterministic provider.
+    provider: str = "bedrock"
     # Bedrock inference-profile id (the `us.` prefix; on-demand isn't supported
     # for the bare 4.5 model id). Cheap tier.
     model: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
