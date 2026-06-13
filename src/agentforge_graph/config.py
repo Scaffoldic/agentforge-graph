@@ -153,3 +153,22 @@ class FrameworksConfig(_Block):
     # "auto" → detect per repo; "off" → none; or an explicit list of pack names.
     enabled: str | list[str] = "auto"
     packs: list[str] = Field(default_factory=list)  # force-enable, e.g. ["fastapi"]
+
+
+def _default_adr_globs() -> list[str]:
+    return ["docs/adr/**/*.md", "docs/decisions/**/*.md"]
+
+
+class KnowledgeConfig(_Block):
+    """The ``knowledge:`` block of ckg.yaml (feat-010 — ADR & docs ingestion).
+
+    MVP reads ``enabled`` + ``adr_globs``; ``doc_globs``/``commit_messages``/
+    ``infer_governs``/``infer_budget_usd`` are declared for follow-ups."""
+
+    KEY: ClassVar[str] = "knowledge"
+    enabled: bool = True
+    adr_globs: list[str] = Field(default_factory=_default_adr_globs)
+    doc_globs: list[str] = Field(default_factory=list)  # follow-up: general docs
+    commit_messages: bool = False  # follow-up
+    infer_governs: bool = False  # follow-up: LLM matcher (off by default)
+    infer_budget_usd: float = 1.0
