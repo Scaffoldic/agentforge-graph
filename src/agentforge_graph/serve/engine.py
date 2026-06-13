@@ -115,6 +115,38 @@ class _Engine:
             "tool_api_version": TOOL_API_VERSION,
         }
 
+    async def explain(self, symbol_id: str) -> dict[str, Any]:
+        """A symbol's design-pattern tags (feat-012) + its 1-hop typed facts —
+        the reserved ckg_explain. (Prose summary lands when summaries ship.)"""
+        from agentforge_graph.core import EdgeKind
+
+        cg = await self.code_graph()
+        node = await cg.store.graph.get(symbol_id)
+        tags: list[dict[str, Any]] = []
+        facts: list[dict[str, str]] = []
+        if node is not None:
+            for e in await cg.store.graph.adjacent(symbol_id, [EdgeKind.TAGGED], "out"):
+                target = await cg.store.graph.get(e.dst)
+                tags.append(
+                    {
+                        "pattern": target.name if target else "",
+                        "confidence": e.attrs.get("confidence", 0.0),
+                        "rationale": e.attrs.get("rationale", ""),
+                    }
+                )
+            for e in await cg.store.graph.adjacent(symbol_id, None, "both"):
+                if e.kind is not EdgeKind.TAGGED:
+                    facts.append({"src": e.src, "dst": e.dst, "kind": e.kind.value})
+        return {
+            "symbol_id": symbol_id,
+            "name": node.name if node else "",
+            "kind": node.kind.value if node else "",
+            "tags": tags,
+            "facts": facts,
+            **(await self.staleness()),
+            "tool_api_version": TOOL_API_VERSION,
+        }
+
     async def status(self) -> dict[str, Any]:
         meta = self._meta()
         cg = await self.code_graph()
