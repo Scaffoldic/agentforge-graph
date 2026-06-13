@@ -18,6 +18,7 @@ _EXPECTED = {
     "ckg_impact",
     "ckg_neighbors",
     "ckg_status",
+    "ckg_routes",
 }
 
 

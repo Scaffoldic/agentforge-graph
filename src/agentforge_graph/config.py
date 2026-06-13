@@ -144,3 +144,12 @@ class ServeConfig(_Block):
     max_k: int = 50
     response_token_cap: int = 6000
     refresh_on_call: bool = False
+
+
+class FrameworksConfig(_Block):
+    """The ``frameworks:`` block of ckg.yaml (feat-011)."""
+
+    KEY: ClassVar[str] = "frameworks"
+    # "auto" → detect per repo; "off" → none; or an explicit list of pack names.
+    enabled: str | list[str] = "auto"
+    packs: list[str] = Field(default_factory=list)  # force-enable, e.g. ["fastapi"]

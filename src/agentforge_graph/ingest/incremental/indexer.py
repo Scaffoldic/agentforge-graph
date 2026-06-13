@@ -21,6 +21,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 
 from agentforge_graph.core import GraphQuery, Node, NodeKind, SymbolID
+from agentforge_graph.frameworks import FrameworkExtractor
 from agentforge_graph.store import Store
 
 from ..pack import PackRegistry
@@ -43,6 +44,7 @@ class IncrementalIndexer:
         commit: str = "",
         resolve_scope_hops: int = 1,
         dirty: DirtySet | None = None,
+        frameworks: FrameworkExtractor | None = None,
     ) -> None:
         self.store = store
         self.source = source
@@ -51,6 +53,7 @@ class IncrementalIndexer:
         self.commit = commit
         self.resolve_scope_hops = resolve_scope_hops
         self.dirty = dirty
+        self.frameworks = frameworks
 
     async def refresh(self, changes: ChangeSet) -> IndexReport:
         if changes.is_empty():
@@ -70,8 +73,9 @@ class IncrementalIndexer:
             await self.store.graph.delete_file(path)
             await self.store.vectors.delete_where({"path": path})
 
-        # (3) re-extract + upsert the touched files (resolve deferred to (4))
-        report = await IngestPipeline(self.repo, self.commit).run(
+        # (3) re-extract + upsert the touched files (resolve deferred to (4));
+        # active framework packs re-emit their facts into the touched subgraphs.
+        report = await IngestPipeline(self.repo, self.commit, frameworks=self.frameworks).run(
             self.source, self.store.graph, self.registry, paths=touched
         )
 

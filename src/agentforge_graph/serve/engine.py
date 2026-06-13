@@ -85,6 +85,22 @@ class _Engine:
             "dirty": bool(head) and bool(meta.indexed_commit) and head != meta.indexed_commit,
         }
 
+    async def routes(self, method: str = "", path: str = "") -> dict[str, Any]:
+        """Extracted endpoints (feat-011), optionally filtered by HTTP method
+        and/or path prefix, wrapped in the staleness envelope."""
+        cg = await self.code_graph()
+        items = [r.to_dict() for r in await cg.routes()]
+        if method:
+            items = [r for r in items if str(r["method"]).upper() == method.upper()]
+        if path:
+            items = [r for r in items if str(r["path"]).startswith(path)]
+        return {
+            "routes": items,
+            "count": len(items),
+            **(await self.staleness()),
+            "tool_api_version": TOOL_API_VERSION,
+        }
+
     async def status(self) -> dict[str, Any]:
         meta = self._meta()
         cg = await self.code_graph()

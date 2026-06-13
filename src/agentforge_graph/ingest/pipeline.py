@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 
 from agentforge_graph.core import FileSubgraph, GraphStore, SourceFile
+from agentforge_graph.frameworks import FrameworkExtractor
 
 from .extractor import TreeSitterExtractor
 from .pack import LanguagePack, PackRegistry
@@ -21,16 +22,38 @@ from .resolver import ImportResolver
 from .source import RepoSource
 
 
-def _extract_one(pack: LanguagePack, repo: str, commit: str, sf: SourceFile) -> FileSubgraph:
+def _extract_one(
+    pack: LanguagePack,
+    repo: str,
+    commit: str,
+    sf: SourceFile,
+    frameworks: FrameworkExtractor | None,
+) -> tuple[FileSubgraph, int]:
     # Built and used entirely within the worker thread (parser is not shareable).
-    return TreeSitterExtractor(pack, repo, commit).extract(sf)
+    sg = TreeSitterExtractor(pack, repo, commit).extract(sf)
+    unresolved = 0
+    if frameworks is not None and frameworks.active:
+        facts = frameworks.extract(sf, repo, commit)  # feat-011: routes/etc.
+        unresolved = facts.unresolved
+        if facts.nodes or facts.edges:
+            sg = sg.model_copy(
+                update={"nodes": [*sg.nodes, *facts.nodes], "edges": [*sg.edges, *facts.edges]}
+            )
+    return sg, unresolved
 
 
 class IngestPipeline:
-    def __init__(self, repo: str, commit: str = "", concurrency: int = 8) -> None:
+    def __init__(
+        self,
+        repo: str,
+        commit: str = "",
+        concurrency: int = 8,
+        frameworks: FrameworkExtractor | None = None,
+    ) -> None:
         self.repo = repo
         self.commit = commit
         self.concurrency = concurrency
+        self.frameworks = frameworks
 
     async def run(
         self,
@@ -42,33 +65,40 @@ class IngestPipeline:
         """Extract + upsert each file, then resolve. When ``paths`` is given,
         only those files are (re)extracted (feat-004 incremental scope); the
         resolver is **not** run here — incremental refresh owns scoped
-        re-resolution. ``paths is None`` is the full-index path (resolve runs)."""
+        re-resolution. ``paths is None`` is the full-index path (resolve runs).
+        Active framework packs (feat-011) emit extra nodes/edges merged into
+        each file's subgraph, so they ride the same upsert + incrementality."""
         report = IndexReport()
         sem = asyncio.Semaphore(self.concurrency)
 
-        async def _do(sf: SourceFile) -> FileSubgraph | None:
+        async def _do(sf: SourceFile) -> tuple[FileSubgraph, int] | None:
             pack = registry.for_slug(sf.language)
             if pack is None:
                 return None
             async with sem:
-                sg = await asyncio.to_thread(_extract_one, pack, self.repo, self.commit, sf)
-            await store.upsert(sg)
-            return sg
+                result = await asyncio.to_thread(
+                    _extract_one, pack, self.repo, self.commit, sf, self.frameworks
+                )
+            await store.upsert(result[0])
+            return result
 
         files = (sf for sf in source.iter_files(registry) if paths is None or sf.path in paths)
-        subgraphs = await asyncio.gather(*[_do(sf) for sf in files])
+        results = await asyncio.gather(*[_do(sf) for sf in files])
 
-        for sg in subgraphs:
-            if sg is None:
+        for result in results:
+            if result is None:
                 continue
+            sg, unresolved = result
             report.files_indexed += 1
             report.nodes += len(sg.nodes)
             report.edges += len(sg.edges)
+            report.framework_unresolved += unresolved
             for n in sg.nodes:
                 report.by_node_kind[n.kind.value] = report.by_node_kind.get(n.kind.value, 0) + 1
             for e in sg.edges:
                 report.by_edge_kind[e.kind.value] = report.by_edge_kind.get(e.kind.value, 0) + 1
         report.skipped = list(source.skipped)
+        report.routes_extracted = report.by_node_kind.get("Route", 0)
 
         if paths is not None:
             # Scoped (incremental) extract: the caller re-resolves with the

@@ -10,14 +10,14 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from agentforge_graph.store import Store
 
 from .pack import PackRegistry
 from .packs import BUILTIN_PACKS, builtin_registry
 from .pipeline import IngestPipeline
-from .report import IndexReport
+from .report import IndexReport, RouteInfo
 from .source import RepoSource
 
 if TYPE_CHECKING:
@@ -39,6 +39,23 @@ def _git_commit(repo_path: str | Path) -> str:
         return out.stdout.strip()
     except (subprocess.SubprocessError, OSError):
         return ""
+
+
+def _framework_extractor(
+    repo_path: str | Path, config: str | Path | None, registry: PackRegistry
+) -> Any:
+    """Detect the framework packs active for this repo (feat-011) and wrap them
+    in a ``FrameworkExtractor``. Inactive (no framework / ``frameworks: off``)
+    yields an empty extractor that the pipeline skips."""
+    from agentforge_graph.frameworks import (
+        FrameworkExtractor,
+        active_frameworks,
+        builtin_framework_registry,
+    )
+
+    exts = {ext for p in registry.packs for ext in p.extensions}
+    packs = active_frameworks(repo_path, config, builtin_framework_registry(), exts)
+    return FrameworkExtractor(packs)
 
 
 def _save_meta(
@@ -134,13 +151,21 @@ class CodeGraph:
             and not meta.packs_changed(registry.packs)
         )
         cg = cls(store, repo_path, config, languages)
+        frameworks = _framework_extractor(repo_path, config, registry)
         result = await ChangeDetector(repo_path).detect(source, meta, registry)
         if use_incremental:
             report = await cg._apply_changes(
-                source, registry, repo, commit, result.changes, ingest_cfg.resolve_scope_hops, root
+                source,
+                registry,
+                repo,
+                commit,
+                result.changes,
+                ingest_cfg.resolve_scope_hops,
+                root,
+                frameworks,
             )
         else:
-            report = await IngestPipeline(repo=repo, commit=commit).run(
+            report = await IngestPipeline(repo=repo, commit=commit, frameworks=frameworks).run(
                 source, store.graph, registry
             )
         cg._report = report
@@ -162,9 +187,17 @@ class CodeGraph:
         root = Path(self._repo_path) / StoreConfig.load(self._config).path
         ingest_cfg = IngestConfig.load(self._config)
         meta = IndexMeta.load(root)
+        frameworks = _framework_extractor(self._repo_path, self._config, registry)
         result = await ChangeDetector(self._repo_path).detect(source, meta, registry)
         report = await self._apply_changes(
-            source, registry, repo, commit, result.changes, ingest_cfg.resolve_scope_hops, root
+            source,
+            registry,
+            repo,
+            commit,
+            result.changes,
+            ingest_cfg.resolve_scope_hops,
+            root,
+            frameworks,
         )
         self._report = report
         _save_meta(root, commit, registry, result.file_hashes)
@@ -179,6 +212,7 @@ class CodeGraph:
         changes: object,
         resolve_scope_hops: int,
         root: Path,
+        frameworks: Any = None,
     ) -> IndexReport:
         from .incremental import ChangeSet, DirtySet, IncrementalIndexer
 
@@ -191,6 +225,7 @@ class CodeGraph:
             commit,
             resolve_scope_hops=resolve_scope_hops,
             dirty=DirtySet(root),
+            frameworks=frameworks,
         )
         return await indexer.refresh(changes)
 
@@ -285,6 +320,28 @@ class CodeGraph:
 
         rm = RepoMap(self._store, RepoMapConfig.load(self._config))
         return await rm.ranked_symbols(k=k, focus=focus)
+
+    async def routes(self) -> list[RouteInfo]:
+        """Every extracted endpoint (feat-011): method, path pattern, handler
+        symbol and source location, sorted by (path, method)."""
+        from agentforge_graph.core import GraphQuery, NodeKind, SymbolID
+
+        nodes = (
+            await self._store.graph.query(GraphQuery(kinds=[NodeKind.ROUTE], limit=10_000_000))
+        ).nodes
+        routes = [
+            RouteInfo(
+                method=str(n.attrs.get("method", "")),
+                path=str(n.attrs.get("path", "")),
+                framework=str(n.attrs.get("framework", "")),
+                handler=str(n.attrs.get("handler", "")),
+                file=SymbolID.parse(n.id).path,
+                line=n.span[0] if n.span else 0,
+            )
+            for n in nodes
+        ]
+        routes.sort(key=lambda r: (r.path, r.method))
+        return routes
 
     @property
     def store(self) -> Store:

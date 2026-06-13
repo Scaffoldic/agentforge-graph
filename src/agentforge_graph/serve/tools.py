@@ -53,6 +53,11 @@ class NeighborsInput(BaseModel):
     depth: int = Field(default=1, description="hops (clamped to serve.max_depth)")
 
 
+class RoutesInput(BaseModel):
+    method: str = Field(default="", description="filter by HTTP method, e.g. GET (optional)")
+    path: str = Field(default="", description="filter by path prefix, e.g. /users (optional)")
+
+
 class EmptyInput(BaseModel):
     pass
 
@@ -211,4 +216,21 @@ class CkgStatus(_CkgTool):
         return json.dumps(await self._engine.status(), indent=2)
 
 
-ALL_TOOLS = [CkgRepoMap, CkgSearch, CkgSymbol, CkgImpact, CkgNeighbors, CkgStatus]
+class CkgRoutes(_CkgTool):
+    name: ClassVar[str] = "ckg_routes"
+    description: ClassVar[str] = (
+        "List the app's HTTP API surface: every framework route (e.g. FastAPI) with its "
+        "method, path pattern and handler symbol id. Filter by `method` and/or `path` prefix. "
+        "Take a route's `handler` into ckg_symbol / ckg_impact to see the handler and what it "
+        "touches. Returns empty if no web framework is detected."
+    )
+    input_schema: ClassVar[type[BaseModel]] = RoutesInput
+
+    async def run(self, **kwargs: Any) -> str:
+        data = await self._engine.routes(
+            method=kwargs.get("method", ""), path=kwargs.get("path", "")
+        )
+        return json.dumps(data, indent=2)
+
+
+ALL_TOOLS = [CkgRepoMap, CkgSearch, CkgSymbol, CkgImpact, CkgNeighbors, CkgStatus, CkgRoutes]

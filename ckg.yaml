@@ -60,8 +60,11 @@ serve:                          # feat-008 — MCP guardrails
   response_token_cap: 6000
   refresh_on_call: off
 
+frameworks:                     # feat-011 — framework-aware extractors
+  enabled: auto                 # auto-detect per repo | off | explicit list e.g. ["fastapi"]
+  packs: []                     # force-enable specific packs regardless of detection
+
 # Higher-layer features — config lands when the feature ships:
 # temporal:   (feat-009)   enabled, history_backfill, retention_commits
 # knowledge:  (feat-010)   adr_globs, doc_globs, commit_messages, infer_governs
-# frameworks: (feat-011)   enabled: auto, packs
 # enrich:     (feat-012)   model, summaries, patterns, budget_usd
