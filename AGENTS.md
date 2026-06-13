@@ -120,6 +120,47 @@ always wrong — the framework is composed from named modules.
 <!-- agentforge:end-managed -->
 
 <!-- agentforge:custom -->
-<!-- Project-specific AI assistant instructions go here. This
-     section survives `agentforge upgrade`. -->
+
+## agentforge-graph — project-specific AI guidance
+
+This project is a **Code Knowledge Graph engine** (not a typical agent). Before
+changing a subsystem, read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (the
+map), [`CONTRIBUTING.md`](CONTRIBUTING.md) (playbooks), and the relevant
+[`docs/design/`](docs/design/) doc.
+
+**Invariants you must respect:**
+
+- **Layering (ADR-0001):** the deterministic engine — `core`, `config`,
+  `ingest`, `store`, `chunking`, `embed`, `retrieve`, `repomap`, `frameworks`,
+  `knowledge` — **must not import `agentforge`**. There's a layering test that
+  enforces it. Only `serve` and `enrich` may import the framework.
+- **Provenance (ADR-0004):** every `Node`/`Edge` carries `Provenance`
+  (`parsed | resolved | llm | manual`, + extractor, commit, confidence). LLM
+  facts use `Provenance.llm(...)` with a confidence and are opt-out-able. Never
+  emit an unattributed fact.
+- **Stable ids (ADR-0003):** node ids are `SymbolID` strings derived from
+  `(lang, repo, path, descriptor)` — deterministic, no counters. Use
+  `SymbolID.for_symbol` / `.parse`, never invent ids.
+- **Locked kinds (ADR-0005):** `NodeKind`/`EdgeKind` are fixed in
+  `core/kinds.py`. Don't add kinds casually; producers for reserved kinds ship
+  in later features.
+- **Conservative resolution:** create a cross-file edge only on an unambiguous
+  match; count the rest, never guess.
+- **Injectable models:** never hard-call a model. Implement/inject `Embedder`,
+  `PatternJudge`, or `Summarizer`. CI uses the deterministic fakes — keep tests
+  model-free; live tests are env-gated (`CKG_LIVE_BEDROCK` / `CKG_LIVE_AGENT`).
+- **Budget rails:** LLM enrichment runs under `BudgetPolicy`; account cost
+  per-batch and persist partial progress on a trip. Don't bypass it.
+
+**Tooling & workflow:** use `uv` (`uv run ckg …`), not pip. Use `Read`/`Edit`/
+`Grep`, not Bash `cat`/`find`/`sed`. One feature/bug/enh = one branch = one PR;
+design-doc-first for features. Gate every change on
+`pytest + mypy --strict + ruff`. Log AgentForge/Kuzu surprises in
+`docs/framework/` (local-only).
+
+**Dogfood:** `ckg index . && ckg serve-mcp --repo .` exposes this repo's own
+graph (decisions, routes, impact, summaries) — useful grounded context for an
+assistant working here.
+
 <!-- agentforge:end-custom -->
+
