@@ -78,6 +78,54 @@ async def test_controller_by_name(tmp_path) -> None:  # type: ignore[no-untyped-
         await cg.close()
 
 
+async def test_base_class_signal_nominates(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    # ENH-001: a class whose OWN name has no role suffix, but which inherits a
+    # role-named base, is still nominated (from the class signature).
+    repo = tmp_path / "p"
+    repo.mkdir()
+    (repo / "m.py").write_text(
+        "class VectorStore:\n    def search(self): ...\n\n\n"
+        "class Lance(VectorStore):\n    def search(self):\n        return 1\n"
+    )
+    cg = await CodeGraph.index(repo_path=repo)
+    try:
+        noms = await _nominations(cg)
+        assert "Repository" in noms["Lance"]  # inherits *Store base
+    finally:
+        await cg.close()
+
+
+async def test_recall_broad_adds_signals(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from agentforge_graph.core import GraphQuery
+    from agentforge_graph.enrich.heuristics import PatternHeuristics, class_and_function_ids
+
+    repo = tmp_path / "p"
+    repo.mkdir()
+    (repo / "m.py").write_text(
+        "class Base:\n    def run(self): ...\n\n\n"
+        "class CacheManager:\n    def get(self): ...\n\n\n"
+        "class Worker(Base):\n    def run(self):\n        return 1\n"
+    )
+    cg = await CodeGraph.index(repo_path=repo)
+    try:
+        nodes = (await cg.store.graph.query(GraphQuery(limit=10_000))).nodes
+        ids = class_and_function_ids(nodes)
+        conservative = {
+            c.name: set(c.patterns)
+            for c in await PatternHeuristics("conservative").nominate(cg.store.graph, ids)
+        }
+        broad = {
+            c.name: set(c.patterns)
+            for c in await PatternHeuristics("broad").nominate(cg.store.graph, ids)
+        }
+        # CacheManager: Service only under broad; Worker: Strategy (implements Base) under broad
+        assert "CacheManager" not in conservative
+        assert "Service" in broad["CacheManager"]
+        assert "Strategy" in broad.get("Worker", set())
+    finally:
+        await cg.close()
+
+
 async def test_candidate_carries_evidence_and_methods(graph: CodeGraph) -> None:
     nodes = (await graph.store.graph.query(GraphQuery(limit=10_000))).nodes
     cands = await PatternHeuristics().nominate(graph.store.graph, class_and_function_ids(nodes))
