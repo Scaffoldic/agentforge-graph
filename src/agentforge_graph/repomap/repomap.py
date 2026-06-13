@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from agentforge_graph.config import RepoMapConfig
-from agentforge_graph.core import NodeKind
+from agentforge_graph.core import EdgeKind, GraphQuery, NodeKind, SymbolID
 from agentforge_graph.store import Store
 
 from .rank import RankedSymbol, rank_symbols
@@ -44,4 +44,17 @@ class RepoMap:
             focus,
             scope,
         )
-        return render_map(ranked, budget)
+        return render_map(ranked, budget, await self._file_summaries())
+
+    async def _file_summaries(self) -> dict[str, str]:
+        """path -> file summary text (feat-012), when summaries have been run."""
+        nodes = (
+            await self.store.graph.query(GraphQuery(kinds=[NodeKind.SUMMARY], limit=10**9))
+        ).nodes
+        out: dict[str, str] = {}
+        for n in nodes:
+            if str(n.attrs.get("level")) != "file":
+                continue
+            for e in await self.store.graph.adjacent(n.id, [EdgeKind.SUMMARIZES], "out"):
+                out[SymbolID.parse(e.dst).path] = str(n.attrs.get("text", ""))
+        return out

@@ -149,16 +149,41 @@ async def _decisions(args: argparse.Namespace) -> int:
 
 async def _enrich(args: argparse.Namespace) -> int:
     cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    do_patterns = args.patterns or args.all or not args.summaries
+    do_summaries = args.summaries or args.all
     try:
-        report = await cg.enrich(budget_usd=args.budget_usd)
-        by = ", ".join(f"{k}={v}" for k, v in sorted(report.by_pattern.items()))
-        print(
-            f"enriched: {report.candidates} candidates, {report.judged} judged, "
-            f"{report.tagged} tagged — ${report.cost_usd:.4f}"
-            + (" [budget tripped]" if report.budget_tripped else "")
-        )
-        if by:
-            print(f"  patterns: {by}")
+        if do_patterns:
+            r = await cg.enrich(budget_usd=args.budget_usd)
+            by = ", ".join(f"{k}={v}" for k, v in sorted(r.by_pattern.items()))
+            print(
+                f"patterns: {r.candidates} candidates, {r.judged} judged, {r.tagged} tagged "
+                f"— ${r.cost_usd:.4f}" + (" [budget tripped]" if r.budget_tripped else "")
+            )
+            if by:
+                print(f"  by pattern: {by}")
+        if do_summaries:
+            s = await cg.summarize(budget_usd=args.budget_usd)
+            print(
+                f"summaries: {s.files_summarized} files"
+                + (" + repo" if s.repo_summarized else "")
+                + f" — ${s.cost_usd:.4f}"
+                + (" [budget tripped]" if s.budget_tripped else "")
+            )
+    finally:
+        await cg.close()
+    return 0
+
+
+async def _summaries(args: argparse.Namespace) -> int:
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        items = await cg.summaries(level=args.level)
+        if not items:
+            print("(no summaries — run `ckg enrich --summaries`)")
+            return 0
+        for s in items:
+            where = s.path or "<repo>"
+            print(f"[{s.level}] {where}\n  {s.text}\n")
     finally:
         await cg.close()
     return 0
@@ -286,11 +311,20 @@ def build_parser() -> argparse.ArgumentParser:
     dec.add_argument("--config", default=None, help="path to ckg.yaml")
     dec.set_defaults(func=_decisions)
 
-    enr = sub.add_parser("enrich", help="LLM pattern tagging (budgeted; Bedrock Claude)")
+    enr = sub.add_parser("enrich", help="LLM enrichment (pattern tags / summaries; Bedrock Claude)")
     enr.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    enr.add_argument("--patterns", action="store_true", help="run pattern tagging (default)")
+    enr.add_argument("--summaries", action="store_true", help="run module summaries")
+    enr.add_argument("--all", action="store_true", help="run both patterns and summaries")
     enr.add_argument("--budget-usd", type=float, default=None, help="override the per-run USD cap")
     enr.add_argument("--config", default=None, help="path to ckg.yaml")
     enr.set_defaults(func=_enrich)
+
+    sm = sub.add_parser("summaries", help="list stored module summaries")
+    sm.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    sm.add_argument("--level", default=None, help="filter by level (file|repo)")
+    sm.add_argument("--config", default=None, help="path to ckg.yaml")
+    sm.set_defaults(func=_summaries)
 
     tg = sub.add_parser("tagged", help="list symbols carrying a design-pattern tag")
     tg.add_argument("pattern", help="pattern name, e.g. Repository")

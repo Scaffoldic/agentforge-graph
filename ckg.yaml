@@ -83,6 +83,8 @@ enrich:                         # feat-012 — LLM enrichment (pattern tagging)
   budget_usd: 2.0               # per-run LLM judge cap (breaker)
   confidence_floor: 0.7         # drop tags below this confidence
   taxonomy: v1
+  summary_max_words: 120        # module summaries
+  summary_levels: ["file", "repo"]
 
 # Higher-layer features — config lands when the feature ships:
 # temporal:   (feat-009)   enabled, history_backfill, retention_commits

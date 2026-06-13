@@ -116,9 +116,9 @@ class _Engine:
         }
 
     async def explain(self, symbol_id: str) -> dict[str, Any]:
-        """A symbol's design-pattern tags (feat-012) + its 1-hop typed facts —
-        the reserved ckg_explain. (Prose summary lands when summaries ship.)"""
-        from agentforge_graph.core import EdgeKind
+        """A symbol's LLM summary + design-pattern tags (feat-012) + its 1-hop
+        typed facts — the reserved ckg_explain."""
+        from agentforge_graph.core import EdgeKind, NodeKind, SymbolID
 
         cg = await self.code_graph()
         node = await cg.store.graph.get(symbol_id)
@@ -137,10 +137,21 @@ class _Engine:
             for e in await cg.store.graph.adjacent(symbol_id, None, "both"):
                 if e.kind is not EdgeKind.TAGGED:
                     facts.append({"src": e.src, "dst": e.dst, "kind": e.kind.value})
+        # the owning file's summary, if one exists (feat-012)
+        summary = ""
+        if node is not None:
+            path = SymbolID.parse(symbol_id).path
+            for n in (
+                await cg.store.graph.query(GraphQuery(kinds=[NodeKind.SUMMARY], limit=10**9))
+            ).nodes:
+                if str(n.attrs.get("level")) == "file" and str(n.attrs.get("path")) == path:
+                    summary = str(n.attrs.get("text", ""))
+                    break
         return {
             "symbol_id": symbol_id,
             "name": node.name if node else "",
             "kind": node.kind.value if node else "",
+            "summary": summary,
             "tags": tags,
             "facts": facts,
             **(await self.staleness()),

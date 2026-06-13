@@ -23,7 +23,7 @@ from .source import RepoSource
 if TYPE_CHECKING:
     # embed/retrieve import ingest, so reference their types under TYPE_CHECKING.
     from agentforge_graph.embed import EmbedReport
-    from agentforge_graph.enrich import TaggedInfo
+    from agentforge_graph.enrich import SummaryInfo, TaggedInfo
     from agentforge_graph.knowledge import DecisionInfo
     from agentforge_graph.repomap import RankedSymbol
     from agentforge_graph.retrieve import ContextPack
@@ -491,6 +491,84 @@ class CodeGraph:
                     )
                 )
         out.sort(key=lambda t: t.confidence, reverse=True)
+        return out
+
+    async def summarize(
+        self, summarizer: object | None = None, budget_usd: float | None = None
+    ) -> Any:
+        """Bottom-up module summaries (feat-012): file summaries + one repo
+        summary, embedded for concept search. Drains DirtySet("summaries") if
+        non-empty, else summarizes all files. Builds the Bedrock summarizer +
+        embedder from config unless supplied. Explicit call only."""
+        from agentforge_graph.config import EmbedConfig, EnrichConfig, StoreConfig
+        from agentforge_graph.core import GraphQuery, NodeKind, SymbolID
+        from agentforge_graph.embed import embedder_from_config
+        from agentforge_graph.enrich import Summarizer, SummaryEnricher
+
+        from .incremental import DirtySet
+
+        cfg = EnrichConfig.load(self._config)
+        repo = Path(self._repo_path).resolve().name
+        root = Path(self._repo_path) / StoreConfig.load(self._config).path
+        if isinstance(summarizer, Summarizer):
+            the_summarizer: Summarizer = summarizer
+        else:
+            from agentforge_graph.enrich.bedrock_summarizer import BedrockClaudeSummarizer
+
+            the_summarizer = BedrockClaudeSummarizer(
+                cfg.model, cfg.region, cfg.assume_role_arn or None
+            )
+
+        files = (
+            await self._store.graph.query(GraphQuery(kinds=[NodeKind.FILE], limit=10**9))
+        ).nodes
+        dirty = DirtySet(root)
+        dirty_ids = await dirty.dirty_for("summaries")
+        if dirty_ids:  # dirty entries are symbol ids → the files that contain them
+            paths = {SymbolID.parse(i).path for i in dirty_ids}
+            file_ids = [n.id for n in files if SymbolID.parse(n.id).path in paths]
+        else:
+            file_ids = [n.id for n in files]
+
+        enricher = SummaryEnricher(
+            repo,
+            the_summarizer,
+            embedder=embedder_from_config(EmbedConfig.load(self._config)),
+            max_words=cfg.summary_max_words,
+            levels=cfg.summary_levels,
+            budget_usd=budget_usd if budget_usd is not None else cfg.budget_usd,
+            commit=_git_commit(self._repo_path),
+        )
+        report = await enricher.enrich(self._store, file_ids)
+        done_paths = {SymbolID.parse(f).path for f in enricher.last_done_ids}
+        await dirty.mark_clean(
+            "summaries", [i for i in dirty_ids if SymbolID.parse(i).path in done_paths]
+        )
+        return report
+
+    async def summaries(self, level: str | None = None) -> list[SummaryInfo]:
+        """Stored module summaries (feat-012), optionally filtered by level."""
+        from agentforge_graph.core import EdgeKind, GraphQuery, NodeKind
+        from agentforge_graph.enrich import SummaryInfo
+
+        nodes = (
+            await self._store.graph.query(GraphQuery(kinds=[NodeKind.SUMMARY], limit=10**9))
+        ).nodes
+        out: list[SummaryInfo] = []
+        for n in nodes:
+            lvl = str(n.attrs.get("level", ""))
+            if level is not None and lvl != level:
+                continue
+            targets = await self._store.graph.adjacent(n.id, [EdgeKind.SUMMARIZES], "out")
+            out.append(
+                SummaryInfo(
+                    target=targets[0].dst if targets else "",
+                    level=lvl,
+                    text=str(n.attrs.get("text", "")),
+                    path=str(n.attrs.get("path", "")),
+                )
+            )
+        out.sort(key=lambda s: (s.level, s.path))
         return out
 
     @property
