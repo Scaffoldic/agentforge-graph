@@ -12,9 +12,13 @@ pick, and milestones. Specs live alongside in
 > in `.claude/state/current.md` once the project is scaffolded — this
 > tracker is the planning/dependency view, not the live work log.
 
-_Last updated: 2026-06-12 · **v0.1 MVP COMPLETE** — feat-001/002/003/005/006/
-007/008 all shipped. `ckg index → embed → query/map`, served over MCP. Next:
-the other nine language packs + features 004/009/010/011/012._
+_Last updated: 2026-06-13 · **v0.1 MVP COMPLETE** — all 12 features ≥MVP
+(001/002/003/005/006/007/008 shipped; 004 incremental; 010 ADR + 011 frameworks
+MVP; 012 enrichment tags+summaries). Python/TS/JS packs. **OSS-prep done:**
+Apache-2.0 license (PR #17), README/ARCHITECTURE/CONTRIBUTING. **ENH-003 phase 1
+shipped** (PR #18 — pluggable model-provider registry). Only feat-009 (temporal)
+unstarted. Next: ENH-003 phase 2 (non-Bedrock adapters) / ENH-004 (Neo4j+pgvector)
+/ 0.1 release prep (version bump from 0.0.0, changelog, tag)._
 
 ---
 
