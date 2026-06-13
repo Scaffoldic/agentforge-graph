@@ -186,4 +186,27 @@ until C++ resolution matures.
 
 ## Implementation status
 
-Not started.
+**MVP shipped** (branch `feat/011-framework-extractors`) — **FastAPI routes**.
+New package `agentforge_graph.frameworks` (zero `agentforge` imports):
+`FrameworkPack` ABC + `FrameworkFacts`, `FrameworkRegistry`, dependency/import
+detection (`active_frameworks`), `FrameworkExtractor`, and the built-in
+**FastAPI** pack (`routes.scm` → `Route` nodes + `HANDLED_BY` edges to the
+handler `Function`).
+
+Framework facts **ride the file's `FileSubgraph`** (pass-1 merge), so they
+inherit feat-004 incrementality unchanged — a changed file re-emits its routes,
+`clear_resolved` never touches them (they're `parsed`/file-owned). Surfaces:
+`CodeGraph.routes()`, `ckg routes` CLI, the `ckg_routes` MCP tool (now in
+`ALL_TOOLS`), and a `frameworks:` config block (`enabled: auto|off|<list>`,
+`packs`). `IndexReport` gains `routes_extracted` + `framework_unresolved`
+(dynamic paths and class-based handlers counted, never silently dropped).
+
+≥97% package coverage; `mypy --strict` + ruff clean. Design:
+`docs/design/design-011-framework-extractors.md`.
+
+### Follow-ups (same harness)
+- ORM pack (`DataModel`/`HAS_FIELD`/`RELATES_TO`) — SQLAlchemy/Django models.
+- DI (`Service`/`INJECTED_INTO`).
+- Cross-file pass-2: `include_router(prefix=…)` composition, Django `urls.py`
+  string view refs (the `resolve()`/`coupled_files()` hooks are reserved).
+- Class-based view handlers; Flask, Express/NestJS (TS), Spring (Java).
