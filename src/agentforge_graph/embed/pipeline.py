@@ -36,11 +36,23 @@ class EmbedPipeline:
         self.commit = commit
         self.name = "cast-chunker"
 
-    async def run(self, store: Store, source: RepoSource, registry: PackRegistry) -> EmbedReport:
+    async def run(
+        self,
+        store: Store,
+        source: RepoSource,
+        registry: PackRegistry,
+        only_paths: set[str] | None = None,
+    ) -> EmbedReport:
+        """Embed the indexed code. When ``only_paths`` is given (feat-004: the
+        files a refresh dirtied), only those files are re-chunked/embedded;
+        otherwise every file is visited (the chunk-hash skip still avoids
+        re-embedding unchanged files)."""
         report = EmbedReport(model=self.embedder.name, dim=self.embedder.dim)
         prov = Provenance.parsed(self.name, self.commit)
 
         for sf in source.iter_files(registry):
+            if only_paths is not None and sf.path not in only_paths:
+                continue
             nodes_for_path = [
                 n
                 for n in (
