@@ -58,6 +58,11 @@ class RoutesInput(BaseModel):
     path: str = Field(default="", description="filter by path prefix, e.g. /users (optional)")
 
 
+class DecisionsInput(BaseModel):
+    scope: str = Field(default="", description="restrict to decisions governing a path prefix")
+    status: str = Field(default="", description="filter by status, e.g. accepted (optional)")
+
+
 class EmptyInput(BaseModel):
     pass
 
@@ -233,4 +238,30 @@ class CkgRoutes(_CkgTool):
         return json.dumps(data, indent=2)
 
 
-ALL_TOOLS = [CkgRepoMap, CkgSearch, CkgSymbol, CkgImpact, CkgNeighbors, CkgStatus, CkgRoutes]
+class CkgDecisions(_CkgTool):
+    name: ClassVar[str] = "ckg_decisions"
+    description: ClassVar[str] = (
+        "List the architecture decisions (ADRs) governing the codebase: each decision's "
+        "status, date, title and the symbols/files it governs. Filter by `scope` (a path "
+        "prefix the decision governs) and/or `status` (e.g. accepted). Call this before a "
+        "refactor to check no documented decision forbids the change. Empty if no ADRs."
+    )
+    input_schema: ClassVar[type[BaseModel]] = DecisionsInput
+
+    async def run(self, **kwargs: Any) -> str:
+        data = await self._engine.decisions(
+            scope=kwargs.get("scope", ""), status=kwargs.get("status", "")
+        )
+        return json.dumps(data, indent=2)
+
+
+ALL_TOOLS = [
+    CkgRepoMap,
+    CkgSearch,
+    CkgSymbol,
+    CkgImpact,
+    CkgNeighbors,
+    CkgStatus,
+    CkgRoutes,
+    CkgDecisions,
+]
