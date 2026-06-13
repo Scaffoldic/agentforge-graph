@@ -75,6 +75,14 @@ knowledge:                      # feat-010 — ADR & docs ingestion
   infer_governs: off            # LLM matcher for decisions with no parsed links
   infer_budget_usd: 1.0
 
+enrich:                         # feat-012 — LLM enrichment (pattern tagging)
+  enabled: on                   # never runs implicitly — `ckg enrich` only
+  model: "us.anthropic.claude-haiku-4-5-20251001-v1:0"  # Bedrock inference profile (cheap tier)
+  region: "us-east-1"
+  assume_role_arn: ""           # set for CI (OIDC assume-role); empty = default AWS creds
+  budget_usd: 2.0               # per-run LLM judge cap (breaker)
+  confidence_floor: 0.7         # drop tags below this confidence
+  taxonomy: v1
+
 # Higher-layer features — config lands when the feature ships:
 # temporal:   (feat-009)   enabled, history_backfill, retention_commits
-# enrich:     (feat-012)   model, summaries, patterns, budget_usd

@@ -63,6 +63,10 @@ class DecisionsInput(BaseModel):
     status: str = Field(default="", description="filter by status, e.g. accepted (optional)")
 
 
+class ExplainInput(BaseModel):
+    symbol_id: str = Field(description="exact symbol id to explain")
+
+
 class EmptyInput(BaseModel):
     pass
 
@@ -255,6 +259,20 @@ class CkgDecisions(_CkgTool):
         return json.dumps(data, indent=2)
 
 
+class CkgExplain(_CkgTool):
+    name: ClassVar[str] = "ckg_explain"
+    description: ClassVar[str] = (
+        "Explain a symbol: its LLM-derived design-pattern tags (e.g. 'Repository', with "
+        "confidence + rationale) and its 1-hop typed graph facts. Use to learn what role a "
+        "class/function plays before changing it. Tags are [llm]-provenance; empty until "
+        "`ckg enrich` has run."
+    )
+    input_schema: ClassVar[type[BaseModel]] = ExplainInput
+
+    async def run(self, **kwargs: Any) -> str:
+        return json.dumps(await self._engine.explain(kwargs["symbol_id"]), indent=2)
+
+
 ALL_TOOLS = [
     CkgRepoMap,
     CkgSearch,
@@ -264,4 +282,5 @@ ALL_TOOLS = [
     CkgStatus,
     CkgRoutes,
     CkgDecisions,
+    CkgExplain,
 ]

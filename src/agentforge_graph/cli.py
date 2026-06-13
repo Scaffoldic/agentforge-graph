@@ -147,6 +147,38 @@ async def _decisions(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _enrich(args: argparse.Namespace) -> int:
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        report = await cg.enrich(budget_usd=args.budget_usd)
+        by = ", ".join(f"{k}={v}" for k, v in sorted(report.by_pattern.items()))
+        print(
+            f"enriched: {report.candidates} candidates, {report.judged} judged, "
+            f"{report.tagged} tagged — ${report.cost_usd:.4f}"
+            + (" [budget tripped]" if report.budget_tripped else "")
+        )
+        if by:
+            print(f"  patterns: {by}")
+    finally:
+        await cg.close()
+    return 0
+
+
+async def _tagged(args: argparse.Namespace) -> int:
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        hits = await cg.tagged(args.pattern, min_confidence=args.min_confidence)
+        if not hits:
+            print(f"(no symbols tagged {args.pattern})")
+            return 0
+        for t in hits:
+            sym = t.symbol_id.rsplit(" ", 1)[-1]
+            print(f"{t.confidence:.2f}  {sym}  — {t.rationale}")
+    finally:
+        await cg.close()
+    return 0
+
+
 async def _serve_mcp(args: argparse.Namespace) -> int:
     # lazy import: keeps the engine commands (index/embed/query/map) free of
     # the framework/MCP SDK.
@@ -253,6 +285,19 @@ def build_parser() -> argparse.ArgumentParser:
     dec.add_argument("--status", default=None, help="filter by status (e.g. accepted)")
     dec.add_argument("--config", default=None, help="path to ckg.yaml")
     dec.set_defaults(func=_decisions)
+
+    enr = sub.add_parser("enrich", help="LLM pattern tagging (budgeted; Bedrock Claude)")
+    enr.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    enr.add_argument("--budget-usd", type=float, default=None, help="override the per-run USD cap")
+    enr.add_argument("--config", default=None, help="path to ckg.yaml")
+    enr.set_defaults(func=_enrich)
+
+    tg = sub.add_parser("tagged", help="list symbols carrying a design-pattern tag")
+    tg.add_argument("pattern", help="pattern name, e.g. Repository")
+    tg.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    tg.add_argument("--min-confidence", type=float, default=0.7, help="confidence floor (0.7)")
+    tg.add_argument("--config", default=None, help="path to ckg.yaml")
+    tg.set_defaults(func=_tagged)
 
     srv = sub.add_parser("serve-mcp", help="run the MCP stdio server exposing the CKG tools")
     srv.add_argument("--repo", default=".", help="repository path (default: .)")

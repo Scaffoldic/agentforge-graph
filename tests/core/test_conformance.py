@@ -76,6 +76,10 @@ class InMemoryGraphStore(GraphStore):
             if n.kind is NodeKind.PACKAGE and nid not in inbound:
                 self._nodes.pop(nid, None)
 
+    async def clear_outgoing(self, src_ids: list[str], kind: EdgeKind) -> None:
+        srcs = set(src_ids)
+        self._edges = [e for e in self._edges if not (e.src in srcs and e.kind is kind)]
+
     async def query(self, q: GraphQuery) -> QueryResult:
         matched: list[Node] = []
         for n in self._nodes.values():

@@ -140,6 +140,24 @@ class GraphStoreConformance:
         assert await store.get(pkg_id) is None
         assert await store.get(sg.nodes[1].id) is not None  # the class survives
 
+    async def test_clear_outgoing_removes_kind_from_sources(self, store: GraphStore) -> None:
+        sg = make_sample_subgraph()
+        await store.upsert(sg)
+        cls = sg.nodes[1].id
+        tag_id = SymbolID.for_symbol(_LANG, _REPO, "<taxonomy>", "Repository.")
+        llm = Provenance.llm("pattern-tags", 0.9)
+        await store.add(
+            [
+                Node(id=tag_id, kind=NodeKind.PATTERN_TAG, name="Repository", provenance=llm),
+                Edge(src=cls, dst=tag_id, kind=EdgeKind.TAGGED, provenance=llm),
+            ]
+        )
+        assert await store.adjacent(cls, [EdgeKind.TAGGED], "out")
+        await store.clear_outgoing([cls], EdgeKind.TAGGED)
+        assert await store.adjacent(cls, [EdgeKind.TAGGED], "out") == []
+        # the CONTAINS edge from the same source is untouched (kind-scoped)
+        assert await store.adjacent(cls, [EdgeKind.CONTAINS], "out")
+
     async def test_adjacent_directed(self, store: GraphStore) -> None:
         sg = make_sample_subgraph()  # File -CONTAINS-> Class -CONTAINS-> Method
         await store.upsert(sg)

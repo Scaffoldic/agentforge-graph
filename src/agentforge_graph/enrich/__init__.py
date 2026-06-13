@@ -1,0 +1,32 @@
+"""LLM enrichment (feat-012): turn the code graph into a knowledge graph.
+
+MVP: **design-pattern tagging** — deterministic structural heuristics nominate
+candidates, a budgeted LLM judge confirms them, and confirmed verdicts become
+``TAGGED`` edges to a fixed v1 ``PatternTag`` taxonomy with honest ``llm``
+provenance + confidence + rationale. The judge is injectable
+(``ScriptedJudge`` for tests, ``BedrockClaudeJudge`` live), so all orchestration
+is deterministic. This is the framework layer (ADR-0001: ``enrich`` may import
+``agentforge``); never runs implicitly (``ckg enrich`` only).
+"""
+
+from __future__ import annotations
+
+from .enricher import PatternTagEnricher
+from .heuristics import Candidate, PatternHeuristics
+from .judge import PatternJudge, ScriptedJudge, Verdict
+from .report import EnrichReport, TaggedInfo
+from .taxonomy import TAXONOMY_V1, is_pattern, pattern_tag_id
+
+__all__ = [
+    "PatternTagEnricher",
+    "PatternHeuristics",
+    "Candidate",
+    "PatternJudge",
+    "ScriptedJudge",
+    "Verdict",
+    "EnrichReport",
+    "TaggedInfo",
+    "TAXONOMY_V1",
+    "is_pattern",
+    "pattern_tag_id",
+]
