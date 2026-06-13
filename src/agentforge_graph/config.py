@@ -84,6 +84,8 @@ class IngestConfig(_Block):
     exclude: list[str] = Field(default_factory=lambda: list(DEFAULT_EXCLUDES))
     max_file_kb: int = 512
     lsp_assist: bool = False  # opt-in resolution escalation (Tier B); inert at 0.1
+    incremental: bool = True  # feat-004: re-index only the diff when a prior index exists
+    resolve_scope_hops: int = 1  # import-graph hops to re-resolve around a changed file
 
 
 class ChunkingConfig(_Block):

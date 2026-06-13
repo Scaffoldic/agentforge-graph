@@ -33,6 +33,7 @@ class RepoSource:
         self.skipped: list[str] = []
 
     def iter_files(self, registry: PackRegistry) -> Iterator[SourceFile]:
+        self.skipped = []  # reset per walk so repeated walks (feat-004) stay accurate
         for path in sorted(self.root.rglob("*")):
             if not path.is_file():
                 continue
