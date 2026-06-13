@@ -5,8 +5,9 @@
 | **ID** | ENH-002 |
 | **Value/Impact** | Medium |
 | **Effort** | S–M |
-| **Status** | proposed |
+| **Status** | done |
 | **Area** | `enrich.summary_enricher`, `enrich.enricher` |
+| **Done** | 2026-06-13 (`enh/e2e-eval-enhancements`) — both enrichers run the per-item LLM calls in **concurrent batches** of `enrich.concurrency` (default 6) via `asyncio.gather`. Cost is accounted **per batch** (`budget.check()`/`commit()` outside the gather), so the shared judge/summarizer cost is read atomically — no per-call race; budget overrun is bounded to one batch; `concurrency=1` reproduces the strict per-call breaker. Bottom-up order preserved (repo summary after all file summaries); output is deterministic (results gathered in candidate order). |
 | **Relates to** | feat-012 (summaries + pattern tagging) |
 
 ## Motivation

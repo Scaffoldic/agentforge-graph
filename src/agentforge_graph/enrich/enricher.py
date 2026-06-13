@@ -11,6 +11,8 @@ framework-layer module (ADR-0001: ``enrich`` may import ``agentforge``).
 
 from __future__ import annotations
 
+import asyncio
+
 from agentforge_core.production.budget import BudgetPolicy
 from agentforge_core.production.exceptions import BudgetExceeded
 
@@ -34,6 +36,7 @@ class PatternTagEnricher:
         heuristics: PatternHeuristics | None = None,
         confidence_floor: float = 0.7,
         budget_usd: float = 2.0,
+        concurrency: int = 6,
         commit: str = "",
     ) -> None:
         self.repo = repo
@@ -41,6 +44,7 @@ class PatternTagEnricher:
         self.heuristics = heuristics or PatternHeuristics()
         self.confidence_floor = confidence_floor
         self.budget_usd = budget_usd
+        self.concurrency = max(1, concurrency)
         self.commit = commit
         self.last_judged_ids: list[str] = []
 
@@ -54,41 +58,48 @@ class PatternTagEnricher:
 
         budget = BudgetPolicy(usd=self.budget_usd, max_tokens=10**12, max_iterations=10**12)
         facts: list[Node | Edge] = []
-        prev_cost = 0.0
 
-        for cand in candidates:
+        # Judge in concurrent batches (ENH-002): cost is accounted per batch —
+        # `budget.check()`/`commit()` sit OUTSIDE the gather, so the shared judge
+        # cost is read atomically (no per-call race). Budget overrun is bounded
+        # to one batch; concurrency=1 reproduces the strict per-call breaker.
+        for start in range(0, len(candidates), self.concurrency):
+            batch = candidates[start : start + self.concurrency]
             try:
                 budget.check()
             except BudgetExceeded:
                 report.budget_tripped = True
                 break
-            verdicts = await self.judge.judge(cand)
-            report.judged += 1
-            self.last_judged_ids.append(cand.symbol_id)
-            prev_cost, delta = self.judge.cost_usd, self.judge.cost_usd - prev_cost
-            budget.commit(delta)
+            before = self.judge.cost_usd
+            batch_verdicts = await asyncio.gather(*(self.judge.judge(c) for c in batch))
+            budget.commit(self.judge.cost_usd - before)
             report.cost_usd = round(self.judge.cost_usd, 6)
-            for v in verdicts:
-                if not (
-                    v.is_match and v.confidence >= self.confidence_floor and is_pattern(v.pattern)
-                ):
-                    continue
-                prov = Provenance.llm(self.version, round(v.confidence, 4), self.commit)
-                tag_id = pattern_tag_id(self.repo, v.pattern)
-                facts.append(
-                    Node(id=tag_id, kind=NodeKind.PATTERN_TAG, name=v.pattern, provenance=prov)
-                )
-                facts.append(
-                    Edge(
-                        src=cand.symbol_id,
-                        dst=tag_id,
-                        kind=EdgeKind.TAGGED,
-                        attrs={"confidence": round(v.confidence, 4), "rationale": v.rationale},
-                        provenance=prov,
+            for cand, verdicts in zip(batch, batch_verdicts, strict=True):
+                report.judged += 1
+                self.last_judged_ids.append(cand.symbol_id)
+                for v in verdicts:
+                    if not (
+                        v.is_match
+                        and v.confidence >= self.confidence_floor
+                        and is_pattern(v.pattern)
+                    ):
+                        continue
+                    prov = Provenance.llm(self.version, round(v.confidence, 4), self.commit)
+                    tag_id = pattern_tag_id(self.repo, v.pattern)
+                    facts.append(
+                        Node(id=tag_id, kind=NodeKind.PATTERN_TAG, name=v.pattern, provenance=prov)
                     )
-                )
-                report.tagged += 1
-                report.by_pattern[v.pattern] = report.by_pattern.get(v.pattern, 0) + 1
+                    facts.append(
+                        Edge(
+                            src=cand.symbol_id,
+                            dst=tag_id,
+                            kind=EdgeKind.TAGGED,
+                            attrs={"confidence": round(v.confidence, 4), "rationale": v.rationale},
+                            provenance=prov,
+                        )
+                    )
+                    report.tagged += 1
+                    report.by_pattern[v.pattern] = report.by_pattern.get(v.pattern, 0) + 1
 
         # idempotent re-tag: drop judged symbols' old tags, then write the new
         await store.clear_outgoing(self.last_judged_ids, EdgeKind.TAGGED)

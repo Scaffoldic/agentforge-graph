@@ -12,6 +12,8 @@ edge is created only when missing, and the vector is replaced by ref.
 
 from __future__ import annotations
 
+import asyncio
+
 from agentforge_core.production.budget import BudgetPolicy
 from agentforge_core.production.exceptions import BudgetExceeded
 
@@ -53,6 +55,7 @@ class SummaryEnricher:
         max_words: int = 120,
         levels: list[str] | None = None,
         budget_usd: float = 2.0,
+        concurrency: int = 6,
         commit: str = "",
     ) -> None:
         self.repo = repo
@@ -61,6 +64,7 @@ class SummaryEnricher:
         self.max_words = max_words
         self.levels = levels or ["file", "repo"]
         self.budget_usd = budget_usd
+        self.concurrency = max(1, concurrency)
         self.commit = commit
         self.last_done_ids: list[str] = []
 
@@ -76,29 +80,39 @@ class SummaryEnricher:
         edges: list[Edge] = []
         to_embed: list[tuple[str, str, str]] = []  # (summary_id, path, text)
         file_summaries: list[tuple[str, str]] = []  # (path, text)
-        prev_cost = 0.0
 
+        # contexts first (graph reads), then summarize in concurrent batches —
+        # cost accounted per batch outside the gather (ENH-002), bottom-up order
+        # preserved (the repo tier runs after all file summaries).
+        targets: list[tuple[str, FileContext]] = []
         for fid in file_ids:
             file_node = await store.graph.get(fid)
-            if file_node is None or file_node.kind is not NodeKind.FILE:
-                continue
+            if file_node is not None and file_node.kind is NodeKind.FILE:
+                targets.append((fid, await self._file_context(store, file_node)))
+
+        for start in range(0, len(targets), self.concurrency):
+            batch = targets[start : start + self.concurrency]
             try:
                 budget.check()
             except BudgetExceeded:
                 report.budget_tripped = True
                 break
-            ctx = await self._file_context(store, file_node)
-            summary = await self.summarizer.summarize_file(ctx, self.max_words)
-            prev_cost, delta = self.summarizer.cost_usd, self.summarizer.cost_usd - prev_cost
-            budget.commit(delta)
-            path = SymbolID.parse(fid).path
-            sid = summary_id(self.repo, path)
-            nodes.append(self._summary_node(sid, summary.text, "file", summary.model, path, prov))
-            edges.append(Edge(src=sid, dst=fid, kind=EdgeKind.SUMMARIZES, provenance=prov))
-            to_embed.append((sid, path, summary.text))
-            file_summaries.append((path, summary.text))
-            self.last_done_ids.append(fid)
-            report.files_summarized += 1
+            before = self.summarizer.cost_usd
+            summaries = await asyncio.gather(
+                *(self.summarizer.summarize_file(ctx, self.max_words) for _fid, ctx in batch)
+            )
+            budget.commit(self.summarizer.cost_usd - before)
+            for (fid, _ctx), summary in zip(batch, summaries, strict=True):
+                path = SymbolID.parse(fid).path
+                sid = summary_id(self.repo, path)
+                nodes.append(
+                    self._summary_node(sid, summary.text, "file", summary.model, path, prov)
+                )
+                edges.append(Edge(src=sid, dst=fid, kind=EdgeKind.SUMMARIZES, provenance=prov))
+                to_embed.append((sid, path, summary.text))
+                file_summaries.append((path, summary.text))
+                self.last_done_ids.append(fid)
+                report.files_summarized += 1
 
         # repo tier (bottom-up from the file summaries) — also budget-gated
         repo_ok = "repo" in self.levels and bool(file_summaries) and not report.budget_tripped
@@ -109,10 +123,11 @@ class SummaryEnricher:
                 report.budget_tripped = True
                 repo_ok = False
         if repo_ok:
+            before = self.summarizer.cost_usd
             repo_summary = await self.summarizer.summarize_repo(
                 self.repo, file_summaries, self.max_words
             )
-            budget.commit(self.summarizer.cost_usd - prev_cost)
+            budget.commit(self.summarizer.cost_usd - before)
             rnode = repo_node_id(self.repo)
             nodes.append(Node(id=rnode, kind=NodeKind.REPOSITORY, name=self.repo, provenance=prov))
             rsid = summary_id(self.repo, _REPO_PLACEHOLDER)
