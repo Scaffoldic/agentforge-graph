@@ -172,6 +172,8 @@ class EnrichConfig(_Block):
     budget_usd: float = 2.0  # per-run LLM judge cap (breaker)
     confidence_floor: float = 0.7  # drop tags below this
     taxonomy: str = "v1"
+    summary_max_words: int = 120  # feat-012 summaries
+    summary_levels: list[str] = Field(default_factory=lambda: ["file", "repo"])
 
 
 def _default_adr_globs() -> list[str]:
