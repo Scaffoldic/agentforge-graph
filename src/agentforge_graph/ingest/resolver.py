@@ -11,6 +11,8 @@ guessed (ADR-0004). All edges are written with ``source=resolved`` via
 
 from __future__ import annotations
 
+import posixpath
+
 from agentforge_graph.core import (
     Descriptor,
     Edge,
@@ -27,6 +29,24 @@ from .pack import PackRegistry
 from .report import ResolveStats
 
 _ALL = 10_000_000  # effectively unbounded query for v0.1 graph sizes
+_INIT_FILES = ("__init__.py", "__init__.pyi")
+
+
+def _detect_source_roots(file_paths: list[str]) -> set[str]:
+    """Directories that are a prefix of file paths but **not** part of the import
+    namespace — e.g. ``src`` in a ``src/``-layout package (BUG-001). A source
+    root is the parent of a *top-level* package (a package dir whose own parent
+    is not a package). Detected from ``__init__.py`` presence."""
+    pkg_dirs = {posixpath.dirname(p) for p in file_paths if posixpath.basename(p) in _INIT_FILES}
+    roots = {posixpath.dirname(d) for d in pkg_dirs if posixpath.dirname(d) not in pkg_dirs}
+    return {r for r in roots if r}  # "" (repo-root layout) needs no stripping
+
+
+def _strip_root(path: str, roots: set[str]) -> str:
+    for r in sorted(roots, key=len, reverse=True):
+        if path.startswith(r + "/"):
+            return path[len(r) + 1 :]
+    return path
 
 
 class ImportResolver:
@@ -43,6 +63,7 @@ class ImportResolver:
         files = [n for n in all_nodes if n.kind is NodeKind.FILE]
 
         # module index + per-module top-level exports (direct CONTAINS children)
+        roots = _detect_source_roots([SymbolID.parse(f.id).path for f in files])
         module_to_file: dict[str, str] = {}
         file_module: dict[str, str] = {}
         exports: dict[str, dict[str, str]] = {}
@@ -51,7 +72,11 @@ class ImportResolver:
             pack = self.registry.for_slug(ps.lang)
             if pack is None:
                 continue
-            module = pack.module_path(ps.path)
+            # strip a source root (e.g. `src/`) for namespace (dotted) packs so a
+            # file's module key matches how it's imported (BUG-001); relative
+            # packs (TS/JS) resolve by path and need no stripping.
+            key_path = _strip_root(ps.path, roots) if pack.module_style == "dotted" else ps.path
+            module = pack.module_path(key_path)
             module_to_file[module] = f.id
             file_module[f.id] = module
             members = await store.neighbors(f.id, [EdgeKind.CONTAINS], depth=1)

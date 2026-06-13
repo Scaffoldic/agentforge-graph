@@ -115,16 +115,17 @@ class LanceVectorStore(VectorStore):
         tbl = await self._table()
         if tbl is None:
             return []
-        query = tbl.vector_search(vector).limit(k)
+        query = tbl.vector_search(vector).distance_type("cosine").limit(k)
         if filter:
             query = query.where(_where(filter))
         rows = await query.to_list()
-        # LanceDB returns _distance (smaller = closer); ScoredRef score is
-        # higher = closer, so negate.
+        # Cosine distance in [0, 2] (smaller = closer); expose a cosine
+        # similarity in [0, 1] (higher = closer) so scores are interpretable
+        # and survive the retrieval decay (BUG-002).
         return [
             ScoredRef(
                 ref=r["ref"],
-                score=-float(r["_distance"]),
+                score=max(0.0, 1.0 - float(r["_distance"])),
                 attrs=json.loads(r["attrs_json"]) if r.get("attrs_json") else {},
             )
             for r in rows
