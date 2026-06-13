@@ -59,6 +59,11 @@ class Edge(BaseModel):
     kind: EdgeKind
     attrs: dict[str, Any] = Field(default_factory=dict)
     provenance: Provenance
+    # The file whose content produced this edge (the import/call site's file).
+    # Lets resolver-produced edges be invalidated per file on an incremental
+    # re-resolve (feat-004). Empty for file-parsed edges, where the store
+    # stamps the owning file's path at upsert time.
+    origin_path: str = ""
 
     @field_validator("src", "dst")
     @classmethod

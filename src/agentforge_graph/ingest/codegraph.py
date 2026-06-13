@@ -41,6 +41,21 @@ def _git_commit(repo_path: str | Path) -> str:
         return ""
 
 
+def _save_meta(
+    root: Path, commit: str, registry: PackRegistry, file_hashes: dict[str, str]
+) -> None:
+    """Persist the index manifest atomically, *last* — so a crash anywhere
+    earlier leaves the previous consistent manifest and the next run re-derives
+    the diff from it (feat-004)."""
+    from .incremental import IndexMeta
+
+    IndexMeta(
+        indexed_commit=commit,
+        pack_versions=IndexMeta.fingerprints(registry.packs),
+        files=file_hashes,
+    ).save(root)
+
+
 def _registry_for(languages: str | list[str] | None) -> PackRegistry:
     if languages is None or languages == "auto":
         return builtin_registry()
@@ -94,16 +109,90 @@ class CodeGraph:
         include: list[str] | None = None,
         exclude: list[str] | None = None,
         embed: bool = False,
+        full: bool = False,
     ) -> CodeGraph:
+        """Index ``repo_path``. Incremental by default once a prior index
+        exists (feat-004) — only the diff is re-extracted/re-resolved. ``full``
+        (or a changed pack fingerprint / schema bump / ``ingest.incremental:
+        false``) forces a clean rebuild."""
+        from agentforge_graph.config import IngestConfig, StoreConfig
+
+        from .incremental import ChangeDetector, IndexMeta
+
         store = await Store.open(repo_path, config)
         source, registry = _source_registry(repo_path, config, languages, include, exclude)
         repo = Path(repo_path).resolve().name
-        pipeline = IngestPipeline(repo=repo, commit=_git_commit(repo_path))
-        report = await pipeline.run(source, store.graph, registry)
-        cg = cls(store, repo_path, config, languages, report)
+        commit = _git_commit(repo_path)
+        root = Path(repo_path) / StoreConfig.load(config).path
+        ingest_cfg = IngestConfig.load(config)
+        meta = IndexMeta.load(root)
+
+        use_incremental = (
+            ingest_cfg.incremental
+            and not full
+            and meta.is_indexed()
+            and not meta.packs_changed(registry.packs)
+        )
+        cg = cls(store, repo_path, config, languages)
+        result = await ChangeDetector(repo_path).detect(source, meta, registry)
+        if use_incremental:
+            report = await cg._apply_changes(
+                source, registry, repo, commit, result.changes, ingest_cfg.resolve_scope_hops, root
+            )
+        else:
+            report = await IngestPipeline(repo=repo, commit=commit).run(
+                source, store.graph, registry
+            )
+        cg._report = report
+        _save_meta(root, commit, registry, result.file_hashes)
         if embed:
             await cg.embed()
         return cg
+
+    async def refresh(self) -> IndexReport:
+        """Re-index only what changed since the last index (feat-004). The
+        explicit incremental entry point; ``index()`` calls the same path."""
+        from agentforge_graph.config import IngestConfig, StoreConfig
+
+        from .incremental import ChangeDetector, IndexMeta
+
+        source, registry = _source_registry(self._repo_path, self._config, self._languages)
+        repo = Path(self._repo_path).resolve().name
+        commit = _git_commit(self._repo_path)
+        root = Path(self._repo_path) / StoreConfig.load(self._config).path
+        ingest_cfg = IngestConfig.load(self._config)
+        meta = IndexMeta.load(root)
+        result = await ChangeDetector(self._repo_path).detect(source, meta, registry)
+        report = await self._apply_changes(
+            source, registry, repo, commit, result.changes, ingest_cfg.resolve_scope_hops, root
+        )
+        self._report = report
+        _save_meta(root, commit, registry, result.file_hashes)
+        return report
+
+    async def _apply_changes(
+        self,
+        source: RepoSource,
+        registry: PackRegistry,
+        repo: str,
+        commit: str,
+        changes: object,
+        resolve_scope_hops: int,
+        root: Path,
+    ) -> IndexReport:
+        from .incremental import ChangeSet, DirtySet, IncrementalIndexer
+
+        assert isinstance(changes, ChangeSet)
+        indexer = IncrementalIndexer(
+            self._store,
+            source,
+            registry,
+            repo,
+            commit,
+            resolve_scope_hops=resolve_scope_hops,
+            dirty=DirtySet(root),
+        )
+        return await indexer.refresh(changes)
 
     @classmethod
     async def open(
@@ -114,12 +203,17 @@ class CodeGraph:
     ) -> CodeGraph:
         return cls(await Store.open(repo_path, config), repo_path, config, languages)
 
-    async def embed(self, embedder: object | None = None) -> EmbedReport:
+    async def embed(self, embedder: object | None = None, only_dirty: bool = False) -> EmbedReport:
         """Chunk and embed everything indexed. Builds the embedder from
-        ``EmbedConfig`` if not supplied."""
+        ``EmbedConfig`` if not supplied. With ``only_dirty`` (feat-004), embed
+        only the files a refresh dirtied for the ``embeddings`` consumer and
+        mark them clean — the cheap path after an incremental index."""
         from agentforge_graph.chunking import CASTChunker
-        from agentforge_graph.config import ChunkingConfig, EmbedConfig
+        from agentforge_graph.config import ChunkingConfig, EmbedConfig, StoreConfig
+        from agentforge_graph.core import SymbolID
         from agentforge_graph.embed import Embedder, EmbedPipeline, embedder_from_config
+
+        from .incremental import DirtySet
 
         chunking = ChunkingConfig.load(self._config)
         emb = (
@@ -133,7 +227,19 @@ class CodeGraph:
             emb,
             commit=_git_commit(self._repo_path),
         )
-        self._embed_report = await pipeline.run(self._store, source, registry)
+        dirty: DirtySet | None = None
+        only_paths: set[str] | None = None
+        ids: list[str] = []
+        if only_dirty:
+            root = Path(self._repo_path) / StoreConfig.load(self._config).path
+            dirty = DirtySet(root)
+            ids = await dirty.dirty_for("embeddings")
+            only_paths = {SymbolID.parse(i).path for i in ids}
+        self._embed_report = await pipeline.run(
+            self._store, source, registry, only_paths=only_paths
+        )
+        if dirty is not None:
+            await dirty.mark_clean("embeddings", ids)
         return self._embed_report
 
     async def retrieve(

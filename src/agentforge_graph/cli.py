@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 from collections.abc import Sequence
+from pathlib import Path
 
 from agentforge_graph.embed import EmbedReport
 from agentforge_graph.ingest import CodeGraph
@@ -53,6 +54,7 @@ async def _index(args: argparse.Namespace) -> int:
         include=args.include or None,
         exclude=args.exclude or None,
         embed=args.embed,
+        full=args.full,
     )
     try:
         print(_format_report(cg.stats()))
@@ -60,6 +62,37 @@ async def _index(args: argparse.Namespace) -> int:
             print(_format_embed(cg.embed_stats()))
     finally:
         await cg.close()
+    return 0
+
+
+async def _status(args: argparse.Namespace) -> int:
+    from agentforge_graph.config import StoreConfig
+    from agentforge_graph.core import GraphQuery
+    from agentforge_graph.ingest.codegraph import _git_commit
+    from agentforge_graph.ingest.incremental import IndexMeta
+
+    root = Path(args.path) / StoreConfig.load(args.config).path
+    meta = IndexMeta.load(root)
+    head = _git_commit(args.path)
+    dirty = bool(head) and bool(meta.indexed_commit) and head != meta.indexed_commit
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        nodes = (await cg.store.graph.query(GraphQuery(limit=10_000_000))).nodes
+    finally:
+        await cg.close()
+    by_kind: dict[str, int] = {}
+    for n in nodes:
+        by_kind[n.kind.value] = by_kind.get(n.kind.value, 0) + 1
+    lines = [
+        f"indexed commit: {meta.indexed_commit or '(none)'}",
+        f"head commit:    {head or '(not a git repo)'}",
+        f"dirty:          {'yes — run ckg index' if dirty else 'no'}",
+        f"files indexed:  {len(meta.files)}",
+        f"nodes:          {len(nodes)}"
+        + (" (" + ", ".join(f"{k}={v}" for k, v in sorted(by_kind.items())) + ")" if nodes else ""),
+        f"store:          {root}",
+    ]
+    print("\n".join(lines))
     return 0
 
 
@@ -121,7 +154,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     idx.add_argument("--config", default=None, help="path to ckg.yaml")
     idx.add_argument("--embed", action="store_true", help="also chunk + embed after indexing")
+    idx.add_argument(
+        "--full",
+        action="store_true",
+        help="force a full rebuild instead of incremental (default: incremental)",
+    )
     idx.set_defaults(func=_index)
+
+    st = sub.add_parser("status", help="show the index commit, staleness and node counts")
+    st.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    st.add_argument("--config", default=None, help="path to ckg.yaml")
+    st.set_defaults(func=_status)
 
     emb = sub.add_parser("embed", help="chunk + embed an already-indexed repository")
     emb.add_argument("path", nargs="?", default=".", help="repository path (default: .)")

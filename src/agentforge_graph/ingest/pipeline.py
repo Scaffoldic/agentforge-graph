@@ -33,8 +33,16 @@ class IngestPipeline:
         self.concurrency = concurrency
 
     async def run(
-        self, source: RepoSource, store: GraphStore, registry: PackRegistry
+        self,
+        source: RepoSource,
+        store: GraphStore,
+        registry: PackRegistry,
+        paths: set[str] | None = None,
     ) -> IndexReport:
+        """Extract + upsert each file, then resolve. When ``paths`` is given,
+        only those files are (re)extracted (feat-004 incremental scope); the
+        resolver is **not** run here — incremental refresh owns scoped
+        re-resolution. ``paths is None`` is the full-index path (resolve runs)."""
         report = IndexReport()
         sem = asyncio.Semaphore(self.concurrency)
 
@@ -47,7 +55,8 @@ class IngestPipeline:
             await store.upsert(sg)
             return sg
 
-        subgraphs = await asyncio.gather(*[_do(sf) for sf in source.iter_files(registry)])
+        files = (sf for sf in source.iter_files(registry) if paths is None or sf.path in paths)
+        subgraphs = await asyncio.gather(*[_do(sf) for sf in files])
 
         for sg in subgraphs:
             if sg is None:
@@ -60,6 +69,11 @@ class IngestPipeline:
             for e in sg.edges:
                 report.by_edge_kind[e.kind.value] = report.by_edge_kind.get(e.kind.value, 0) + 1
         report.skipped = list(source.skipped)
+
+        if paths is not None:
+            # Scoped (incremental) extract: the caller re-resolves with the
+            # right import-graph scope. Edge tallies come from that pass.
+            return report
 
         stats = await ImportResolver(registry, self.commit).resolve(store)
         report.resolve = stats

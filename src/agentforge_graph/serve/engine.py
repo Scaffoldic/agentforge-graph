@@ -69,31 +69,37 @@ class _Engine:
             self._repomap = RepoMap(cg.store, RepoMapConfig.load(self.config))
         return self._repomap
 
+    def _meta(self) -> Any:
+        from agentforge_graph.ingest.incremental import IndexMeta
+
+        root = Path(self.repo_path) / StoreConfig.load(self.config).path
+        return IndexMeta.load(root)
+
     async def staleness(self) -> dict[str, Any]:
-        """Cheap envelope: indexed commit + dirty flag (one-node lookup)."""
-        cg = await self.code_graph()
-        one = (await cg.store.graph.query(GraphQuery(limit=1))).nodes
-        indexed_commit = one[0].provenance.commit if one else ""
+        """Cheap envelope: the indexed commit + dirty flag, read from the
+        persisted manifest (feat-004) rather than probed from a node."""
+        meta = self._meta()
         head = _git_head(self.repo_path)
         return {
-            "indexed_commit": indexed_commit,
-            "dirty": bool(head) and bool(indexed_commit) and head != indexed_commit,
+            "indexed_commit": meta.indexed_commit,
+            "dirty": bool(head) and bool(meta.indexed_commit) and head != meta.indexed_commit,
         }
 
     async def status(self) -> dict[str, Any]:
+        meta = self._meta()
         cg = await self.code_graph()
         nodes = (await cg.store.graph.query(GraphQuery(limit=_ALL))).nodes
-        indexed_commit = next((n.provenance.commit for n in nodes if n.provenance.commit), "")
         head = _git_head(self.repo_path)
-        dirty = bool(head) and bool(indexed_commit) and head != indexed_commit
+        dirty = bool(head) and bool(meta.indexed_commit) and head != meta.indexed_commit
         by_kind: dict[str, int] = {}
         for n in nodes:
             by_kind[n.kind.value] = by_kind.get(n.kind.value, 0) + 1
         store_root = Path(self.repo_path) / StoreConfig.load(self.config).path
         return {
-            "indexed_commit": indexed_commit,
+            "indexed_commit": meta.indexed_commit,
             "head_commit": head,
             "dirty": dirty,
+            "files_indexed": len(meta.files),
             "nodes": len(nodes),
             "by_kind": by_kind,
             "store_path": str(store_root),

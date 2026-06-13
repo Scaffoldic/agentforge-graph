@@ -22,6 +22,8 @@ ingest:                         # feat-002 / ADR-0009 — top-10 languages, A/B 
     - "**/.git/**"
   max_file_kb: 512
   lsp_assist: off               # opt-in resolution escalation (Tier B / C++)
+  incremental: on               # feat-004 — re-index only the diff once indexed (--full overrides)
+  resolve_scope_hops: 1         # import-graph hops to re-resolve around a changed file
 
 chunking:                       # feat-005 / ADR-0007 — AST-aware (cAST)
   max_tokens: 512

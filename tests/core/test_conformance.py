@@ -64,6 +64,18 @@ class InMemoryGraphStore(GraphStore):
             with contextlib.suppress(ValueError):
                 self._edges.remove(edge)
 
+    async def clear_resolved(self, paths: list[str]) -> None:
+        pathset = set(paths)
+        self._edges = [
+            e
+            for e in self._edges
+            if not (e.origin_path in pathset and e.provenance.source is Source.RESOLVED)
+        ]
+        inbound = {e.dst for e in self._edges}
+        for nid, n in list(self._nodes.items()):
+            if n.kind is NodeKind.PACKAGE and nid not in inbound:
+                self._nodes.pop(nid, None)
+
     async def query(self, q: GraphQuery) -> QueryResult:
         matched: list[Node] = []
         for n in self._nodes.values():

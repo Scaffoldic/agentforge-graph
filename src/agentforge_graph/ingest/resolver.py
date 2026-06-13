@@ -69,7 +69,19 @@ class ImportResolver:
             if key in seen_edges:
                 return False
             seen_edges.add(key)
-            edges.append(Edge(src=src, dst=dst, kind=kind, provenance=prov))
+            # Own the edge by its source-side file (the import/call site), so a
+            # later incremental re-resolve can invalidate exactly these edges
+            # via clear_resolved (feat-004). src is a FILE node (IMPORTS) or a
+            # symbol in the caller's file (CALLS); both parse to that file path.
+            edges.append(
+                Edge(
+                    src=src,
+                    dst=dst,
+                    kind=kind,
+                    provenance=prov,
+                    origin_path=SymbolID.parse(src).path,
+                )
+            )
             return True
 
         def _external(slug: str, repo: str, module: str) -> str:
