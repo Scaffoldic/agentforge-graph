@@ -54,6 +54,18 @@ async def test_path_filter_and_attrs_round_trip(vectors: LanceVectorStore) -> No
     assert hits[0].attrs == {"ordinal": 0}
 
 
+async def test_search_score_is_cosine_similarity(vectors: LanceVectorStore) -> None:
+    # BUG-002: scores are a cosine similarity in [0, 1] (higher = closer), not a
+    # negative distance — an identical vector scores ~1.0.
+    items = make_sample_embeddings()  # orthogonal one-hot vectors
+    await vectors.upsert(items)
+    hits = await vectors.search(items[1].vector, k=3)
+    assert hits[0].ref == items[1].ref
+    assert hits[0].score == pytest.approx(1.0, abs=1e-3)  # identical → similarity 1
+    assert all(0.0 <= h.score <= 1.0 for h in hits)
+    assert all(hits[i].score >= hits[i + 1].score for i in range(len(hits) - 1))
+
+
 async def test_unfilterable_column_rejected(vectors: LanceVectorStore) -> None:
     await vectors.upsert(make_sample_embeddings())
     with pytest.raises(ValueError, match="unfilterable"):
