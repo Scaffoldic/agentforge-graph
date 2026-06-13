@@ -203,8 +203,22 @@ the two-stage design buys; ~$0.005 for 3 judgments. Deterministic tests use the
 package coverage; `mypy --strict` + ruff clean. Design:
 `docs/design/design-012-llm-enrichment.md`.
 
+### Summaries (also shipped)
+
+`SummaryEnricher` (`docs/design/design-012b-summaries.md`): bottom-up **file**
+summaries (from a file's signatures + imports) + one **repo** summary
+synthesised from them. Injectable `Summarizer` (`ScriptedSummarizer` for CI,
+`BedrockClaudeSummarizer` live, sharing a `BedrockClient` with the judge).
+`Summary` nodes + `SUMMARIZES` edges (`llm` provenance), **embedded**
+(`source_type="summary"`) so a concept query lands on a summary and expands to
+the code via `SUMMARIZES` (in the default `context` expansion). Budgeted +
+`DirtySet("summaries")`; idempotent by MERGE-node + create-edge-if-missing (no
+edge churn — sidesteps a Kuzu forward-rel-scan staleness bug, see
+docs/framework). Surfaces: `CodeGraph.summarize()`/`summaries()`,
+`ckg enrich --summaries|--all`, `ckg summaries`, a one-line file summary in the
+repo map, and the summary in `ckg_explain`. Live-verified on Bedrock Claude.
+
 ### Follow-ups
-- Bottom-up **summaries** (`Summary`/`SUMMARIZES`, embedded `source_type:
-  summary`, repo-map one-liners) — reuses this harness + `clear_outgoing`.
-- Full `ckg_explain` prose (add the summary line); heuristic precision tuning;
-  taxonomy config-extension.
+- Per-package (directory) + per-symbol summary tiers.
+- Heuristic precision tuning; taxonomy config-extension; staleness rendering
+  (feat-009 signal).

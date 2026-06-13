@@ -9,7 +9,12 @@ from agentforge_graph.chunking import estimate_tokens
 from .rank import RankedSymbol
 
 
-def render_map(ranked: list[RankedSymbol], budget_tokens: int) -> str:
+def render_map(
+    ranked: list[RankedSymbol],
+    budget_tokens: int,
+    summaries: dict[str, str] | None = None,
+) -> str:
+    summaries = summaries or {}
     by_file: dict[str, list[RankedSymbol]] = {}
     order: list[str] = []
     for r in ranked:
@@ -30,10 +35,13 @@ def render_map(ranked: list[RankedSymbol], budget_tokens: int) -> str:
         if full:
             break
         header = f"{path}:"
+        # a one-line file summary (feat-012) under the header, when present
+        summary = summaries.get(path)
+        head: list[str] = [header, f"  # {summary}"] if summary else [header]
         started = False
         for r in by_file[path]:
             line = f"  {r.signature or f'{r.name}(...)'}"
-            trial = [line] if started else [header, line]
+            trial = [line] if started else [*head, line]
             if not fits(trial):
                 full = True
                 break

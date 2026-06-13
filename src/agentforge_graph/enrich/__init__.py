@@ -14,7 +14,9 @@ from __future__ import annotations
 from .enricher import PatternTagEnricher
 from .heuristics import Candidate, PatternHeuristics
 from .judge import PatternJudge, ScriptedJudge, Verdict
-from .report import EnrichReport, TaggedInfo
+from .report import EnrichReport, SummaryInfo, SummaryReport, TaggedInfo
+from .summarizer import FileContext, ScriptedSummarizer, Summarizer, Summary
+from .summary_enricher import SummaryEnricher, repo_node_id, summary_id
 from .taxonomy import TAXONOMY_V1, is_pattern, pattern_tag_id
 
 __all__ = [
@@ -26,6 +28,15 @@ __all__ = [
     "Verdict",
     "EnrichReport",
     "TaggedInfo",
+    "SummaryReport",
+    "SummaryInfo",
+    "SummaryEnricher",
+    "Summarizer",
+    "ScriptedSummarizer",
+    "Summary",
+    "FileContext",
+    "summary_id",
+    "repo_node_id",
     "TAXONOMY_V1",
     "is_pattern",
     "pattern_tag_id",

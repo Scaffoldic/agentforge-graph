@@ -26,8 +26,8 @@ _FLOOR: dict[str, int] = {"parsed": 1, "resolved": 2}
 
 _MODE_EDGES: dict[Mode, tuple[list[EdgeKind], Direction]] = {
     # GOVERNS/DESCRIBES (feat-010) surface the decision/doc governing a retrieved
-    # symbol; TAGGED (feat-012) surfaces its design-pattern role. Both are the
-    # differentiators. llm-provenance items obey include_llm_facts.
+    # symbol; TAGGED + SUMMARIZES (feat-012) surface its design-pattern role and
+    # the module summary. The differentiators; llm items obey include_llm_facts.
     "context": (
         [
             EdgeKind.CALLS,
@@ -37,6 +37,7 @@ _MODE_EDGES: dict[Mode, tuple[list[EdgeKind], Direction]] = {
             EdgeKind.GOVERNS,
             EdgeKind.DESCRIBES,
             EdgeKind.TAGGED,
+            EdgeKind.SUMMARIZES,
         ],
         "both",
     ),
@@ -86,8 +87,10 @@ class Retriever:
                     continue
                 items.append(self._item(node, hit.score, [f"vector hit {hit.score:.2f}"]))
                 if mode != "similar":
+                    # a chunk hit seeds its symbols; a summary hit (feat-012)
+                    # seeds the code it summarizes — concept query → code.
                     for edge in await self.store.graph.adjacent(
-                        hit.ref, [EdgeKind.CHUNK_OF], "out"
+                        hit.ref, [EdgeKind.CHUNK_OF, EdgeKind.SUMMARIZES], "out"
                     ):
                         seeds[edge.dst] = max(seeds.get(edge.dst, 0.0), hit.score)
         if symbol is not None:
@@ -179,6 +182,8 @@ class Retriever:
             return f"{prefix}{label}{node.attrs.get('title', node.name)}"
         if node.kind is NodeKind.PATTERN_TAG:
             return f"[llm] design pattern: {node.name}"
+        if node.kind is NodeKind.SUMMARY:
+            return f"[summary] {node.attrs.get('text', '')}"
         return node.attrs.get("code")
 
     def _filter(
