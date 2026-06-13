@@ -1,0 +1,43 @@
+# Enhancements
+
+Things that **work correctly** but could be better — quality, recall, speed,
+ergonomics. Distinct from bugs (incorrect) and known-limitations (inherent).
+
+One file per enhancement: `ENH-NNN-short-slug.md`. Keep this index current.
+
+## Index
+
+| ID | Title | Value | Effort | Area | Status |
+|---|---|---|---|---|---|
+| [ENH-001](ENH-001-pattern-recall-tuning.md) | Improve pattern-tag candidate recall | Medium | M | enrich.heuristics | proposed |
+| [ENH-002](ENH-002-parallelize-enrichment-calls.md) | Parallelize summary/judge LLM calls | Medium | S–M | enrich | proposed |
+
+## Template
+
+```markdown
+# ENH-NNN: <title>
+
+| Field | Value |
+|---|---|
+| **ID** | ENH-NNN |
+| **Value/Impact** | High / Medium / Low |
+| **Effort** | S / M / L |
+| **Status** | proposed / accepted / done |
+| **Area** | package / module |
+| **Relates to** | feat-NNN |
+
+## Motivation
+Why it matters; the observed gap.
+
+## Current behavior
+What happens today (with refs).
+
+## Proposed change
+Concretely what to do.
+
+## Acceptance criteria
+How we know it's done.
+
+## Notes / alternatives
+Trade-offs, risks.
+```

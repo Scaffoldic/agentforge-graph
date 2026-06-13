@@ -1,0 +1,49 @@
+# Bugs
+
+Defects — the system does something **incorrect** (wrong output, broken
+feature, degraded data). Distinct from enhancements (works, could be better) and
+known-limitations (inherent, not fixable by us).
+
+One file per bug: `BUG-NNN-short-slug.md`. Keep this index current.
+
+## Index
+
+| ID | Title | Severity | Area | Status |
+|---|---|---|---|---|
+| [BUG-001](BUG-001-src-layout-import-resolution.md) | `src/`-layout breaks in-repo import resolution | High | ingest.resolver | fixed |
+| [BUG-002](BUG-002-retrieval-scores-render-zero.md) | Retrieval scores render `0.00` | Medium | retrieve / store.lance | fixed |
+| [BUG-003](BUG-003-adr-readme-ingested-as-decision.md) | ADR `README.md` ingested as a Decision | Low | knowledge | fixed |
+
+## Template
+
+```markdown
+# BUG-NNN: <title>
+
+| Field | Value |
+|---|---|
+| **ID** | BUG-NNN |
+| **Severity** | High / Medium / Low |
+| **Status** | open / in-progress / fixed |
+| **Found** | YYYY-MM-DD (how) |
+| **Area** | package / module |
+| **Affects** | feat-NNN |
+
+## Summary
+One or two sentences.
+
+## Reproduce
+Exact steps / command + minimal input.
+
+## Expected vs actual
+- **Expected:** …
+- **Actual:** …
+
+## Root cause
+The real reason, with `file:line` refs.
+
+## Proposed fix
+What to change; alternatives if any.
+
+## Workaround
+If one exists today.
+```
