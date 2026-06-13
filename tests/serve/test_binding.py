@@ -19,6 +19,7 @@ _EXPECTED = {
     "ckg_neighbors",
     "ckg_status",
     "ckg_routes",
+    "ckg_decisions",
 }
 
 
