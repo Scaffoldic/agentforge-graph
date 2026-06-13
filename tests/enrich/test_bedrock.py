@@ -1,11 +1,12 @@
-"""BedrockClaudeJudge parsing/cost/prompt — deterministic, no AWS (the boto3
-invoke is monkeypatched). The live path is covered by test_live.py (gated)."""
+"""BedrockClaudeJudge parsing/cost/prompt — deterministic, no AWS (the shared
+client's invoke is monkeypatched). The live path is covered by test_live.py."""
 
 from __future__ import annotations
 
 import pytest
 
-from agentforge_graph.enrich.bedrock import BedrockClaudeJudge, _price_for
+from agentforge_graph.enrich.bedrock import BedrockClaudeJudge
+from agentforge_graph.enrich.bedrock_client import price_for as _price_for
 from agentforge_graph.enrich.heuristics import Candidate
 
 
@@ -51,12 +52,10 @@ def test_parse_extracts_verdicts_and_usage() -> None:
                 },
             }
         ],
-        "usage": {"input_tokens": 400, "output_tokens": 80},
     }
-    verdicts, usage = BedrockClaudeJudge._parse(payload)
+    verdicts = BedrockClaudeJudge._parse(payload)
     assert {v.pattern for v in verdicts} == {"Repository", "Service"}
     assert verdicts[1].confidence == 1.0  # clamped from 2.0 into [0,1]
-    assert usage == {"input_tokens": 400, "output_tokens": 80}
 
 
 async def test_judge_filters_to_nominated_and_tracks_cost(
@@ -87,11 +86,16 @@ async def test_judge_filters_to_nominated_and_tracks_cost(
         ],
         "usage": {"input_tokens": 1_000_000, "output_tokens": 0},
     }
-    monkeypatch.setattr(judge, "_invoke", lambda c: canned)
+
+    async def fake_invoke(system, user, tools=None, tool_name=None):  # type: ignore[no-untyped-def]
+        judge._client.cost_usd += 1.0  # 1M input tokens × $1/M
+        return canned
+
+    monkeypatch.setattr(judge._client, "invoke", fake_invoke)
     verdicts = await judge.judge(_candidate())
     # Builder wasn't nominated for this candidate → filtered out
     assert {v.pattern for v in verdicts} == {"Repository"}
-    assert judge.cost_usd == pytest.approx(1.0)  # 1M input tokens × $1/M
+    assert judge.cost_usd == pytest.approx(1.0)
 
 
 async def test_judge_no_patterns_is_free() -> None:
