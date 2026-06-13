@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Literal
 
 from agentforge_graph.config import RetrieveConfig
-from agentforge_graph.core import Direction, EdgeKind, Node, Source, SymbolID
+from agentforge_graph.core import Direction, EdgeKind, Node, NodeKind, Source, SymbolID
 from agentforge_graph.embed import Embedder
 from agentforge_graph.store import Store
 
@@ -25,8 +25,18 @@ _RANK: dict[Source, int] = {Source.LLM: 0, Source.PARSED: 1, Source.RESOLVED: 2,
 _FLOOR: dict[str, int] = {"parsed": 1, "resolved": 2}
 
 _MODE_EDGES: dict[Mode, tuple[list[EdgeKind], Direction]] = {
+    # GOVERNS/DESCRIBES (feat-010) surface the architecture decision / doc that
+    # governs a retrieved symbol — the differentiator. DESCRIBES is inert until
+    # a doc pack produces it.
     "context": (
-        [EdgeKind.CALLS, EdgeKind.CONTAINS, EdgeKind.INHERITS, EdgeKind.REFERENCES],
+        [
+            EdgeKind.CALLS,
+            EdgeKind.CONTAINS,
+            EdgeKind.INHERITS,
+            EdgeKind.REFERENCES,
+            EdgeKind.GOVERNS,
+            EdgeKind.DESCRIBES,
+        ],
         "both",
     ),
     "impact": ([EdgeKind.CALLS, EdgeKind.IMPORTS, EdgeKind.IMPLEMENTS], "in"),
@@ -149,10 +159,24 @@ class Retriever:
             score=score,
             path=SymbolID.parse(node.id).path,
             span=node.span,
-            code=node.attrs.get("code"),
+            code=self._render_code(node),
             provenance=node.provenance.source,
             why=list(why),
         )
+
+    @staticmethod
+    def _render_code(node: Node) -> str | None:
+        """The verbatim block a retrieved item renders. A Decision (feat-010)
+        shows its status/date inline so the agent sees governance at a glance."""
+        if node.kind is NodeKind.DECISION:
+            status = node.attrs.get("status", "")
+            date = node.attrs.get("date", "")
+            adr = node.attrs.get("adr_id", "")
+            stamp = ", ".join(x for x in (status, date) if x)
+            prefix = f"[{stamp}] " if stamp else ""
+            label = f"{adr}: " if adr else ""
+            return f"{prefix}{label}{node.attrs.get('title', node.name)}"
+        return node.attrs.get("code")
 
     def _filter(
         self,

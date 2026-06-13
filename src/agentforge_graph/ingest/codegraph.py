@@ -23,6 +23,7 @@ from .source import RepoSource
 if TYPE_CHECKING:
     # embed/retrieve import ingest, so reference their types under TYPE_CHECKING.
     from agentforge_graph.embed import EmbedReport
+    from agentforge_graph.knowledge import DecisionInfo
     from agentforge_graph.repomap import RankedSymbol
     from agentforge_graph.retrieve import ContextPack
     from agentforge_graph.retrieve.retriever import Mode
@@ -56,6 +57,36 @@ def _framework_extractor(
     exts = {ext for p in registry.packs for ext in p.extensions}
     packs = active_frameworks(repo_path, config, builtin_framework_registry(), exts)
     return FrameworkExtractor(packs)
+
+
+async def _ingest_knowledge(
+    store: Store,
+    repo_path: str | Path,
+    config: str | Path | None,
+    repo: str,
+    commit: str,
+    registry: PackRegistry,
+    report: IndexReport,
+) -> None:
+    """Run the ADR/knowledge pass (feat-010) after code indexing, so mention
+    linking sees current code. No-op when ``knowledge.enabled`` is false."""
+    from agentforge_graph.config import KnowledgeConfig
+    from agentforge_graph.knowledge import KnowledgeIngestor
+
+    cfg = KnowledgeConfig.load(config)
+    if not cfg.enabled:
+        return
+    exts = {ext for p in registry.packs for ext in p.extensions}
+    stats = await KnowledgeIngestor(repo, commit).ingest(
+        store.graph, repo_path, cfg.adr_globs, exts
+    )
+    report.decisions_indexed = stats.decisions_indexed
+    report.governs_resolved = stats.governs_resolved
+    report.mentions_unresolved = stats.mentions_unresolved
+    if stats.decisions_indexed:
+        report.by_node_kind["Decision"] = (
+            report.by_node_kind.get("Decision", 0) + stats.decisions_indexed
+        )
 
 
 def _save_meta(
@@ -169,6 +200,7 @@ class CodeGraph:
                 source, store.graph, registry
             )
         cg._report = report
+        await _ingest_knowledge(store, repo_path, config, repo, commit, registry, report)
         _save_meta(root, commit, registry, result.file_hashes)
         if embed:
             await cg.embed()
@@ -200,6 +232,9 @@ class CodeGraph:
             frameworks,
         )
         self._report = report
+        await _ingest_knowledge(
+            self._store, self._repo_path, self._config, repo, commit, registry, report
+        )
         _save_meta(root, commit, registry, result.file_hashes)
         return report
 
@@ -342,6 +377,45 @@ class CodeGraph:
         ]
         routes.sort(key=lambda r: (r.path, r.method))
         return routes
+
+    async def decisions(
+        self, scope: str | None = None, status: str | None = None
+    ) -> list[DecisionInfo]:
+        """Architecture decisions (feat-010). ``scope`` keeps a decision whose
+        own path is under the prefix or which governs a symbol under it;
+        ``status`` filters by ADR status. Sorted by (status, date desc)."""
+        from agentforge_graph.core import EdgeKind, GraphQuery, NodeKind, SymbolID
+        from agentforge_graph.knowledge import DecisionInfo
+
+        nodes = (
+            await self._store.graph.query(GraphQuery(kinds=[NodeKind.DECISION], limit=10_000_000))
+        ).nodes
+        out: list[DecisionInfo] = []
+        for n in nodes:
+            governs = [
+                e.dst for e in await self._store.graph.adjacent(n.id, [EdgeKind.GOVERNS], "out")
+            ]
+            if status and str(n.attrs.get("status", "")) != status:
+                continue
+            if scope:
+                own = SymbolID.parse(n.id).path
+                if not own.startswith(scope) and not any(
+                    SymbolID.parse(g).path.startswith(scope) for g in governs
+                ):
+                    continue
+            out.append(
+                DecisionInfo(
+                    id=n.id,
+                    adr_id=str(n.attrs.get("adr_id", "")),
+                    title=str(n.attrs.get("title", n.name)),
+                    status=str(n.attrs.get("status", "")),
+                    date=str(n.attrs.get("date", "")),
+                    path=str(n.attrs.get("path", SymbolID.parse(n.id).path)),
+                    governs=governs,
+                )
+            )
+        out.sort(key=lambda d: (d.status, d.date), reverse=True)
+        return out
 
     @property
     def store(self) -> Store:

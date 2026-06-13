@@ -41,3 +41,6 @@ class IndexReport(BaseModel):
     resolve: ResolveStats = Field(default_factory=ResolveStats)
     routes_extracted: int = 0  # feat-011: framework Route nodes emitted
     framework_unresolved: int = 0  # framework registrations seen but not extractable
+    decisions_indexed: int = 0  # feat-010: ADR Decision nodes
+    governs_resolved: int = 0  # GOVERNS edges from unambiguous ADR mentions
+    mentions_unresolved: int = 0  # ADR mentions seen but not linked
