@@ -101,6 +101,20 @@ class _Engine:
             "tool_api_version": TOOL_API_VERSION,
         }
 
+    async def decisions(self, scope: str = "", status: str = "") -> dict[str, Any]:
+        """Architecture decisions (feat-010), optionally filtered by governed
+        path ``scope`` and ``status``, wrapped in the staleness envelope."""
+        cg = await self.code_graph()
+        items = [
+            d.to_dict() for d in await cg.decisions(scope=scope or None, status=status or None)
+        ]
+        return {
+            "decisions": items,
+            "count": len(items),
+            **(await self.staleness()),
+            "tool_api_version": TOOL_API_VERSION,
+        }
+
     async def status(self) -> dict[str, Any]:
         meta = self._meta()
         cg = await self.code_graph()

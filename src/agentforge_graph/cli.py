@@ -38,6 +38,11 @@ def _format_report(report: IndexReport) -> str:
             f"  frameworks: {report.routes_extracted} routes "
             f"({report.framework_unresolved} unresolved)"
         )
+    if report.decisions_indexed or report.governs_resolved:
+        lines.append(
+            f"  decisions: {report.decisions_indexed} ADRs, "
+            f"{report.governs_resolved} governs ({report.mentions_unresolved} unresolved)"
+        )
     if report.skipped:
         shown = ", ".join(report.skipped[:5]) + (" …" if len(report.skipped) > 5 else "")
         lines.append(f"  skipped {len(report.skipped)}: {shown}")
@@ -121,6 +126,22 @@ async def _routes(args: argparse.Namespace) -> int:
         for r in routes:
             handler = r.handler.rsplit(" ", 1)[-1] if r.handler else "?"
             print(f"{r.method:<{width}}  {r.path}  →  {handler}  ({r.file}:{r.line})")
+    finally:
+        await cg.close()
+    return 0
+
+
+async def _decisions(args: argparse.Namespace) -> int:
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        decisions = await cg.decisions(scope=args.scope, status=args.status)
+        if not decisions:
+            print("(no decisions found)")
+            return 0
+        for d in decisions:
+            adr = d.adr_id or d.path
+            govs = f"  governs {len(d.governs)}" if d.governs else ""
+            print(f"{d.status:<10}  {d.date or '—':<10}  {adr}  {d.title}{govs}")
     finally:
         await cg.close()
     return 0
@@ -223,6 +244,15 @@ def build_parser() -> argparse.ArgumentParser:
     rt.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
     rt.add_argument("--config", default=None, help="path to ckg.yaml")
     rt.set_defaults(func=_routes)
+
+    dec = sub.add_parser(
+        "decisions", help="list architecture decisions (ADRs) and what they govern"
+    )
+    dec.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    dec.add_argument("--scope", default=None, help="restrict to decisions governing a path subtree")
+    dec.add_argument("--status", default=None, help="filter by status (e.g. accepted)")
+    dec.add_argument("--config", default=None, help="path to ckg.yaml")
+    dec.set_defaults(func=_decisions)
 
     srv = sub.add_parser("serve-mcp", help="run the MCP stdio server exposing the CKG tools")
     srv.add_argument("--repo", default=".", help="repository path (default: .)")

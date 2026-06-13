@@ -13,6 +13,7 @@ _EXPECTED: dict[str, tuple[set[str], set[str]]] = {
     "ckg_neighbors": ({"symbol_id", "edge_kinds", "depth"}, {"symbol_id"}),
     "ckg_status": (set(), set()),
     "ckg_routes": ({"method", "path"}, set()),
+    "ckg_decisions": ({"scope", "status"}, set()),
 }
 
 
