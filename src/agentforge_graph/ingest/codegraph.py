@@ -23,6 +23,7 @@ from .source import RepoSource
 if TYPE_CHECKING:
     # embed/retrieve import ingest, so reference their types under TYPE_CHECKING.
     from agentforge_graph.embed import EmbedReport
+    from agentforge_graph.enrich import TaggedInfo
     from agentforge_graph.knowledge import DecisionInfo
     from agentforge_graph.repomap import RankedSymbol
     from agentforge_graph.retrieve import ContextPack
@@ -320,8 +321,11 @@ class CodeGraph:
         k: int | None = None,
         depth: int | None = None,
         embedder: object | None = None,
+        include_llm_facts: bool = True,
     ) -> ContextPack:
-        """Hybrid retrieval (feat-006): vector entry + graph expansion."""
+        """Hybrid retrieval (feat-006): vector entry + graph expansion.
+        ``include_llm_facts=False`` excludes llm-derived items (decisions tags
+        etc.) wholesale (feat-010/012)."""
         from agentforge_graph.config import EmbedConfig, RetrieveConfig
         from agentforge_graph.embed import Embedder, embedder_from_config
         from agentforge_graph.retrieve import Retriever
@@ -332,7 +336,14 @@ class CodeGraph:
             else embedder_from_config(EmbedConfig.load(self._config))
         )
         retriever = Retriever(self._store, emb, RetrieveConfig.load(self._config))
-        return await retriever.retrieve(query=query, symbol=symbol, mode=mode, k=k, depth=depth)
+        return await retriever.retrieve(
+            query=query,
+            symbol=symbol,
+            mode=mode,
+            k=k,
+            depth=depth,
+            include_llm_facts=include_llm_facts,
+        )
 
     async def repo_map(
         self,
@@ -415,6 +426,71 @@ class CodeGraph:
                 )
             )
         out.sort(key=lambda d: (d.status, d.date), reverse=True)
+        return out
+
+    async def enrich(self, judge: object | None = None, budget_usd: float | None = None) -> Any:
+        """LLM pattern enrichment (feat-012). Drains the ``patterns`` DirtySet
+        if non-empty (incremental), else tags all Class/Function symbols. Builds
+        the Bedrock judge from ``EnrichConfig`` unless one is supplied. Returns
+        an ``EnrichReport``. Never runs implicitly — explicit call only."""
+        from agentforge_graph.config import EnrichConfig, StoreConfig
+        from agentforge_graph.core import GraphQuery
+        from agentforge_graph.enrich import PatternJudge, PatternTagEnricher
+        from agentforge_graph.enrich.heuristics import class_and_function_ids
+
+        from .incremental import DirtySet
+
+        cfg = EnrichConfig.load(self._config)
+        repo = Path(self._repo_path).resolve().name
+        root = Path(self._repo_path) / StoreConfig.load(self._config).path
+        if isinstance(judge, PatternJudge):
+            the_judge: PatternJudge = judge
+        else:
+            from agentforge_graph.enrich.bedrock import BedrockClaudeJudge
+
+            the_judge = BedrockClaudeJudge(cfg.model, cfg.region, cfg.assume_role_arn or None)
+
+        dirty = DirtySet(root)
+        dirty_ids = await dirty.dirty_for("patterns")
+        if dirty_ids:
+            symbol_ids = dirty_ids
+        else:
+            nodes = (await self._store.graph.query(GraphQuery(limit=10_000_000))).nodes
+            symbol_ids = class_and_function_ids(nodes)
+
+        enricher = PatternTagEnricher(
+            repo,
+            the_judge,
+            confidence_floor=cfg.confidence_floor,
+            budget_usd=budget_usd if budget_usd is not None else cfg.budget_usd,
+            commit=_git_commit(self._repo_path),
+        )
+        report = await enricher.enrich(self._store.graph, symbol_ids)
+        await dirty.mark_clean("patterns", enricher.last_judged_ids)
+        return report
+
+    async def tagged(self, pattern: str, min_confidence: float = 0.7) -> list[TaggedInfo]:
+        """Symbols carrying ``pattern`` above ``min_confidence`` (feat-012)."""
+        from agentforge_graph.core import EdgeKind, SymbolID
+        from agentforge_graph.enrich import TaggedInfo, pattern_tag_id
+
+        repo = Path(self._repo_path).resolve().name
+        tag_id = pattern_tag_id(repo, pattern)
+        if await self._store.graph.get(tag_id) is None:
+            return []
+        out: list[TaggedInfo] = []
+        for e in await self._store.graph.adjacent(tag_id, [EdgeKind.TAGGED], "in"):
+            conf = float(e.attrs.get("confidence", 0.0))
+            if conf >= min_confidence and SymbolID.parse(e.src).descriptor:
+                out.append(
+                    TaggedInfo(
+                        symbol_id=e.src,
+                        pattern=pattern,
+                        confidence=conf,
+                        rationale=str(e.attrs.get("rationale", "")),
+                    )
+                )
+        out.sort(key=lambda t: t.confidence, reverse=True)
         return out
 
     @property

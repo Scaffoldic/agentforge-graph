@@ -25,9 +25,9 @@ _RANK: dict[Source, int] = {Source.LLM: 0, Source.PARSED: 1, Source.RESOLVED: 2,
 _FLOOR: dict[str, int] = {"parsed": 1, "resolved": 2}
 
 _MODE_EDGES: dict[Mode, tuple[list[EdgeKind], Direction]] = {
-    # GOVERNS/DESCRIBES (feat-010) surface the architecture decision / doc that
-    # governs a retrieved symbol — the differentiator. DESCRIBES is inert until
-    # a doc pack produces it.
+    # GOVERNS/DESCRIBES (feat-010) surface the decision/doc governing a retrieved
+    # symbol; TAGGED (feat-012) surfaces its design-pattern role. Both are the
+    # differentiators. llm-provenance items obey include_llm_facts.
     "context": (
         [
             EdgeKind.CALLS,
@@ -36,6 +36,7 @@ _MODE_EDGES: dict[Mode, tuple[list[EdgeKind], Direction]] = {
             EdgeKind.REFERENCES,
             EdgeKind.GOVERNS,
             EdgeKind.DESCRIBES,
+            EdgeKind.TAGGED,
         ],
         "both",
     ),
@@ -176,6 +177,8 @@ class Retriever:
             prefix = f"[{stamp}] " if stamp else ""
             label = f"{adr}: " if adr else ""
             return f"{prefix}{label}{node.attrs.get('title', node.name)}"
+        if node.kind is NodeKind.PATTERN_TAG:
+            return f"[llm] design pattern: {node.name}"
         return node.attrs.get("code")
 
     def _filter(
