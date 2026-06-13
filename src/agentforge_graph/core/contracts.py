@@ -73,6 +73,12 @@ class GraphStore(ABC):
         to the same graph a full re-index would produce."""
 
     @abstractmethod
+    async def clear_outgoing(self, src_ids: list[str], kind: EdgeKind) -> None:
+        """Delete edges of ``kind`` whose ``src`` is in ``src_ids`` — lets an
+        enricher (feat-012) re-derive a symbol's facts idempotently (re-tag
+        without duplicating ``TAGGED``/``SUMMARIZES`` edges)."""
+
+    @abstractmethod
     async def query(self, q: GraphQuery) -> QueryResult:
         """Exact-match node lookup with the flat ``GraphQuery`` filter."""
 

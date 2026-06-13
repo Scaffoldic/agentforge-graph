@@ -300,6 +300,18 @@ class KuzuGraphStore(GraphStore):
             self._conn.execute("ROLLBACK")
             raise
 
+    async def clear_outgoing(self, src_ids: list[str], kind: EdgeKind) -> None:
+        async with self._lock:
+            await asyncio.to_thread(self._clear_outgoing_sync, src_ids, kind)
+
+    def _clear_outgoing_sync(self, src_ids: list[str], kind: EdgeKind) -> None:
+        if not src_ids:
+            return
+        self._conn.execute(
+            "MATCH (a:CkgNode)-[e:CkgEdge]->() WHERE a.id IN $ids AND e.kind = $kind DELETE e",
+            {"ids": src_ids, "kind": kind.value},
+        )
+
     # --- reads ------------------------------------------------------------
 
     async def query(self, q: GraphQuery) -> QueryResult:
