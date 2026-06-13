@@ -5,7 +5,7 @@
 | **ID** | ENH-003 |
 | **Value/Impact** | High (OSS adoption — most consumers are not on Bedrock) |
 | **Effort** | M |
-| **Status** | proposed |
+| **Status** | phase 1 done (registry seam) · phase 2 proposed (first-party non-Bedrock adapters) |
 | **Area** | `embed`, `enrich`, `config` |
 | **Relates to** | feat-005 (embeddings), feat-012 (enrichment); mirrors `store/registry.py` |
 
@@ -55,6 +55,30 @@ for models:
   change (same ergonomics as storage drivers).
 - CI stays model-free (fakes are just another registered driver); each live
   adapter has an env-gated test.
+
+## Status — what shipped
+
+**Phase 1 (done, `enh/003-…`):** the registry *seam*.
+
+- `providers.py` — generic `resolve_provider` (built-in → entry-point → error).
+- `embed/registry.py` — `embedder_from_config` is registry-backed; group
+  `agentforge_graph.embedder_providers`.
+- `enrich/registry.py` — `judge_from_config` / `summarizer_from_config`; groups
+  `agentforge_graph.{judge,summarizer}_providers`; new `scripted` credential-free
+  built-in; Bedrock lazy.
+- `EnrichConfig.provider` selects judge + summarizer (default `bedrock` — no
+  behaviour change). `codegraph.enrich/summarize` build via the registry.
+- Tests prove third-party providers resolve via entry point with **no core
+  change** — the pluggability guarantee. CI stays model-free.
+
+This makes "BYO provider" / "pick your provider from config" in the README/ARCH
+literally true: a third party adds a provider by `pip install` + one entry point.
+
+**Phase 2 (proposed):** ship first-party non-Bedrock adapters so non-AWS users
+get batteries-included — at minimum an **Anthropic-API** judge/summarizer (rides
+`agentforge-anthropic`) and an **OpenAI** embedder. Each adds a dependency + an
+env-gated live test, so it's a separate focused unit. The last acceptance
+bullet (a non-AWS path end-to-end with a live adapter) lands here.
 
 ## Notes / alternatives
 

@@ -14,6 +14,7 @@ from __future__ import annotations
 from .enricher import PatternTagEnricher
 from .heuristics import Candidate, PatternHeuristics
 from .judge import PatternJudge, ScriptedJudge, Verdict
+from .registry import judge_from_config, summarizer_from_config
 from .report import EnrichReport, SummaryInfo, SummaryReport, TaggedInfo
 from .summarizer import FileContext, ScriptedSummarizer, Summarizer, Summary
 from .summary_enricher import SummaryEnricher, repo_node_id, summary_id
@@ -26,6 +27,8 @@ __all__ = [
     "PatternJudge",
     "ScriptedJudge",
     "Verdict",
+    "judge_from_config",
+    "summarizer_from_config",
     "EnrichReport",
     "TaggedInfo",
     "SummaryReport",

@@ -446,9 +446,9 @@ class CodeGraph:
         if isinstance(judge, PatternJudge):
             the_judge: PatternJudge = judge
         else:
-            from agentforge_graph.enrich.bedrock import BedrockClaudeJudge
+            from agentforge_graph.enrich.registry import judge_from_config
 
-            the_judge = BedrockClaudeJudge(cfg.model, cfg.region, cfg.assume_role_arn or None)
+            the_judge = judge_from_config(cfg)  # ENH-003: provider-selected
 
         dirty = DirtySet(root)
         dirty_ids = await dirty.dirty_for("patterns")
@@ -516,11 +516,9 @@ class CodeGraph:
         if isinstance(summarizer, Summarizer):
             the_summarizer: Summarizer = summarizer
         else:
-            from agentforge_graph.enrich.bedrock_summarizer import BedrockClaudeSummarizer
+            from agentforge_graph.enrich.registry import summarizer_from_config
 
-            the_summarizer = BedrockClaudeSummarizer(
-                cfg.model, cfg.region, cfg.assume_role_arn or None
-            )
+            the_summarizer = summarizer_from_config(cfg)  # ENH-003: provider-selected
 
         files = (
             await self._store.graph.query(GraphQuery(kinds=[NodeKind.FILE], limit=10**9))

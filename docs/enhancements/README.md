@@ -11,7 +11,7 @@ One file per enhancement: `ENH-NNN-short-slug.md`. Keep this index current.
 |---|---|---|---|---|---|
 | [ENH-001](ENH-001-pattern-recall-tuning.md) | Improve pattern-tag candidate recall | Medium | M | enrich.heuristics | done |
 | [ENH-002](ENH-002-parallelize-enrichment-calls.md) | Parallelize summary/judge LLM calls | Medium | S–M | enrich | done |
-| [ENH-003](ENH-003-pluggable-model-provider-registry.md) | Pluggable model-provider registry (consumer LLM/embeddings choice) | High | M | embed/enrich | proposed |
+| [ENH-003](ENH-003-pluggable-model-provider-registry.md) | Pluggable model-provider registry (consumer LLM/embeddings choice) | High | M | embed/enrich | phase 1 done · phase 2 proposed |
 | [ENH-004](ENH-004-first-party-storage-backends.md) | First-party storage backends (Neo4j/pgvector) | Med–High | M–L | store | proposed |
 
 ## Template

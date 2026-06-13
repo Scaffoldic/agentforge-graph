@@ -44,5 +44,6 @@ def test_registry_fake() -> None:
 
 
 def test_registry_unknown_driver() -> None:
-    with pytest.raises(ValueError, match="unknown embed driver"):
+    # ENH-003: now resolved via the provider registry (ProviderNotFound <: ValueError).
+    with pytest.raises(ValueError, match="unknown embedder provider"):
         embedder_from_config(EmbedConfig(driver="nope"))
