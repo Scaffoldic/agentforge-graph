@@ -178,4 +178,33 @@ n/a.
 
 ## Implementation status
 
-Not started.
+**MVP shipped** (branch `feat/012-llm-enrichment`) — **design-pattern tagging**.
+New framework-layer package `agentforge_graph.enrich`: a fixed v1 `PatternTag`
+taxonomy, deterministic stage-1 structural `PatternHeuristics`, an injectable
+`PatternJudge` (`ScriptedJudge` for tests, **`BedrockClaudeJudge`** live — the
+first feature to call an LLM), and a budgeted, resumable `PatternTagEnricher`.
+
+Confirmed verdicts ≥ `confidence_floor` become `PatternTag` nodes + `TAGGED`
+edges with honest `llm` provenance + confidence + rationale. The judge loop runs
+under the framework `BudgetPolicy` (`BudgetExceeded` breaker), drains
+`DirtySet("patterns")` (resumable), and re-tags idempotently via a new
+`GraphStore.clear_outgoing(src_ids, kind)` primitive. Retrieval: `TAGGED` added
+to the default `context` expansion (a retrieved class surfaces its pattern;
+`include_llm_facts=False` excludes). Surfaces: `CodeGraph.enrich()`/`tagged()`,
+`ckg enrich --patterns --budget-usd`, `ckg tagged <pattern>`, and the reserved
+`ckg_explain` MCP tool (symbol → tags + facts; now in `ALL_TOOLS` — 9 tools).
+`EnrichConfig` (Bedrock Claude Haiku 4.5 default).
+
+**Anthropic runs on AWS Bedrock** (same credential path as the Cohere embedder).
+**Live-verified** end-to-end: Repository (0.95) and Factory (0.85) confirmed, a
+name-only Service *rejected* (0.20, dropped by the 0.7 floor) — the precision
+the two-stage design buys; ~$0.005 for 3 judgments. Deterministic tests use the
+`ScriptedJudge` (no model in CI); live tests gated by `CKG_LIVE_AGENT`. ≥97%
+package coverage; `mypy --strict` + ruff clean. Design:
+`docs/design/design-012-llm-enrichment.md`.
+
+### Follow-ups
+- Bottom-up **summaries** (`Summary`/`SUMMARIZES`, embedded `source_type:
+  summary`, repo-map one-liners) — reuses this harness + `clear_outgoing`.
+- Full `ckg_explain` prose (add the summary line); heuristic precision tuning;
+  taxonomy config-extension.
