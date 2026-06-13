@@ -99,7 +99,9 @@ def _edge_params(edge: Edge, origin_path: str) -> dict[str, Any]:
         "prov_extractor": p.extractor,
         "prov_commit": p.commit,
         "prov_confidence": p.confidence,
-        "origin_path": origin_path,
+        # An edge that carries its own owner file (resolver edges, feat-004)
+        # wins; otherwise the caller's stamp (the upserted file's path).
+        "origin_path": edge.origin_path or origin_path,
         "resolved_from": "",
     }
 
@@ -265,6 +267,33 @@ class KuzuGraphStore(GraphStore):
             )
             self._conn.execute(
                 "MATCH (n:CkgNode) WHERE n.origin_path = $p DETACH DELETE n", {"p": path}
+            )
+            self._conn.execute("COMMIT")
+        except Exception:
+            self._conn.execute("ROLLBACK")
+            raise
+
+    async def clear_resolved(self, paths: list[str]) -> None:
+        async with self._lock:
+            await asyncio.to_thread(self._clear_resolved_sync, paths)
+
+    def _clear_resolved_sync(self, paths: list[str]) -> None:
+        if not paths:
+            return
+        self._conn.execute("BEGIN TRANSACTION")
+        try:
+            self._conn.execute(
+                "MATCH ()-[e:CkgEdge]->() "
+                "WHERE e.origin_path IN $paths AND e.prov_source = $resolved DELETE e",
+                {"paths": paths, "resolved": Source.RESOLVED.value},
+            )
+            # GC external package stubs orphaned by the edge deletion, so the
+            # incremental graph matches a full re-index (no dangling sinks).
+            self._conn.execute(
+                "MATCH (p:CkgNode) WHERE p.kind = $pkg "
+                "OPTIONAL MATCH ()-[e:CkgEdge]->(p) "
+                "WITH p, count(e) AS c WHERE c = 0 DETACH DELETE p",
+                {"pkg": NodeKind.PACKAGE.value},
             )
             self._conn.execute("COMMIT")
         except Exception:

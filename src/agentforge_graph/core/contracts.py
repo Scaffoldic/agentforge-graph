@@ -65,6 +65,14 @@ class GraphStore(ABC):
         """Remove everything previously upserted for ``path``."""
 
     @abstractmethod
+    async def clear_resolved(self, paths: list[str]) -> None:
+        """Delete resolved-provenance edges whose ``origin_path`` is in
+        ``paths`` — the inverse of a scoped re-resolve (feat-004). Parsed
+        nodes/edges are untouched. Also garbage-collects external ``PACKAGE``
+        nodes left with no inbound edge, so an incremental re-resolve converges
+        to the same graph a full re-index would produce."""
+
+    @abstractmethod
     async def query(self, q: GraphQuery) -> QueryResult:
         """Exact-match node lookup with the flat ``GraphQuery`` filter."""
 

@@ -106,6 +106,40 @@ class GraphStoreConformance:
         two_hop = {n.id for n in await store.neighbors(file_id, [EdgeKind.CONTAINS], depth=2)}
         assert method_id in two_hop
 
+    async def test_clear_resolved_invalidates_and_gcs_packages(self, store: GraphStore) -> None:
+        sg = make_sample_subgraph()
+        await store.upsert(sg)
+        caller = sg.nodes[2].id  # the method, in _PATH
+        # A resolved CALLS edge to a parsed symbol + a resolved IMPORTS edge to
+        # an external package stub, both owned by _PATH (feat-004 tagging).
+        pkg_id = SymbolID.for_symbol(_LANG, _REPO, "<external>", "react/namespace.")
+        resolved = Provenance.resolved("resolver")
+        await store.add(
+            [
+                Node(id=pkg_id, kind=NodeKind.PACKAGE, name="react", provenance=resolved),
+                Edge(
+                    src=caller,
+                    dst=sg.nodes[1].id,
+                    kind=EdgeKind.CALLS,
+                    provenance=resolved,
+                    origin_path=_PATH,
+                ),
+                Edge(
+                    src=SymbolID.for_symbol(_LANG, _REPO, _PATH, ""),
+                    dst=pkg_id,
+                    kind=EdgeKind.IMPORTS,
+                    provenance=resolved,
+                    origin_path=_PATH,
+                ),
+            ]
+        )
+        assert await store.get(pkg_id) is not None
+        await store.clear_resolved([_PATH])
+        # resolved edges gone, the now-orphan package GC'd, parsed nodes intact
+        assert await store.adjacent(caller, [EdgeKind.CALLS], "out") == []
+        assert await store.get(pkg_id) is None
+        assert await store.get(sg.nodes[1].id) is not None  # the class survives
+
     async def test_adjacent_directed(self, store: GraphStore) -> None:
         sg = make_sample_subgraph()  # File -CONTAINS-> Class -CONTAINS-> Method
         await store.upsert(sg)
