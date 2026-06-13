@@ -179,4 +179,33 @@ n/a.
 
 ## Implementation status
 
-Not started.
+**MVP shipped** (branch `feat/010-adr-and-docs-ingestion`). New package
+`agentforge_graph.knowledge` (zero `agentforge` imports): `ADRParser`
+(MADR frontmatter + Nygard/adr-tools sections, status/date/supersedes, filename
+fallback), precise mention extraction/resolution (`mentions.py` — paths +
+qualified names, **unambiguous-only**; ambiguous counted), and
+`KnowledgeIngestor` → `Decision` nodes (+ body `DocChunk`s) with parsed
+`GOVERNS`/`SUPERSEDES` edges.
+
+Each ADR is upserted as its own `FileSubgraph` (origin_path = ADR path), so
+edits/deletes ride feat-004 incrementality with no `ChangeDetector` change; the
+pass runs after code indexing (mention indices see current code) and GCs
+decisions whose ADR file vanished. `SUPERSEDES` uses a two-round upsert so the
+target decision exists.
+
+**Retrieval surfacing** (the differentiator): `GOVERNS`/`DESCRIBES` added to the
+default `context` expansion, and a retrieved `Decision` renders with a
+`[status, date]` prefix — so a `ckg_search`/`ckg_symbol` hit on a governed
+symbol surfaces its decision. Surfaces: `CodeGraph.decisions(scope, status)`,
+`ckg decisions` CLI, `ckg_decisions` MCP tool (now in `ALL_TOOLS` — 8 tools),
+`knowledge:` config. `IndexReport` + `decisions_indexed`/`governs_resolved`/
+`mentions_unresolved`. ≥97% package coverage; `mypy --strict` + ruff clean.
+Design: `docs/design/design-010-adr-and-docs-ingestion.md`.
+
+### Follow-ups
+- Embed `DocChunk`s (MarkdownChunker + embed path) for semantic search over
+  decision prose (`source_type: doc`).
+- LLM `infer_governs` pass (decisions with zero parsed links → agent matcher,
+  budgeted, `llm` provenance) — an `Enricher`.
+- General `doc_globs`/docstrings + `DESCRIBES`; commit-message ingestion;
+  doc-incremental-by-hash.

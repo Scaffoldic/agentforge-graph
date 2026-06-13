@@ -34,7 +34,7 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 | [008](feat-008-mcp-server-and-tool-api.md) | MCP server & tool API | 1 serve | 0.1 | shipped | 006,007 | — | ✅ |
 | [004](feat-004-incremental-indexing.md) | Incremental indexing | 2 incr | 0.2 | shipped | 002,003 | 009 | ✅ |
 | [009](feat-009-temporal-evolution-layer.md) | Temporal / git evolution | 2 incr | 0.3 | proposed | 004 | — | ⛔ |
-| [010](feat-010-adr-and-docs-ingestion.md) | ADR & docs ingestion | 3 diff | 0.3 | proposed | 005,006 | — | ⛔ |
+| [010](feat-010-adr-and-docs-ingestion.md) | ADR & docs ingestion | 3 diff | 0.3 | MVP shipped (ADR → GOVERNS) | 005,006 | — | 🟡 |
 | [011](feat-011-framework-extractors.md) | Framework-aware extractors | 3 diff | 0.4 | MVP shipped (FastAPI routes) | 002 | — | 🟡 |
 | [012](feat-012-llm-enrichment.md) | LLM enrichment (summaries, tags) | 3 diff | 0.4 | proposed | 006 | — | ⛔ |
 
