@@ -435,8 +435,8 @@ class CodeGraph:
         an ``EnrichReport``. Never runs implicitly — explicit call only."""
         from agentforge_graph.config import EnrichConfig, StoreConfig
         from agentforge_graph.core import GraphQuery
-        from agentforge_graph.enrich import PatternJudge, PatternTagEnricher
-        from agentforge_graph.enrich.heuristics import class_and_function_ids
+        from agentforge_graph.enrich import PatternHeuristics, PatternJudge, PatternTagEnricher
+        from agentforge_graph.enrich.heuristics import Recall, class_and_function_ids
 
         from .incremental import DirtySet
 
@@ -458,11 +458,14 @@ class CodeGraph:
             nodes = (await self._store.graph.query(GraphQuery(limit=10_000_000))).nodes
             symbol_ids = class_and_function_ids(nodes)
 
+        recall: Recall = "broad" if cfg.patterns_recall == "broad" else "conservative"
         enricher = PatternTagEnricher(
             repo,
             the_judge,
+            heuristics=PatternHeuristics(recall=recall),
             confidence_floor=cfg.confidence_floor,
             budget_usd=budget_usd if budget_usd is not None else cfg.budget_usd,
+            concurrency=cfg.concurrency,
             commit=_git_commit(self._repo_path),
         )
         report = await enricher.enrich(self._store.graph, symbol_ids)
@@ -537,6 +540,7 @@ class CodeGraph:
             max_words=cfg.summary_max_words,
             levels=cfg.summary_levels,
             budget_usd=budget_usd if budget_usd is not None else cfg.budget_usd,
+            concurrency=cfg.concurrency,
             commit=_git_commit(self._repo_path),
         )
         report = await enricher.enrich(self._store, file_ids)

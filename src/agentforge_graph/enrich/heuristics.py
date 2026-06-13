@@ -10,7 +10,9 @@ so the verdict cites structure (spec §8).
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
+from typing import Literal
 
 from agentforge_graph.core import EdgeKind, GraphStore, Node, NodeKind, SymbolID
 
@@ -35,6 +37,68 @@ _CRUD = {
 _FACTORY_VERBS = ("create", "make", "build", "new", "from_", "of")
 _OBSERVER_METHODS = {"notify", "subscribe", "unsubscribe", "update", "register", "emit"}
 
+# Role hints keyed by a name/base **suffix** → the pattern it nominates. Applied
+# to a class's own name and to its base classes (ENH-001).
+_ROLE_SUFFIXES: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("Repository", "Repo", "DAO", "Store"), "Repository"),
+    (("Service", "UseCase", "Interactor"), "Service"),
+    (("Controller", "Resource", "Handler", "View"), "Controller"),
+    (("Factory",), "Factory"),
+    (("Builder",), "Builder"),
+    (("Strategy", "Policy"), "Strategy"),
+    (("Adapter",), "Adapter"),
+    (("Facade",), "Facade"),
+    (("Decorator",), "Decorator"),
+    (("Observer", "Listener", "Subscriber"), "Observer"),
+)
+# Extra name suffixes considered only in `recall="broad"` mode.
+_BROAD_SUFFIXES: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("Manager", "Provider", "Engine", "Coordinator"), "Service"),
+    (("Gateway", "Client", "Wrapper", "Proxy"), "Adapter"),
+)
+# Base classes that don't imply an implementable role (skip for the Strategy
+# "implements an interface" broad signal).
+_TRIVIAL_BASES = {
+    "object",
+    "Exception",
+    "BaseException",
+    "BaseModel",
+    "Enum",
+    "StrEnum",
+    "IntEnum",
+    "Protocol",
+    "Generic",
+    "ABC",
+    "Dict",
+    "List",
+    "Set",
+    "Tuple",
+    "NamedTuple",
+    "TypedDict",
+    "dict",
+    "list",
+    "set",
+    "tuple",
+}
+_CLASS_BASES_RE = re.compile(r"class\s+\w+\s*\(([^)]*)\)")
+
+
+def _base_names(signature: str) -> list[str]:
+    """Base classes parsed from a class signature line (``class X(A, b.C):`` →
+    ``["A", "C"]``). Avoids needing INHERITS edges in the graph (ENH-001)."""
+    m = _CLASS_BASES_RE.search(signature)
+    if not m:
+        return []
+    bases: list[str] = []
+    for part in m.group(1).split(","):
+        part = part.strip()
+        if not part or "=" in part:  # skip metaclass=… / keyword bases
+            continue
+        leaf = part.split(".")[-1].split("[")[0].strip()  # abc.ABC→ABC, Generic[T]→Generic
+        if leaf[:1].isalpha():
+            bases.append(leaf)
+    return bases
+
 
 @dataclass
 class Candidate:
@@ -55,8 +119,17 @@ def _suffix(name: str, *suffixes: str) -> bool:
     return any(low.endswith(s.lower()) for s in suffixes)
 
 
+Recall = Literal["conservative", "broad"]
+
+
 class PatternHeuristics:
-    """Nominate candidate patterns for code symbols by structure."""
+    """Nominate candidate patterns for code symbols by structure. ``recall``
+    controls breadth: ``conservative`` (default) is name + base-class + shape
+    signals; ``broad`` also nominates extra name suffixes and ABC
+    implementations (more judge calls, higher recall) — ENH-001."""
+
+    def __init__(self, recall: Recall = "conservative") -> None:
+        self.recall = recall
 
     async def nominate(self, store: GraphStore, symbol_ids: list[str]) -> list[Candidate]:
         out: list[Candidate] = []
@@ -88,65 +161,55 @@ class PatternHeuristics:
                 methods.append((m.name, str(m.attrs.get("signature", ""))))
         return methods
 
+    @staticmethod
+    def _nominate(c: Candidate, pattern: str, evidence: str) -> None:
+        if pattern not in c.patterns:
+            c.patterns.append(pattern)
+        c.evidence.append(evidence)
+
     async def _class_patterns(self, store: GraphStore, c: Candidate) -> None:
         names = {m.lower() for m, _ in c.methods}
         crud = sorted(names & _CRUD)
+        bases = _base_names(c.signature)
 
-        if _suffix(c.name, "Repository", "Repo", "DAO", "Store"):
-            c.patterns.append("Repository")
-            c.evidence.append(f"class name ends with a repository suffix ({c.name})")
-        elif len(crud) >= 2:
-            c.patterns.append("Repository")
-            c.evidence.append(f"has CRUD-shaped methods: {', '.join(crud)}")
+        # --- name-suffix signals ---
+        for suffixes, pattern in _ROLE_SUFFIXES:
+            if _suffix(c.name, *suffixes):
+                self._nominate(c, pattern, f"name ends with a {pattern} suffix ({c.name})")
 
-        if _suffix(c.name, "Service", "UseCase", "Interactor"):
-            c.patterns.append("Service")
-            c.evidence.append(f"class name ends with a service suffix ({c.name})")
+        # --- base-class signals (subclass of a role-named ABC) — ENH-001 ---
+        for base in bases:
+            for suffixes, pattern in _ROLE_SUFFIXES:
+                if _suffix(base, *suffixes):
+                    self._nominate(c, pattern, f"inherits {base} (a {pattern})")
 
-        if _suffix(c.name, "Controller", "Resource", "Handler", "View"):
-            c.patterns.append("Controller")
-            c.evidence.append(f"class name ends with a controller suffix ({c.name})")
-
-        if _suffix(c.name, "Factory") or any(
-            m.lower().startswith(_FACTORY_VERBS) for m, _ in c.methods
+        # --- shape signals ---
+        if len(crud) >= (1 if self.recall == "broad" else 2):
+            self._nominate(c, "Repository", f"has CRUD-shaped methods: {', '.join(crud)}")
+        if any(m.lower().startswith(_FACTORY_VERBS) for m, _ in c.methods):
+            self._nominate(c, "Factory", "factory-verb methods (create/make/build/…)")
+        if "build" in names and any(
+            m.lower().startswith(("with_", "set_", "add_")) for m, _ in c.methods
         ):
-            c.patterns.append("Factory")
-            c.evidence.append("name or factory-verb methods (create/make/build/…)")
-
-        if _suffix(c.name, "Builder") or (
-            "build" in names
-            and any(m.lower().startswith(("with_", "set_", "add_")) for m, _ in c.methods)
-        ):
-            c.patterns.append("Builder")
-            c.evidence.append("a build() method with fluent with_/set_ methods")
-
+            self._nominate(c, "Builder", "a build() method with fluent with_/set_ methods")
         if "get_instance" in names or "instance" in names:
-            c.patterns.append("Singleton")
-            c.evidence.append("get_instance/instance accessor")
-
-        if names & _OBSERVER_METHODS or _suffix(c.name, "Observer", "Listener", "Subscriber"):
-            c.patterns.append("Observer")
-            c.evidence.append("observer-shaped methods or name")
-
-        if _suffix(c.name, "Strategy", "Policy"):
-            c.patterns.append("Strategy")
-            c.evidence.append(f"name ends with a strategy suffix ({c.name})")
-
-        if _suffix(c.name, "Adapter"):
-            c.patterns.append("Adapter")
-            c.evidence.append(f"name ends with Adapter ({c.name})")
-        if _suffix(c.name, "Facade"):
-            c.patterns.append("Facade")
-            c.evidence.append(f"name ends with Facade ({c.name})")
-        if _suffix(c.name, "Decorator"):
-            c.patterns.append("Decorator")
-            c.evidence.append(f"name ends with Decorator ({c.name})")
+            self._nominate(c, "Singleton", "get_instance/instance accessor")
+        if names & _OBSERVER_METHODS:
+            self._nominate(c, "Observer", "observer-shaped methods (notify/subscribe/…)")
 
         behaviour = [m for m, _ in c.methods if not m.startswith("__")]
         if not behaviour and (c.methods or _suffix(c.name, "DTO", "Dto", "ValueObject", "VO")):
             tag = "DTO" if _suffix(c.name, "DTO", "Dto") else "ValueObject"
-            c.patterns.append(tag)
-            c.evidence.append("data-only class (no behaviour methods)")
+            self._nominate(c, tag, "data-only class (no behaviour methods)")
+
+        # --- broad mode: extra suffixes + ABC-implementation as Strategy ---
+        if self.recall == "broad":
+            for suffixes, pattern in _BROAD_SUFFIXES:
+                if _suffix(c.name, *suffixes):
+                    self._nominate(c, pattern, f"name ends with {pattern}-ish suffix ({c.name})")
+            implementable = [b for b in bases if b not in _TRIVIAL_BASES]
+            if implementable and behaviour:
+                self._nominate(c, "Strategy", f"implements interface(s) {', '.join(implementable)}")
 
     def _function_patterns(self, c: Candidate) -> None:
         low = c.name.lower()

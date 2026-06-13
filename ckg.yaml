@@ -83,6 +83,8 @@ enrich:                         # feat-012 — LLM enrichment (pattern tagging)
   budget_usd: 2.0               # per-run LLM judge cap (breaker)
   confidence_floor: 0.7         # drop tags below this confidence
   taxonomy: v1
+  patterns_recall: conservative # conservative | broad (ENH-001 — broad = higher recall, more judge calls)
+  concurrency: 6                # in-flight LLM calls per enrich run (ENH-002)
   summary_max_words: 120        # module summaries
   summary_levels: ["file", "repo"]
 

@@ -9,8 +9,8 @@ One file per enhancement: `ENH-NNN-short-slug.md`. Keep this index current.
 
 | ID | Title | Value | Effort | Area | Status |
 |---|---|---|---|---|---|
-| [ENH-001](ENH-001-pattern-recall-tuning.md) | Improve pattern-tag candidate recall | Medium | M | enrich.heuristics | proposed |
-| [ENH-002](ENH-002-parallelize-enrichment-calls.md) | Parallelize summary/judge LLM calls | Medium | S–M | enrich | proposed |
+| [ENH-001](ENH-001-pattern-recall-tuning.md) | Improve pattern-tag candidate recall | Medium | M | enrich.heuristics | done |
+| [ENH-002](ENH-002-parallelize-enrichment-calls.md) | Parallelize summary/judge LLM calls | Medium | S–M | enrich | done |
 
 ## Template
 

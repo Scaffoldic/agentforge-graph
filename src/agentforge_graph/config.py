@@ -172,6 +172,8 @@ class EnrichConfig(_Block):
     budget_usd: float = 2.0  # per-run LLM judge cap (breaker)
     confidence_floor: float = 0.7  # drop tags below this
     taxonomy: str = "v1"
+    patterns_recall: str = "conservative"  # ENH-001: conservative | broad
+    concurrency: int = 6  # ENH-002: in-flight LLM calls per enrich run
     summary_max_words: int = 120  # feat-012 summaries
     summary_levels: list[str] = Field(default_factory=lambda: ["file", "repo"])
 

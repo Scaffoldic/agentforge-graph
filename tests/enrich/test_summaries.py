@@ -100,7 +100,7 @@ async def test_budget_trips_before_repo(graph: CodeGraph) -> None:
             return self._c
 
     enricher = SummaryEnricher(
-        "proj", CostlySummarizer(), embedder=FakeEmbedder(dim=8), budget_usd=1.5
+        "proj", CostlySummarizer(), embedder=FakeEmbedder(dim=8), budget_usd=1.5, concurrency=1
     )
     report = await enricher.enrich(graph.store, await _file_ids(graph))
     assert report.budget_tripped is True

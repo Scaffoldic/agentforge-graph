@@ -5,8 +5,9 @@
 | **ID** | ENH-001 |
 | **Value/Impact** | Medium |
 | **Effort** | M |
-| **Status** | proposed |
+| **Status** | done |
 | **Area** | `enrich.heuristics` |
+| **Done** | 2026-06-13 (`enh/e2e-eval-enhancements`) — (1) **base-class signal**: a class is nominated by applying the role-suffix rules to its base classes (parsed from the signature, no INHERITS edges needed), so a subclass of a role-named ABC is caught even without a matching own-name; (2) **`enrich.patterns_recall: conservative\|broad`** — broad adds Manager/Provider/Gateway/Client suffixes, a lower CRUD threshold, and "implements a non-trivial ABC → Strategy". On this repo, broad raises candidates 10 → 21; conservative stays precise. |
 | **Relates to** | feat-012 (pattern tagging) |
 
 ## Motivation
