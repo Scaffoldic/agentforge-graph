@@ -134,8 +134,11 @@ Swift, C, Scala.
 
 **Shipped packs:** Python (with feat-002), **TypeScript**
 (`feat/002-pack-ts` — added `LanguagePack.module_style` so the resolver
-handles relative path imports, not just dotted modules). Remaining v0.1
-packs: js, java, go, c#, rust, ruby, php (Tier A), c++ (Tier B).
+handles relative path imports, not just dotted modules), **JavaScript**
+(`feat/002-pack-js` — reuses the TS `relative` module style; only grammar
+delta is the class-name node, and `.jsx`/`.mjs`/`.cjs` parse under the same
+`javascript` grammar). Remaining v0.1 packs: java, go, c#, rust, ruby, php
+(Tier A), c++ (Tier B).
 
 ---
 
