@@ -14,6 +14,21 @@ class ResolveStats(BaseModel):
     refs_unresolved: int = 0  # call sites with zero/ambiguous targets (recorded, not guessed)
 
 
+class RouteInfo(BaseModel):
+    """One extracted endpoint (feat-011), for ``CodeGraph.routes`` / ``ckg
+    routes`` / the ``ckg_routes`` tool."""
+
+    method: str
+    path: str
+    framework: str
+    handler: str  # handler symbol id (HANDLED_BY target)
+    file: str
+    line: int
+
+    def to_dict(self) -> dict[str, object]:
+        return self.model_dump()
+
+
 class IndexReport(BaseModel):
     """Summary of a full ``IngestPipeline.run`` / ``CodeGraph.index``."""
 
@@ -24,3 +39,5 @@ class IndexReport(BaseModel):
     by_edge_kind: dict[str, int] = Field(default_factory=dict)
     skipped: list[str] = Field(default_factory=list)
     resolve: ResolveStats = Field(default_factory=ResolveStats)
+    routes_extracted: int = 0  # feat-011: framework Route nodes emitted
+    framework_unresolved: int = 0  # framework registrations seen but not extractable
