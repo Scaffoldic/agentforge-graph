@@ -135,7 +135,7 @@ consume it**. Workstreams (run mostly in parallel; not feature-numbered):
 
 | # | Workstream | What "done" looks like | Status |
 |---|---|---|---|
-| **W1** | **Multi-language validation** on real OSS repos | every *shipped* language pack validated on ≥1 real repo; runs + scores logged in `docs/validation/` | 🔨 Python ([click](../validation/python-click.md)) + TypeScript ([zod](../validation/typescript-zod.md)) done; JS next |
+| **W1** | **Multi-language validation** on real OSS repos | every *shipped* language pack validated on ≥1 real repo; runs + scores logged in `docs/validation/` | ✅ all 3 shipped packs: Python ([click](../validation/python-click.md)), TS ([zod](../validation/typescript-zod.md)), JS ([express+chalk](../validation/javascript-express-chalk.md)) |
 | **W2** | **Graph-knowledge quality** | measured parse coverage, resolution rates, impact correctness, retrieval/repo-map usefulness; gaps filed as BUG/ENH/KL | 🔨 click: parsing solid; **BUG-004 fixed** (relative imports: imports 56→109, CALLS 292→404); ENH-006/007 open |
 | **W3** | **Remaining language packs** (feat-002 follow-ups) | Java, Go, C#, Rust, Ruby, PHP (Tier A) + C++ (Tier B) land so the "10 languages" claim is real | ⬜ (3/10 shipped: Py/TS/JS) |
 | **W4** | **MCP consumption proven + documented** | a real agent answers real questions over MCP unattended on ≥1 repo per tier; guide shipped (`docs/guides/using-over-mcp.md` ✅) | 🔨 guide done; dogfood pending |
@@ -201,6 +201,13 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-14** — **W1 JavaScript run (`express` CommonJS + `chalk` ESM) — all 3
+  shipped packs now validated.** ESM JS works (chalk: imports resolve). **CommonJS
+  does not** — filed **BUG-006**: `require()` / `module.exports` aren't captured,
+  so a CommonJS repo (express) resolves **0 imports** and has no cross-file graph.
+  CommonJS is dominant in Node, so this is the biggest JS gap; it's feature-sized
+  (needs require-capture + `module.exports` export modeling) — its own unit, not a
+  one-liner. Run: `docs/validation/javascript-express-chalk.md`.
 - **2026-06-14** — **BUG-005 fixed** (TS abstract classes). Added an
   `abstract_class_declaration` pattern to the TS `structure.scm`. Re-run on zod:
   `ZodType` (the abstract root) now extracts with its 32 methods (Class 86→92,

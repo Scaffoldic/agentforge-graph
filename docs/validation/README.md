@@ -46,7 +46,7 @@ Pick small-but-real repos; keep them pinned to a commit for reproducibility.
 |---|---|---|---|---|
 | A | Python | **pallets/click @ 8.1.7** | ✅ [run](python-click.md) (graph; embed/enrich pending creds) | BUG-004 (fixed), ENH-006, ENH-007 |
 | A | TypeScript | **colinhacks/zod @ v3.23.8** | ✅ [run](typescript-zod.md) (graph; embed/enrich pending creds) | BUG-005 (fixed), ENH-008 |
-| A | JavaScript | _tbd_ | ⬜ | — |
+| A | JavaScript | **expressjs/express @ 4.19.2 (CommonJS) + chalk @ v5.3.0 (ESM)** | ✅ [run](javascript-express-chalk.md) | BUG-006 (CommonJS); ESM works |
 | A | Java | _tbd_ | ⬜ | — |
 | A | Go | _tbd_ | ⬜ | — |
 | A | C# | _tbd_ | ⬜ | — |
