@@ -207,9 +207,26 @@ async def _tagged(args: argparse.Namespace) -> int:
 async def _serve_mcp(args: argparse.Namespace) -> int:
     # lazy import: keeps the engine commands (index/embed/query/map) free of
     # the framework/MCP SDK.
-    from agentforge_graph.serve import serve_mcp
+    from typing import cast
 
-    await serve_mcp(repo_path=args.repo, config=args.config, refresh_on_call=args.refresh_on_call)
+    from agentforge_graph.config import ServeConfig
+    from agentforge_graph.serve import serve_mcp
+    from agentforge_graph.serve.server import Transport
+
+    # CLI flags override; otherwise fall back to the serve: block in ckg.yaml.
+    cfg = ServeConfig.load(args.config)
+    transport = cast(Transport, args.transport or cfg.transport)
+    host = args.host or cfg.host
+    port = args.port if args.port is not None else cfg.port
+
+    await serve_mcp(
+        repo_path=args.repo,
+        config=args.config,
+        transport=transport,
+        host=host,
+        port=port,
+        refresh_on_call=args.refresh_on_call,
+    )
     return 0
 
 
@@ -333,9 +350,19 @@ def build_parser() -> argparse.ArgumentParser:
     tg.add_argument("--config", default=None, help="path to ckg.yaml")
     tg.set_defaults(func=_tagged)
 
-    srv = sub.add_parser("serve-mcp", help="run the MCP stdio server exposing the CKG tools")
+    srv = sub.add_parser(
+        "serve-mcp", help="run the MCP server (stdio or http) exposing the CKG tools"
+    )
     srv.add_argument("--repo", default=".", help="repository path (default: .)")
     srv.add_argument("--config", default=None, help="path to ckg.yaml")
+    srv.add_argument(
+        "--transport",
+        choices=["stdio", "http"],
+        default=None,
+        help="MCP transport (default: stdio, or serve.transport in ckg.yaml)",
+    )
+    srv.add_argument("--host", default=None, help="http transport bind host (default: 127.0.0.1)")
+    srv.add_argument("--port", type=int, default=None, help="http transport port (default: 8765)")
     srv.add_argument(
         "--refresh-on-call",
         action="store_true",

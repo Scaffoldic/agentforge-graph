@@ -71,8 +71,12 @@ To Claude Code (or any MCP client) — **9 read-only tools**: `ckg_repo_map`,
 `ckg_routes`, `ckg_decisions`, `ckg_explain`:
 
 ```bash
-claude mcp add ckg -- ckg serve-mcp --repo .
+claude mcp add ckg -- ckg serve-mcp --repo .       # stdio (subprocess)
+ckg serve-mcp --repo . --transport http            # or HTTP → http://127.0.0.1:8765/mcp
 ```
+
+Over HTTP, point any MCP client at the URL:
+`{"mcpServers": {"ckg": {"url": "http://127.0.0.1:8765/mcp"}}}`.
 
 Or as a native AgentForge toolset:
 

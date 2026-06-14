@@ -6,7 +6,7 @@
 |---|---|
 | **ID** | feat-008 |
 | **Title** | MCP server & AgentForge tool API |
-| **Status** | proposed |
+| **Status** | shipped (9 tools; stdio + streamable-HTTP transports) |
 | **Owner** | kjoshi |
 | **Created** | 2026-06-11 |
 | **Target version** | 0.1.0 |
@@ -53,8 +53,19 @@ AgentForge `Tool` wrappers, both thin over feat-006/007.
 ### 4.1 User-facing experience
 
 ```bash
-ckg serve-mcp --repo . [--refresh-on-call]    # stdio MCP server
+ckg serve-mcp --repo .                              # stdio MCP server (default)
+ckg serve-mcp --repo . --transport http             # streamable-HTTP at :8765/mcp
+ckg serve-mcp --repo . --transport http --host 0.0.0.0 --port 9000
 ```
+
+Two transports, same tools/guardrails:
+
+- **stdio** — the client launches the server as a subprocess
+  (`mcpServers` `command`/`args`, or `claude mcp add ckg -- ckg serve-mcp --repo .`).
+- **http** — a long-running streamable-HTTP server (mounted at `/mcp` under
+  uvicorn) clients reach by `url` (`{"mcpServers": {"ckg": {"url":
+  "http://127.0.0.1:8765/mcp"}}}`). Bind `127.0.0.1` by default; front with a
+  proxy/TLS for remote access (no built-in auth at 0.1).
 
 ```python
 from agentforge import Agent
@@ -89,9 +100,9 @@ refreshes, capped at a wall-clock budget, reported in the result).
 ### 4.3 Internal mechanics
 
 - Single tool registry (`ToolDef`: name, params model, handler,
-  description) renders to both MCP (`mcp` Python SDK, stdio
-  transport; SSE post-0.1) and AgentForge `Tool` ABC instances.
-  One definition, two bindings.
+  description) renders to both MCP (`mcp` Python SDK over **stdio or
+  streamable-HTTP**, via the framework `MCPServer.from_stdio`/`from_http`)
+  and AgentForge `Tool` ABC instances. One definition, every binding.
 - Server opens the store read-only (feat-003), holds it for the
   process lifetime, and answers `ckg_status` from `meta.json` so
   agents can detect staleness and tell the user to re-index.
@@ -111,6 +122,9 @@ console-script entry point.
 
 ```yaml
 serve:
+  transport: stdio       # stdio | http (streamable-HTTP at /mcp); --transport overrides
+  host: 127.0.0.1        # http bind host
+  port: 8765             # http port
   max_depth: 3
   max_k: 50
   response_token_cap: 6000

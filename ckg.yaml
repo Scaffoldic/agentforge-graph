@@ -56,7 +56,10 @@ repomap:                        # feat-007 — Aider-style PageRank repo map
   damping: 0.85
   kinds: ["Class", "Function", "Method"]
 
-serve:                          # feat-008 — MCP guardrails
+serve:                          # feat-008 — MCP server + guardrails
+  transport: "stdio"            # stdio (subprocess) | http (streamable-HTTP at /mcp); CLI --transport overrides
+  host: "127.0.0.1"             # http transport bind host
+  port: 8765                    # http transport port
   max_depth: 3
   max_k: 50
   response_token_cap: 6000

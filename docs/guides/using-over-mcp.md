@@ -3,7 +3,8 @@
 agentforge-graph exposes a repo's Code Knowledge Graph to **any agent or
 developer** two ways, over the **same 9 read-only tools** and the same engine:
 
-1. **MCP stdio server** — for external clients (Claude Code, Cursor, any MCP host).
+1. **MCP server** — for external clients (Claude Code, Cursor, any MCP host), over
+   **stdio** (subprocess) or **HTTP** (streamable-HTTP at a URL).
 2. **In-process AgentForge toolset** — for agents built on the framework.
 
 Both are read-only, per-repo, and need no network service — the graph lives in an
@@ -28,17 +29,21 @@ Re-running is incremental (feat-004). Minimum to serve: `ckg index .`. Without
 
 ## 2a. Serve over MCP (external agents)
 
+Two transports, **same 9 tools and guardrails** — pick by how the client connects.
+
+### stdio — client launches a subprocess (simplest, local)
+
 ```bash
-ckg serve-mcp --repo .            # stdio server; blocks. --config <ckg.yaml> optional
+ckg serve-mcp --repo .            # blocks; --config <ckg.yaml> optional
 ```
 
-Wire it into a client. **Claude Code**:
+**Claude Code**:
 
 ```bash
 claude mcp add ckg -- ckg serve-mcp --repo /abs/path/to/repo
 ```
 
-**Any MCP host** (Cursor, Claude Desktop, custom) via an `mcpServers` block:
+**Any MCP host** (Cursor, Claude Desktop, custom) via a `command`/`args` block:
 
 ```json
 {
@@ -51,8 +56,32 @@ claude mcp add ckg -- ckg serve-mcp --repo /abs/path/to/repo
 }
 ```
 
-Transport is **stdio only** at 0.1 (no HTTP/SSE), **no auth** — the client launches
-the server as a subprocess scoped to one repo. Run one server per repo.
+The client owns the process lifetime; scoped to one repo.
+
+### http — a long-running server clients reach by URL
+
+```bash
+ckg serve-mcp --repo . --transport http                 # → http://127.0.0.1:8765/mcp
+ckg serve-mcp --repo . --transport http --host 0.0.0.0 --port 9000
+```
+
+Connect by **`url`** (streamable-HTTP, mounted at `/mcp`):
+
+```json
+{
+  "mcpServers": {
+    "ckg": { "url": "http://127.0.0.1:8765/mcp" }
+  }
+}
+```
+
+Use http when the server should outlive the client, be shared by several
+agents/clients, or run on another host/container. Defaults bind `127.0.0.1` —
+**there's no built-in auth at 0.1, so for remote access front it with a
+reverse proxy + TLS + authN.** Run one server per repo (or one process per repo).
+
+Either transport can be set as the default in `ckg.yaml` (`serve.transport`,
+`serve.host`, `serve.port`); the CLI flags override it.
 
 ## 2b. Use in-process (AgentForge agents)
 
