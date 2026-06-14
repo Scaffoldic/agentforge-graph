@@ -14,7 +14,7 @@ One file per bug: `BUG-NNN-short-slug.md`. Keep this index current.
 | [BUG-002](BUG-002-retrieval-scores-render-zero.md) | Retrieval scores render `0.00` | Medium | retrieve / store.lance | fixed |
 | [BUG-003](BUG-003-adr-readme-ingested-as-decision.md) | ADR `README.md` ingested as a Decision | Low | knowledge | fixed |
 | [BUG-004](BUG-004-relative-from-import-resolution.md) | Relative `from .module import name` imports under-resolve | High | ingest.resolver | fixed |
-| [BUG-005](BUG-005-typescript-abstract-class-not-extracted.md) | TS/JS `abstract class` declarations not extracted | High | ingest.packs.typescript | open |
+| [BUG-005](BUG-005-typescript-abstract-class-not-extracted.md) | TS `abstract class` declarations not extracted | High | ingest.packs.typescript | fixed |
 
 ## Template
 

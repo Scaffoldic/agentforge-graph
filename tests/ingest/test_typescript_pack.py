@@ -69,6 +69,33 @@ def test_ts_nodes_descriptors_and_method_promotion() -> None:
     assert by_desc["describe()."].kind is NodeKind.FUNCTION  # top-level
 
 
+def test_ts_abstract_class_extracted() -> None:
+    # BUG-005: `abstract class` is a distinct grammar node (abstract_class_declaration);
+    # it must extract as a Class with methods promoted, like a concrete class.
+    src = (
+        "export abstract class ZodType {\n"
+        "  parse(x: unknown) {\n"
+        "    return x;\n"
+        "  }\n"
+        "}\n"
+        "export class ZodString extends ZodType {\n"
+        "  check() {\n"
+        "    return true;\n"
+        "  }\n"
+        "}\n"
+    )
+    sf = SourceFile(
+        path="t.ts",
+        text=src,
+        language="ts",
+        content_hash=hashlib.sha256(src.encode()).hexdigest(),
+    )
+    by_desc = {SymbolID.parse(n.id).descriptor: n for n in _extractor().extract(sf).nodes}
+    assert by_desc["ZodType#"].kind is NodeKind.CLASS  # abstract class now captured
+    assert by_desc["ZodType#parse()."].kind is NodeKind.METHOD  # its method promoted + nested
+    assert by_desc["ZodString#"].kind is NodeKind.CLASS  # concrete sibling unaffected
+
+
 def test_ts_imports_and_refs_recorded() -> None:
     sg = _extractor().extract(_sf(FIXTURES / "shapes.ts", "shapes.ts"))
     file_node = next(n for n in sg.nodes if n.kind is NodeKind.FILE)
