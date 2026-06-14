@@ -17,6 +17,8 @@ from pydantic import BaseModel, Field
 
 from agentforge_graph.core import NodeKind
 
+_INIT_BASENAMES = ("__init__.py", "__init__.pyi")  # a file that *is* its package
+
 
 class DescriptorRules(BaseModel):
     """Maps a structure-query capture name (e.g. ``def.class``) to the node
@@ -61,18 +63,40 @@ class LanguagePack(BaseModel):
             segs = segs[:-1]
         return ".".join(segs)
 
-    def resolve_import(self, importer_path: str, raw_module: str) -> str:
+    def resolve_import(self, importer_path: str, raw_module: str, importer_module: str = "") -> str:
         """Map an import as written in ``importer_path`` to a module key
-        comparable to ``module_path``. ``dotted``: identity. ``relative``: a
-        ``./``/``../`` specifier is resolved against the importer's directory;
-        a bare specifier (``react``) stays as-is (external)."""
-        if self.module_style == "dotted":
-            return raw_module
-        target = self._strip_ext(raw_module)
-        if target.startswith("./") or target.startswith("../"):
-            base = posixpath.dirname(importer_path)
-            return posixpath.normpath(posixpath.join(base, target))
-        return target
+        comparable to ``module_path``.
+
+        ``relative`` (TS/JS): a ``./``/``../`` specifier is resolved against the
+        importer's directory; a bare specifier (``react``) stays as-is (external).
+
+        ``dotted`` (Python): an absolute import (``a.b.c``) is identity; a
+        **relative** import (leading dots, e.g. ``.utils`` / ``..pkg.mod`` / ``.``)
+        is resolved against ``importer_module`` — the importer's own (source-root
+        stripped) module key — to an absolute key (BUG-004). One leading dot is the
+        importer's package; each extra dot ascends one level."""
+        if self.module_style == "relative":
+            target = self._strip_ext(raw_module)
+            if target.startswith("./") or target.startswith("../"):
+                base = posixpath.dirname(importer_path)
+                return posixpath.normpath(posixpath.join(base, target))
+            return target
+        # dotted
+        dots = len(raw_module) - len(raw_module.lstrip("."))
+        if not dots:
+            return raw_module  # absolute dotted import: identity
+        remainder = raw_module[dots:]  # name after the dots: "utils", "pkg.mod", ""
+        segs = [s for s in importer_module.split(".") if s]
+        # a regular module file lives *in* its package; an __init__ file *is* it
+        if posixpath.basename(importer_path) not in _INIT_BASENAMES and segs:
+            segs = segs[:-1]
+        up = dots - 1  # the first dot is the importer's package; extras ascend
+        if up:
+            segs = segs[:-up] if up <= len(segs) else []
+        base = ".".join(segs)
+        if remainder:
+            return f"{base}.{remainder}" if base else remainder
+        return base
 
 
 class PackRegistry:

@@ -58,3 +58,30 @@ async def test_src_layout_imports_and_calls_resolve(tmp_path: Path) -> None:
         assert imports
     finally:
         await cg.close()
+
+
+async def test_relative_from_imports_resolve(tmp_path: Path) -> None:
+    """BUG-004: `from .util import helper` (relative) binds the name and resolves
+    the cross-file CALLS, just like the absolute form — the idiomatic intra-package
+    style (validated against pallets/click, where `echo` went 0 -> 18 callers)."""
+    repo = tmp_path / "proj"
+    (repo / "src" / "mypkg").mkdir(parents=True)
+    (repo / "src" / "mypkg" / "__init__.py").write_text("")
+    (repo / "src" / "mypkg" / "util.py").write_text("def helper(x):\n    return x\n")
+    (repo / "src" / "mypkg" / "app.py").write_text(
+        "from .util import helper\n\n\ndef run(v):\n    return helper(v)\n"
+    )
+    cg = await CodeGraph.index(repo_path=repo)
+    try:
+        report = cg.stats()
+        assert report.resolve.imports_resolved >= 1  # mypkg.app -> mypkg.util (relative)
+        assert report.resolve.imports_external == 0  # `.util` is in-repo, not external
+        nodes = (await cg.store.graph.query(GraphQuery(limit=10_000))).nodes
+        run_id = next(n.id for n in nodes if SymbolID.parse(n.id).descriptor == "run().")
+        callees = {
+            SymbolID.parse(n.id).descriptor
+            for n in await cg.store.graph.neighbors(run_id, [EdgeKind.CALLS], depth=1)
+        }
+        assert "helper()." in callees  # bare helper() call resolves via the relative import
+    finally:
+        await cg.close()

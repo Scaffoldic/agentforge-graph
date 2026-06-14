@@ -24,24 +24,43 @@ indexed 71 files: 1496 nodes, 1906 edges
 |---|---|---|
 | **Parse coverage** | 71/71 files parsed, 0 skipped | ✅ excellent |
 | **Symbol extraction** | spot-checked `Command`, `Context`, `Option`, `Group`, `BaseCommand`, `echo`, `style` — all present with correct ids/kinds | ✅ good |
-| **Import resolution** | 56 in-repo resolved — but **`utils.py` got only 1 resolved IMPORTS edge** despite `from .utils import …` in 6+ modules | ❌ **relative from-imports under-resolve** → BUG-004 |
-| **Call resolution** | 292 resolved (183 same-file, 109 cross-file). Cross-file *does* work. But **`echo` (one definition, called bare 29× in src) resolves 0 callers** | ⚠️ undercount, downstream of BUG-004 |
-| **Impact correctness** | `impact(echo)` returns only `echo` itself — 0 callers, though it's one of click's most-called functions | ❌ undercounts (BUG-004) |
+| **Import resolution** | 56 → **109** in-repo after BUG-004 fix (relative `from .utils import …` was being dropped) | ✅ fixed (BUG-004) |
+| **Call resolution** | 292 → **404** resolved after fix; cross-file + relative-imported now resolve | ✅ fixed (BUG-004) |
+| **Impact correctness** | `impact(echo)` 1 → **19** after fix — callers now found | ✅ fixed (BUG-004) |
 | **Repo-map usefulness** | public API present at budget≈4000 (`Command`/`Context`/`Option`/`Group`), but at budget≈1500 private `_compat` helpers fill the budget first | ⚠️ weak orientation → ENH-007 |
 | **Routes / decisions** | none (click is a CLI lib, no web routes / no ADRs) — correctly empty | ✅ n/a |
 | **Retrieval quality** | not run — `embed` defaults to Bedrock; no model creds in this env | ⬜ pending creds run |
 | **Enrichment honesty** | not run — needs a live judge/summarizer | ⬜ pending creds run |
 | **MCP consumption** | not run this pass (model-free graph checks only) | ⬜ pending |
 
+## Update — after the BUG-004 fix (same commit, re-indexed)
+
+```
+indexed 71 files: 1439 nodes, 2071 edges  (was 1906)
+  edges: CALLS=404, CONTAINS=1368, IMPORTS=299
+  imports: 109 in-repo resolved (was 56) + 190 external
+  calls:   404 resolved (was 292) / 3754 unresolved
+```
+
+| Metric | Before | After |
+|---|---|---|
+| in-repo imports resolved | 56 | **109** |
+| resolved CALLS | 292 | **404** |
+| `echo` incoming callers | 0 | **18** |
+| `impact(echo)` results | 1 (itself) | **19** |
+
+Import resolution and impact for relative-imported symbols now work; the
+remaining unresolved calls are dominated by external/stdlib and
+attribute/method-on-instance calls (expected, ADR-0004).
+
 ## Findings
 
-- **[BUG-004](../bugs/BUG-004-relative-from-import-resolution.md)** — relative
-  `from .module import name` imports under-resolve, cascading into missed
-  cross-module CALLS to popular utilities (`echo`: 0/29 in-src calls resolved;
-  `utils.py`: 1 resolved IMPORTS edge vs 6+ source from-imports). **High value** —
-  this is the idiomatic intra-package pattern, and it directly degrades impact
-  analysis, the graph's core selling point. Likely adjacent to BUG-001 (which
-  fixed *absolute* src-layout imports); this is the *relative* path.
+- **[BUG-004](../bugs/BUG-004-relative-from-import-resolution.md)** ✅ **fixed
+  this run** — relative `from .module import name` imports were dropped at
+  extraction (the query never matched `relative_import`) and unresolved by
+  `resolve_import`. Fixed both; `echo` went 0→18 callers, in-repo imports 56→109.
+  High value — it's the idiomatic intra-package pattern and the graph's core
+  impact-analysis value depends on it.
 - **[ENH-006](../enhancements/ENH-006-cli-path-arg-consistency.md)** — the CLI
   mixes three repo-path conventions: positional `[path]` (`index`/`status`/
   `embed`/`enrich`/…), `--path` (`map`), and `--repo` (`serve-mcp`). Unify.
@@ -59,8 +78,8 @@ indexed 71 files: 1496 nodes, 1906 edges
 
 ## Next
 
-1. Fix **BUG-004** and re-run; expect resolved-call count and `echo` impact to
-   jump. Re-measure resolution rate.
+1. ✅ **BUG-004 fixed and re-measured** (this run) — imports 56→109, CALLS
+   292→404, `echo` impact 1→19.
 2. Re-run with **live embedder + enricher** (creds) to score retrieval and
    enrichment, and dogfood the MCP consumption path on this graph.
 3. Add the next-language repos (W3 packs gate Java/Go/… first).

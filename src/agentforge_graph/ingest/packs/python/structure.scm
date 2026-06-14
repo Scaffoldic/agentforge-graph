@@ -21,3 +21,11 @@
   module_name: (dotted_name) @import.module
   name: [(dotted_name) @import.name
          (aliased_import (dotted_name) @import.name)]) @import
+
+; `from .mod import x` / `from . import x` (relative) -> the relative module
+; text (leading dots + optional name, e.g. `.utils`, `..pkg.mod`, `.`) + names.
+; resolve_import() resolves the dots against the importer's package (BUG-004).
+(import_from_statement
+  module_name: (relative_import) @import.module
+  name: [(dotted_name) @import.name
+         (aliased_import (dotted_name) @import.name)]) @import
