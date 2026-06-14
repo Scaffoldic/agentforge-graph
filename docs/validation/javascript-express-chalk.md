@@ -30,18 +30,19 @@ chalk (ESM):
 |---|---|---|
 | **Parse coverage** | 152/152 ✅ | 19/19 ✅ |
 | **Symbol extraction** | functions extracted ✅ (no classes — correct for express) | class + functions + method ✅ |
-| **Import resolution** | **0** — `require()` / `module.exports` not captured ❌ **BUG-006** | 5 in-repo resolved ✅ |
-| **Call resolution** | 68 (intra-file only — no import graph to cross) ⚠️ | 12 (cross-file works) ✅ |
-| **Impact correctness** | impossible — no cross-file edges on CommonJS ❌ (BUG-006) | works ✅ |
+| **Import resolution** | 0 → **53 in-repo / 386 IMPORTS** after BUG-006 fix (require + module.exports + dir-index) ✅ fixed | 5 in-repo resolved ✅ |
+| **Call resolution** | 68 → 71 (most express calls are `app.method()` member calls — unresolved by design, separate limitation) ⚠️ | 12 (cross-file works) ✅ |
+| **Impact correctness** | now possible at file/module level (dependency graph exists) ✅ | works ✅ |
 | **Retrieval / enrichment / MCP** | not run — no creds | not run — no creds |
 
 ## Findings
 
-- **[BUG-006](../bugs/BUG-006-commonjs-require-not-resolved.md)** — CommonJS
-  `const x = require("./y")` / `module.exports` are not captured, so a CommonJS
-  repo resolves **0 imports** and has no cross-file graph (no impact analysis).
-  CommonJS is still the dominant module system across the Node ecosystem, so this
-  is a major gap in JS support — **High**. (ESM JS is unaffected — see chalk.)
+- **[BUG-006](../bugs/BUG-006-commonjs-require-not-resolved.md)** ✅ **fixed this
+  run (core)** — CommonJS `require()` (default + named) + `module.exports = name`
+  + directory imports are now captured/resolved. express went from **0 → 53
+  in-repo imports / 386 IMPORTS edges** — the dependency graph went from empty to
+  real. Residual export forms (`module.exports = {…}`/function-expr, `exports.X`)
+  tracked in the bug. (ESM JS was already fine — see chalk.)
 
 ## What this run validated
 
@@ -54,8 +55,8 @@ chalk (ESM):
 
 ## Next
 
-1. **BUG-006** is feature-sized (capture `require()` imports *and* `module.exports`
-   for the binding side) — design it as its own unit, not a one-line query add.
+1. ✅ **BUG-006 fixed** (this run, core patterns) — express dependency graph
+   0→386 IMPORTS. Residual export forms tracked in the bug.
 2. A creds-enabled pass for retrieval/enrichment/MCP (W2/W4).
 3. W1 now covers all three shipped packs (Python/TS/JS); W3 (the other 7 packs)
    gates the remaining languages.

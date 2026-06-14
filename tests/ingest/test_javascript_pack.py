@@ -130,6 +130,44 @@ async def test_js_calls_are_resolved_provenance(js_graph: CodeGraph) -> None:
     assert all(p.provenance.source is Source.RESOLVED for p in nodes)
 
 
+async def test_js_commonjs_default_require_resolves(tmp_path: Path) -> None:
+    """BUG-006: `const x = require("./m")` + `module.exports = name` produce an
+    IMPORTS edge and resolve the cross-file CALL (CommonJS was 0 before)."""
+    repo = tmp_path / "proj"
+    repo.mkdir()
+    (repo / "util.js").write_text(
+        "function helper(x) {\n  return x;\n}\nmodule.exports = helper;\n"
+    )
+    (repo / "app.js").write_text(
+        "const helper = require('./util');\n\nfunction run(v) {\n  return helper(v);\n}\n"
+    )
+    cg = await CodeGraph.index(repo_path=repo)
+    try:
+        assert cg.stats().resolve.imports_resolved >= 1  # app -> util via require
+        assert "helper()." in await _calls_from(cg, "run().")  # default-export binding
+    finally:
+        await cg.close()
+
+
+async def test_js_commonjs_named_require_and_index_dir(tmp_path: Path) -> None:
+    """BUG-006: `const { square } = require("./lib")` resolves to `./lib/index.js`
+    (directory import) and binds the named export."""
+    repo = tmp_path / "proj"
+    (repo / "lib").mkdir(parents=True)
+    (repo / "lib" / "index.js").write_text(
+        "function square(x) {\n  return x * x;\n}\nmodule.exports = { square };\n"
+    )
+    (repo / "app.js").write_text(
+        "const { square } = require('./lib');\n\nfunction area(r) {\n  return square(r);\n}\n"
+    )
+    cg = await CodeGraph.index(repo_path=repo)
+    try:
+        assert cg.stats().resolve.imports_resolved >= 1  # app -> lib/index via require
+        assert "square()." in await _calls_from(cg, "area().")
+    finally:
+        await cg.close()
+
+
 # --- conformance ------------------------------------------------------------
 
 

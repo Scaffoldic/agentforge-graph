@@ -15,7 +15,7 @@ One file per bug: `BUG-NNN-short-slug.md`. Keep this index current.
 | [BUG-003](BUG-003-adr-readme-ingested-as-decision.md) | ADR `README.md` ingested as a Decision | Low | knowledge | fixed |
 | [BUG-004](BUG-004-relative-from-import-resolution.md) | Relative `from .module import name` imports under-resolve | High | ingest.resolver | fixed |
 | [BUG-005](BUG-005-typescript-abstract-class-not-extracted.md) | TS `abstract class` declarations not extracted | High | ingest.packs.typescript | fixed |
-| [BUG-006](BUG-006-commonjs-require-not-resolved.md) | CommonJS `require()` / `module.exports` not captured | High | ingest.packs.javascript | open |
+| [BUG-006](BUG-006-commonjs-require-not-resolved.md) | CommonJS `require()` / `module.exports` not captured | High | ingest.packs.javascript | fixed (core) |
 
 ## Template
 
