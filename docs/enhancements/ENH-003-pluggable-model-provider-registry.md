@@ -5,7 +5,7 @@
 | **ID** | ENH-003 |
 | **Value/Impact** | High (OSS adoption — most consumers are not on Bedrock) |
 | **Effort** | M |
-| **Status** | phase 1 done (registry seam) · phase 2 proposed (first-party non-Bedrock adapters) |
+| **Status** | done — phase 1 (registry seam) + phase 2 (first-party non-Bedrock adapters) |
 | **Area** | `embed`, `enrich`, `config` |
 | **Relates to** | feat-005 (embeddings), feat-012 (enrichment); mirrors `store/registry.py` |
 
@@ -74,11 +74,30 @@ for models:
 This makes "BYO provider" / "pick your provider from config" in the README/ARCH
 literally true: a third party adds a provider by `pip install` + one entry point.
 
-**Phase 2 (proposed):** ship first-party non-Bedrock adapters so non-AWS users
-get batteries-included — at minimum an **Anthropic-API** judge/summarizer (rides
-`agentforge-anthropic`) and an **OpenAI** embedder. Each adds a dependency + an
-env-gated live test, so it's a separate focused unit. The last acceptance
-bullet (a non-AWS path end-to-end with a live adapter) lands here.
+**Phase 2 (done, `enh/003-phase-2-non-bedrock-adapters`):** first-party non-Bedrock
+adapters — non-AWS users are now batteries-included.
+
+- `enrich/claude.py` — provider-neutral `ClaudeJudge` / `ClaudeSummarizer` + a
+  `ClaudeClient` protocol. Bedrock's `invoke_model` and the direct Anthropic API
+  return the same Messages shape, so prompts/parsing/cost/budget are shared and
+  only the transport differs. `BedrockClaude{Judge,Summarizer}` became thin
+  subclasses (public constructors preserved).
+- `enrich/anthropic{,_client}.py` — **Anthropic-API** judge/summarizer over the
+  `anthropic` SDK (ships in the base install, no extra). `api_model_id()`
+  normalises the Bedrock inference-profile id to the bare API id, so the default
+  `enrich.model` works unchanged. `enrich.provider: anthropic` selects both roles.
+- `embed/openai.py` — **OpenAI** embedder (`openai` extra, lazy). `embed.base_url`
+  points the same driver at any OpenAI-compatible local server (Ollama/vLLM/LM
+  Studio), so "run it locally" is also config-only.
+- Config: `embed.{base_url,api_key_env}`, `enrich.{base_url,api_key_env}`;
+  registries gained the `openai` / `anthropic` built-ins.
+- Decision: adapters call the SDKs **directly** (not via the framework `Agent`)
+  to keep forced-tool + cost parity with the Bedrock path and reuse the shared
+  `ClaudeJudge`/`ClaudeSummarizer` core.
+- Env-gated live tests `CKG_LIVE_ANTHROPIC` / `CKG_LIVE_OPENAI`; CI stays
+  model-free. Developer-facing guide: `docs/guides/model-providers.md`.
+
+The last acceptance bullet (a non-AWS path end-to-end with a live adapter) is met.
 
 ## Notes / alternatives
 
