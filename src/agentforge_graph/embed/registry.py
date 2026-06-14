@@ -1,9 +1,11 @@
 """Resolve an ``Embedder`` from ``EmbedConfig`` via the provider registry.
 
-Built-ins (``fake``, ``bedrock``) are registered below; third-party embedders
-register out-of-tree under the ``agentforge_graph.embedder_providers`` entry-point
-group (``pip install`` + one ``embed.driver`` line, no core change). Bedrock is
-imported lazily so the base/fake path never needs boto3.
+Built-ins (``fake``, ``bedrock``, ``openai``) are registered below; third-party
+embedders register out-of-tree under the ``agentforge_graph.embedder_providers``
+entry-point group (``pip install`` + one ``embed.driver`` line, no core change).
+Each live driver lazy-imports its SDK so the base/fake path needs neither boto3
+nor openai. ``openai`` also covers OpenAI-compatible local servers via
+``embed.base_url`` (ENH-003 phase 2).
 """
 
 from __future__ import annotations
@@ -39,9 +41,22 @@ def _build_bedrock(cfg: EmbedConfig) -> Embedder:
     )
 
 
+def _build_openai(cfg: EmbedConfig) -> Embedder:
+    from .openai import OpenAIEmbedder  # lazy: only needs the openai SDK on this path
+
+    return OpenAIEmbedder(
+        model=cfg.model,
+        dim=cfg.dim,
+        batch_size=cfg.batch_size,
+        base_url=cfg.base_url,
+        api_key_env=cfg.api_key_env or "OPENAI_API_KEY",
+    )
+
+
 _EMBEDDER_BUILTINS: dict[str, EmbedderBuilder] = {
     "fake": _build_fake,
     "bedrock": _build_bedrock,
+    "openai": _build_openai,
 }
 
 

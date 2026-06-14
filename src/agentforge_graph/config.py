@@ -101,12 +101,16 @@ class EmbedConfig(_Block):
     ``bedrock`` (Cohere embed-v4); tests/CI use ``fake``."""
 
     KEY: ClassVar[str] = "embed"
-    driver: str = "bedrock"  # bedrock | fake  (fastembed/voyage later)
+    # ENH-003: bedrock | fake | openai | <entry-point>. `openai` also covers
+    # OpenAI-compatible local servers via `base_url` (Ollama/vLLM/LM Studio).
+    driver: str = "bedrock"
     model: str = "cohere.embed-v4:0"
     region: str = "us-east-1"
     dim: int = 1024
     batch_size: int = 96
     assume_role_arn: str = ""  # set for CI; empty = default AWS credential chain
+    base_url: str = ""  # ENH-003: OpenAI-compatible endpoint (empty = provider default)
+    api_key_env: str = ""  # ENH-003: env var holding the API key (empty = provider default)
 
 
 def _default_edge_weights() -> dict[str, float]:
@@ -158,20 +162,23 @@ class FrameworksConfig(_Block):
 class EnrichConfig(_Block):
     """The ``enrich:`` block of ckg.yaml (feat-012 — LLM enrichment).
 
-    Anthropic Claude runs on **AWS Bedrock** (same credential path as the Cohere
-    embedder); ``model`` is a Bedrock model id. Never runs implicitly — only
-    ``ckg enrich`` / ``CodeGraph.enrich()``."""
+    Claude runs on **AWS Bedrock** (default) or the **direct Anthropic API**
+    (``provider: anthropic`` — ENH-003 phase 2, the non-AWS path). Never runs
+    implicitly — only ``ckg enrich`` / ``CodeGraph.enrich()``."""
 
     KEY: ClassVar[str] = "enrich"
     enabled: bool = True
-    # ENH-003: provider for BOTH judge + summarizer. bedrock | scripted |
-    # <entry-point>. `scripted` is the credential-free deterministic provider.
+    # ENH-003: provider for BOTH judge + summarizer. bedrock | anthropic |
+    # scripted | <entry-point>. `anthropic` = direct Anthropic API (needs
+    # ANTHROPIC_API_KEY); `scripted` is the credential-free deterministic one.
     provider: str = "bedrock"
-    # Bedrock inference-profile id (the `us.` prefix; on-demand isn't supported
-    # for the bare 4.5 model id). Cheap tier.
+    # Default is a Bedrock inference-profile id (the `us.` prefix). The
+    # `anthropic` provider normalises it to the bare API id automatically.
     model: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     region: str = "us-east-1"
     assume_role_arn: str = ""  # set for CI; empty = default AWS credential chain
+    base_url: str = ""  # ENH-003: Anthropic-compatible endpoint (empty = default)
+    api_key_env: str = ""  # ENH-003: env var holding the API key (empty = ANTHROPIC_API_KEY)
     budget_usd: float = 2.0  # per-run LLM judge cap (breaker)
     confidence_floor: float = 0.7  # drop tags below this
     taxonomy: str = "v1"
