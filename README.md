@@ -110,26 +110,34 @@ core change. **Today only `kuzu` + `lancedb` ship**; the others are a defined
 extension point, not bundled. (PRs welcome — see
 [`CONTRIBUTING.md`](CONTRIBUTING.md).)
 
-## Models — Bedrock, or bring your own
+## Models — pick a provider, or bring your own
 
-Every model boundary is an **interface**, not a hard dependency:
+Every model boundary is an **interface** resolved by a provider registry
+(ENH-003), so switching providers is a `ckg.yaml` line — not a code change.
+Multiple providers ship first-party:
 
-| Interface | Ships | Bring-your-own |
-|---|---|---|
-| `Embedder` | `BedrockEmbedder` (Cohere `embed-v4`) · `FakeEmbedder` (CI) | OpenAI / local / any — a small adapter |
-| `PatternJudge` | `BedrockClaudeJudge` (Claude) · `ScriptedJudge` (CI) | any LLM provider |
-| `Summarizer` | `BedrockClaudeSummarizer` (Claude) · `ScriptedSummarizer` (CI) | any LLM provider |
+| Interface | Ships first-party | Select with | Bring-your-own |
+|---|---|---|---|
+| `Embedder` | `bedrock` (Cohere `embed-v4`) · `openai` (incl. **local** OpenAI-compatible) · `fake` (CI) | `embed.driver` | entry point — a small adapter |
+| `PatternJudge` | `bedrock` · `anthropic` (direct API) · `scripted` (CI) | `enrich.provider` | entry point |
+| `Summarizer` | `bedrock` · `anthropic` (direct API) · `scripted` (CI) | `enrich.provider` | entry point |
 
-The **shipped live adapters run on AWS Bedrock** (Claude + Cohere, via your
-configured AWS credentials) — chosen because the project's deployment uses AWS.
-It is **not** "supports every provider out of the box": adding OpenAI, a local
-model, or the Anthropic API is implementing one small class against the
-interface — the engine, orchestration, budget rails, and heuristics don't change.
+- **On AWS?** Default `bedrock` (Claude + Cohere) uses your AWS credentials.
+- **Not on AWS?** `enrich.provider: anthropic` (set `ANTHROPIC_API_KEY`) and
+  `embed.driver: openai` (set `OPENAI_API_KEY`) give a full live path, no AWS.
+- **Local / self-hosted?** Point `embed.base_url` at any OpenAI-compatible
+  server (Ollama, vLLM, LM Studio) — same `openai` driver.
+- **Adding a *new* provider** is implementing one small class and registering an
+  entry point — `pip install + one config line`, no fork. The engine,
+  orchestration, budget rails, and heuristics don't change.
+
 CI uses the deterministic fakes, so **no model calls or cloud creds are needed to
 build or test**. Live model tests are env-gated (`CKG_LIVE_BEDROCK`,
-`CKG_LIVE_AGENT`).
+`CKG_LIVE_AGENT`, `CKG_LIVE_ANTHROPIC`, `CKG_LIVE_OPENAI`).
 
-Set `embed.driver: fake` in `ckg.yaml` for fully offline use.
+→ Full guide: [`docs/guides/model-providers.md`](docs/guides/model-providers.md)
+(change a provider, run locally, or add your own). Set `embed.driver: fake` +
+`enrich.provider: scripted` for fully offline use.
 
 ---
 
@@ -173,8 +181,12 @@ Two files, on purpose:
 |---|---|
 | `uv sync` | base: `agentforge-py`, `agentforge-anthropic`, `agentforge-mcp[mcp]` |
 | `--extra engine` | tree-sitter (+ grammars), kuzu, lancedb, networkx |
-| `--extra bedrock` | `boto3` — Bedrock embeddings + LLM enrichment |
+| `--extra bedrock` | `boto3` — Bedrock embeddings + Claude enrichment |
+| `--extra openai` | `openai` — OpenAI / local OpenAI-compatible embeddings |
 | `--extra rerank` | sentence-transformers reranker (off by default) |
+
+The Anthropic-API enrichment path (`enrich.provider: anthropic`) needs no extra —
+the `anthropic` SDK ships with the base install.
 
 ---
 

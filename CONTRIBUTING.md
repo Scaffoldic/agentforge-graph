@@ -31,8 +31,10 @@ uv run ruff format . && uv run ruff check .
 
 - **No model calls or cloud creds in CI.** Deterministic fakes (`FakeEmbedder`,
   `ScriptedJudge`, `ScriptedSummarizer`) stand in for the live adapters.
-- **Live model tests are env-gated:** `CKG_LIVE_BEDROCK=1` (embeddings),
-  `CKG_LIVE_AGENT=1` (Claude judge/summarizer). Run locally with AWS creds.
+- **Live model tests are env-gated:** `CKG_LIVE_BEDROCK=1` (Bedrock embeddings),
+  `CKG_LIVE_AGENT=1` (Bedrock Claude judge/summarizer) with AWS creds;
+  `CKG_LIVE_ANTHROPIC=1` (direct Anthropic API, needs `ANTHROPIC_API_KEY`),
+  `CKG_LIVE_OPENAI=1` (OpenAI embeddings, needs `OPENAI_API_KEY` + `--extra openai`).
 
 ## 3. The development pipeline (one feature = one branch = one PR)
 
@@ -87,18 +89,29 @@ the framework, you're in the wrong layer.
    `…vector_drivers`, or add to the built-ins in `store/registry.py`.
 4. Users select it with `store.graph.driver: <name>` in `ckg.yaml`.
 
-### Add a model provider (OpenAI, local, …)
+### Add a model provider (OpenAI, Anthropic, local, …)
 The model layer is a provider registry (ENH-003), mirroring storage drivers — no
-core change needed:
+core change needed. **First-party built-ins already ship** for embeddings
+(`bedrock`, `openai`, `fake`) and enrichment (`bedrock`, `anthropic`, `scripted`);
+`embed.base_url` makes the `openai` driver work against any OpenAI-compatible
+local server. See the full guide:
+[`docs/guides/model-providers.md`](docs/guides/model-providers.md).
+
+To add a **new** one out-of-tree:
 1. Implement `Embedder` (`embed/base.py`) and/or `PatternJudge` / `Summarizer`
-   (`enrich/judge.py`, `enrich/summarizer.py`).
+   (`enrich/judge.py`, `enrich/summarizer.py`). For an LLM judge/summarizer, the
+   shortcut is a custom `ClaudeClient` (the `invoke()`/`cost_usd` duck type in
+   `enrich/claude.py`) passed to the shared `ClaudeJudge` / `ClaudeSummarizer` —
+   you reuse all prompts, parsing, cost, and budget rails.
 2. Expose a builder `(EmbedConfig|EnrichConfig) -> instance` under the matching
    entry-point group: `agentforge_graph.embedder_providers`,
    `agentforge_graph.judge_providers`, or `agentforge_graph.summarizer_providers`
-   (or add it to the built-ins in `embed/registry.py` / `enrich/registry.py`).
+   (or add it to the built-ins in `embed/registry.py` / `enrich/registry.py` for
+   a first-party one).
 3. Users select it from `ckg.yaml`: `embed.driver: <name>` (embeddings) or
-   `enrich.provider: <name>` (judge + summarizer). `scripted` is the built-in
-   credential-free provider for offline runs.
+   `enrich.provider: <name>` (judge + summarizer). `fake` / `scripted` are the
+   built-in credential-free providers for offline runs. Lazy-import the SDK so
+   the offline path never needs it; add an `--extra` for any new dependency.
 
 ### Add an MCP tool
 Subclass `_CkgTool` in `serve/tools.py`, declare `name`/`description`/

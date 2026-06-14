@@ -39,7 +39,7 @@ These are the load-bearing rules; each maps to an ADR.
 | **Embedded-first, pluggable storage** | Default to a local Kuzu graph + LanceDB vectors under `.ckg/`, no server. Server backends register out-of-tree. | ADR-0006 |
 | **Per-file isolation** | Extraction reads one file at a time and upserts a per-file subgraph; cross-file links are a separate graph-only pass. This is what makes incremental indexing a thin layer. | ADR-0002/0003 |
 | **Conservative resolution** | A cross-file edge is created only on an *unambiguous* match; ambiguous/unknown is counted, never guessed. | ADR-0004 |
-| **Injectable model adapters** | Every model boundary (embedder, pattern judge, summarizer) is an interface with a deterministic fake for CI and a live (Bedrock) adapter — the engine/orchestration is tested with no model calls. | — |
+| **Injectable model adapters** | Every model boundary (embedder, pattern judge, summarizer) is an interface with a deterministic fake for CI plus live adapters resolved by a **provider registry** (ENH-003) — Bedrock, OpenAI/local embeddings, direct Anthropic API, or an out-of-tree entry point. The engine/orchestration is tested with no model calls. | ENH-003 |
 
 ---
 
@@ -108,7 +108,7 @@ These are the load-bearing rules; each maps to an ADR.
 | `ingest.incremental` | engine | `IndexMeta` manifest, `ChangeDetector`, `IncrementalIndexer`, `DirtySet`. |
 | `store` | engine | `KuzuGraphStore`, `LanceVectorStore`, `Store` facade (graph+vector join). |
 | `chunking` | engine | cAST chunker over symbol spans; token estimate. |
-| `embed` | engine | `Embedder` ABC; `FakeEmbedder` (CI), `BedrockEmbedder` (Cohere). `EmbedPipeline`. |
+| `embed` | engine | `Embedder` ABC; `FakeEmbedder` (CI), `BedrockEmbedder` (Cohere), `OpenAIEmbedder` (+ local), registry-resolved. `EmbedPipeline`. |
 | `retrieve` | engine | `Retriever` (hybrid vector→graph), `ContextPack`, provenance-weighted scoring. |
 | `repomap` | engine | Personalized PageRank ranking + budget-packed text map. |
 | `frameworks` | engine | `FrameworkPack` ABC + FastAPI pack (routes → `Route`/`HANDLED_BY`). |
@@ -253,7 +253,7 @@ confirms/produces. The model is behind one interface (`PatternJudge` /
 ┌─ STAGE 2 · LLM (budgeted) ─────────────────────────────────────────────┐
 │  PatternJudge.judge / Summarizer.summarize_*                          │
 │     ├─ ScriptedJudge / ScriptedSummarizer        (CI, deterministic)  │
-│     └─ BedrockClaudeJudge / BedrockClaudeSummarizer (live, on Bedrock)│
+│     └─ Bedrock* / Anthropic* Claude judge+summarizer (live; registry)│
 │  per-batch:  BudgetPolicy.check() → gather(...) → commit(batch cost)  │
 │              (overrun bounded to one batch; BudgetExceeded = stop)    │
 └──────────────────┬─────────────────────────────────────────────────────┘
@@ -345,10 +345,13 @@ Two files, on purpose:
 ## 10. Cross-cutting patterns
 
 - **Injectable model adapters.** `Embedder` / `PatternJudge` / `Summarizer` are
-  interfaces. CI uses deterministic fakes (`FakeEmbedder`, `ScriptedJudge`,
-  `ScriptedSummarizer`) — **no model calls in CI**. Live runs use Bedrock
-  adapters (Claude + Cohere, via boto3, same AWS creds). Swapping providers is a
-  one-class change; the orchestration/budget/heuristics are fully unit-tested.
+  interfaces resolved by a **provider registry** (ENH-003). CI uses deterministic
+  fakes (`FakeEmbedder`, `ScriptedJudge`, `ScriptedSummarizer`) — **no model calls
+  in CI**. Live runs pick a provider from `ckg.yaml`: Bedrock (Claude + Cohere),
+  the direct Anthropic API, OpenAI / local OpenAI-compatible embeddings, or an
+  out-of-tree entry point. Adding a provider is a one-class change + an entry
+  point; the orchestration/budget/heuristics are fully unit-tested. See
+  [`guides/model-providers.md`](guides/model-providers.md).
 - **Provenance discipline.** `parsed` < `resolved` < `manual`, and `llm` is
   second-class with a confidence + rationale. Retrieval can exclude all
   `llm`-derived facts wholesale (`include_llm_facts=False`).
