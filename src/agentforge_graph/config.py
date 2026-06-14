@@ -141,9 +141,12 @@ class RepoMapConfig(_Block):
 
 
 class ServeConfig(_Block):
-    """The ``serve:`` block of ckg.yaml (feat-008 — MCP guardrails)."""
+    """The ``serve:`` block of ckg.yaml (feat-008 — MCP server + guardrails)."""
 
     KEY: ClassVar[str] = "serve"
+    transport: str = "stdio"  # feat-008: stdio | http (streamable-HTTP at /mcp)
+    host: str = "127.0.0.1"  # http transport bind host
+    port: int = 8765  # http transport port
     max_depth: int = 3
     max_k: int = 50
     response_token_cap: int = 6000
