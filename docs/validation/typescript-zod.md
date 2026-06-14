@@ -31,7 +31,7 @@ indexed 170 files: 804 nodes, 1220 edges
 | **Parse coverage** | 170/170 files parsed, 0 skipped | ✅ excellent |
 | **Import resolution** | **131 in-repo resolved** — extensionless relative imports (`./helpers/util`, `./errors`) resolve cross-file via the TS path mechanism | ✅ good (the BUG-004 analog is healthy on TS) |
 | **Symbol extraction — concrete** | `ZodString`/`ZodObject`/`ZodArray`/`ZodError`/`ZodNumber`/`ParseStatus` all present | ✅ good |
-| **Symbol extraction — abstract** | **`ZodType` (abstract base of the whole library) MISSING**; `abstract class` is a distinct `abstract_class_declaration` node the TS query never matches | ❌ **BUG-005** |
+| **Symbol extraction — abstract** | was MISSING; **BUG-005 fixed this run** — `ZodType` now extracts as a Class with its 32 methods (Class 86→92, Method 416→482) | ✅ fixed (BUG-005) |
 | **Symbol extraction — enums/consts/types** | `ZodIssueCode`, `ZodFirstPartyTypeKind`, `ZodParsedType` MISSING (enums / const objects / type aliases not captured); arrow-`const` functions not captured | ⚠️ **ENH-008** (completeness) |
 | **Call resolution** | 332 resolved (272 same-file, 60 cross-file) — cross-file works; low overall rate dominated by external + method-chain calls (expected), worsened by BUG-005 dropping `ZodType`'s methods | ⚠️ partial |
 | **Repo-map / routes / decisions** | n/a (library, no web routes / ADRs) | ✅ |
@@ -39,11 +39,11 @@ indexed 170 files: 804 nodes, 1220 edges
 
 ## Findings
 
-- **[BUG-005](../bugs/BUG-005-typescript-abstract-class-not-extracted.md)** —
-  the TS/JS pack misses `abstract class` declarations (`abstract_class_declaration`
-  node not matched by `structure.scm`). High value: abstract classes are common
-  base classes and often the most central type (here, `ZodType` — the root every
-  `Zod*` schema extends), so all its methods and `extends` relationships are lost.
+- **[BUG-005](../bugs/BUG-005-typescript-abstract-class-not-extracted.md)** ✅
+  **fixed this run** — the TS pack missed `abstract class` declarations
+  (`abstract_class_declaration` not matched). Added the pattern; `ZodType` now
+  extracts with its 32 methods (Class 86→92, Method 416→482). High value: it's the
+  root every `Zod*` schema extends.
 - **[ENH-008](../enhancements/ENH-008-typescript-symbol-completeness.md)** —
   broaden TS/JS extraction to `interface`, `enum`, `type` aliases, and
   arrow/`const`-assigned functions. These are pervasive in real TS (zod exposes
@@ -62,7 +62,6 @@ indexed 170 files: 804 nodes, 1220 edges
 
 ## Next
 
-1. Fix **BUG-005** (capture `abstract_class_declaration`) and re-run; expect
-   `ZodType` + its methods to appear and `extends ZodType` edges to resolve.
-2. Scope **ENH-008** (TS/JS symbol vocabulary).
+1. ✅ **BUG-005 fixed** (this run) — `ZodType` + its 32 methods now extract.
+2. Scope **ENH-008** (TS/JS symbol vocabulary: interfaces/enums/types/arrow-consts).
 3. A JavaScript run, and a creds-enabled pass for retrieval/enrichment/MCP.

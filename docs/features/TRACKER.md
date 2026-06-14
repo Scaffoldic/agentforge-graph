@@ -201,6 +201,12 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-14** — **BUG-005 fixed** (TS abstract classes). Added an
+  `abstract_class_declaration` pattern to the TS `structure.scm`. Re-run on zod:
+  `ZodType` (the abstract root) now extracts with its 32 methods (Class 86→92,
+  Method 416→482). Regression test added. (Side effect: some method→method calls
+  that were incidentally resolving as free-function calls no longer do — they're
+  now correctly modeled as methods.)
 - **2026-06-14** — **W1 TypeScript run (`colinhacks/zod` v3.23.8).** TS parsing +
   extensionless relative-import resolution solid (131 in-repo imports resolve).
   Found **BUG-005** — TS/JS `abstract class` declarations aren't extracted

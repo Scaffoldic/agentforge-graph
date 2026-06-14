@@ -6,6 +6,12 @@
 (class_declaration
   name: (type_identifier) @name) @def.class
 
+; `abstract class Foo {}` is a distinct node from class_declaration; capture it
+; as the same Class kind so abstract base classes + their methods are extracted
+; (BUG-005). JS has no `abstract`, so this is TS-only.
+(abstract_class_declaration
+  name: (type_identifier) @name) @def.class
+
 (function_declaration
   name: (identifier) @name) @def.function
 

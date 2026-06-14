@@ -4,9 +4,10 @@
 |---|---|
 | **ID** | BUG-005 |
 | **Severity** | High |
-| **Status** | open |
+| **Status** | fixed |
 | **Found** | 2026-06-14 (W1 validation on `colinhacks/zod` v3.23.8) |
-| **Area** | `ingest.packs.typescript` / `ingest.packs.javascript` (`structure.scm`) |
+| **Fixed** | 2026-06-14 (`bug/005-typescript-abstract-class`) — added an `(abstract_class_declaration name: (type_identifier) @name) @def.class` pattern to the TS `structure.scm`. Re-run on zod: `ZodType` now extracts as a Class with its 32 methods (Class 86→92, Method 416→482). Side effect: Function 132→66 and resolved CALLS 332→174 — abstract-class methods were previously **mis-classified as top-level functions** (no class to nest under), so intra-class calls were incidentally resolving as free-function calls; they're now correctly modeled as methods (method-call resolution is a separate, pre-existing limitation). JS unaffected (no `abstract`). |
+| **Area** | `ingest.packs.typescript` (`structure.scm`) |
 | **Affects** | feat-002 (extraction) and everything downstream — abstract base classes, their methods, `extends`/impact edges, repo-map centrality |
 
 ## Summary
