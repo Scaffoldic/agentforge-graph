@@ -44,7 +44,7 @@ Pick small-but-real repos; keep them pinned to a commit for reproducibility.
 
 | Tier | Language | Candidate repo(s) | Run | Findings |
 |---|---|---|---|---|
-| A | Python | **pallets/click @ 8.1.7** | ✅ [run](python-click.md) (graph; embed/enrich pending creds) | BUG-004 (fixed), ENH-006, ENH-007 |
+| A | Python | **pallets/click @ 8.1.7** | ✅ [run](python-click.md) — **full creds run done** (embed+retrieval+enrich on live Bedrock, ~$0.13) | BUG-004 (fixed), ENH-006, ENH-007 |
 | A | TypeScript | **colinhacks/zod @ v3.23.8** | ✅ [run](typescript-zod.md) (graph; embed/enrich pending creds) | BUG-005 (fixed), ENH-008 |
 | A | JavaScript | **expressjs/express @ 4.19.2 (CommonJS) + chalk @ v5.3.0 (ESM)** | ✅ [run](javascript-express-chalk.md) | BUG-006 (fixed); ESM works |
 | A | Java | _tbd_ | ⬜ | — |

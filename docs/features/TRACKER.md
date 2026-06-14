@@ -136,9 +136,9 @@ consume it**. Workstreams (run mostly in parallel; not feature-numbered):
 | # | Workstream | What "done" looks like | Status |
 |---|---|---|---|
 | **W1** | **Multi-language validation** on real OSS repos | every *shipped* language pack validated on ≥1 real repo; runs + scores logged in `docs/validation/` | ✅ all 3 shipped packs: Python ([click](../validation/python-click.md)), TS ([zod](../validation/typescript-zod.md)), JS ([express+chalk](../validation/javascript-express-chalk.md)) |
-| **W2** | **Graph-knowledge quality** | measured parse coverage, resolution rates, impact correctness, retrieval/repo-map usefulness; gaps filed as BUG/ENH/KL | 🔨 click: parsing solid; **BUG-004 fixed** (relative imports: imports 56→109, CALLS 292→404); ENH-006/007 open |
+| **W2** | **Graph-knowledge quality** | measured parse coverage, resolution rates, impact correctness, retrieval/repo-map usefulness; gaps filed as BUG/ENH/KL | 🔨 click: parsing solid; BUG-004 fixed; **creds run — retrieval 4/4 NL questions correct, summaries accurate+honest, tags precise (0 false positives)** |
 | **W3** | **Remaining language packs** (feat-002 follow-ups) | Java, Go, C#, Rust, Ruby, PHP (Tier A) + C++ (Tier B) land so the "10 languages" claim is real | ⬜ (3/10 shipped: Py/TS/JS) |
-| **W4** | **MCP consumption proven + documented** | a real agent answers real questions over MCP unattended on ≥1 repo per tier; guide shipped (`docs/guides/using-over-mcp.md` ✅) | 🔨 guide done; dogfood pending |
+| **W4** | **MCP consumption proven + documented** | a real agent answers real questions over MCP unattended on ≥1 repo per tier; guide shipped (`docs/guides/using-over-mcp.md` ✅) | 🔨 guide done; tool outputs validated (retrieval 4/4); full agent loop needs an Anthropic API key (framework Agent is API-key, our creds are Bedrock) |
 | **W5** | **Storage backends** (ENH-004) | decision: embedded-only for 0.1, or ship Neo4j + pgvector behind the existing driver registry + conformance suites | ⬜ deferred until W1–W2 expose the need |
 | **W6** | **DX / packaging** | install/quickstart verified clean-room; version bump 0.0.0→0.1.0, CHANGELOG, tag — **last step, after W1–W4 green** | ⬜ |
 
@@ -201,6 +201,15 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-14** — **First creds-enabled run (live AWS Bedrock, click, ~$0.13).**
+  W2/W4 dimensions that were "pending creds" now scored: **retrieval 4/4** NL
+  questions returned the correct symbol (`invoke`, `style`, `UsageError`, option
+  parsing); **summaries** accurate + honestly hedge on symbol-less files (no
+  hallucination, KL-001 ✅); **pattern tags** precise (0/34 — judge correctly
+  rejects name-based false candidates; recall is the ENH-001 question).
+  Embeddings via Bedrock Cohere embed-v4 (1133 chunks). Full MCP *agent loop*
+  still needs an Anthropic API key (framework Agent is API-key, not Bedrock).
+  Details: `docs/validation/python-click.md`.
 - **2026-06-14** — **BUG-006 fixed (core)** — CommonJS support. JS pack now
   captures `require()` (default + named) + `module.exports = <name>`; resolver
   binds default requires to the module default export and resolves directory
