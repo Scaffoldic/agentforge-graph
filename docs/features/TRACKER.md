@@ -12,17 +12,17 @@ pick, and milestones. Specs live alongside in
 > in `.claude/state/current.md` once the project is scaffolded — this
 > tracker is the planning/dependency view, not the live work log.
 
-_Last updated: 2026-06-14 · **MVP feature-complete, NOT yet 0.1.** All 12 features
-≥MVP (001/002/003/005/006/007/008 shipped; 004 incremental; 010 ADR + 011
-frameworks MVP; 012 enrichment tags+summaries). Python/TS/JS packs. **OSS-prep
-done** (Apache-2.0 PR #17). **ENH-003 DONE** — registry seam (PR #18) + non-Bedrock
-adapters: direct Anthropic API + OpenAI/local embeddings (PR #20). **0.1 is now a
-PRODUCTION-GRADE bar, not "MVP complete"** — see [Road to 0.1](#road-to-01--production-hardening).
-Before tagging: validate graph knowledge on real OSS repos across every language
-we claim (`docs/validation/`), prove MCP consumption by a real agent
-(`docs/guides/using-over-mcp.md`), land the remaining language packs, fill gaps,
-resolve storage backends (ENH-004). Release prep (version bump / changelog / tag)
-comes AFTER hardening, not now._
+_Last updated: 2026-06-14 (eod) · **MVP feature-complete; hardening 0.1 in progress.**
+All 12 features ≥MVP. **OSS-prep done** (Apache-2.0 PR #17); **ENH-003 DONE** — registry
++ non-Bedrock adapters (PR #18/#20); **MCP dual transport** stdio+HTTP (PR #22). **0.1
+is a PRODUCTION-GRADE bar** — see [Road to 0.1](#road-to-01--production-hardening).
+**Today: W1 multi-language validation DONE for all 3 shipped packs** (Python/click,
+TS/zod, JS/express+chalk) — each surfaced + **fixed a real bug**: BUG-004 (Py relative
+imports), BUG-005 (TS abstract classes), BUG-006 (JS CommonJS require). **First
+creds-enabled run** (live Bedrock, click, ~$0.13): retrieval 4/4, summaries
+accurate+honest, tags precise. Open: ENH-005/006/007/008, BUG-006 residuals, full
+MCP agent-loop (needs ANTHROPIC_API_KEY), W3 (other 7 packs), storage (ENH-004).
+Release (version/changelog/tag) is LAST, after W1–W4 green._
 
 ---
 
