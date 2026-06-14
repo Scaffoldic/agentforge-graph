@@ -135,7 +135,7 @@ consume it**. Workstreams (run mostly in parallel; not feature-numbered):
 
 | # | Workstream | What "done" looks like | Status |
 |---|---|---|---|
-| **W1** | **Multi-language validation** on real OSS repos | every *shipped* language pack validated on ≥1 real repo; runs + scores logged in `docs/validation/` | 🔨 Python done ([click](../validation/python-click.md)); TS/JS next |
+| **W1** | **Multi-language validation** on real OSS repos | every *shipped* language pack validated on ≥1 real repo; runs + scores logged in `docs/validation/` | 🔨 Python ([click](../validation/python-click.md)) + TypeScript ([zod](../validation/typescript-zod.md)) done; JS next |
 | **W2** | **Graph-knowledge quality** | measured parse coverage, resolution rates, impact correctness, retrieval/repo-map usefulness; gaps filed as BUG/ENH/KL | 🔨 click: parsing solid; **BUG-004 fixed** (relative imports: imports 56→109, CALLS 292→404); ENH-006/007 open |
 | **W3** | **Remaining language packs** (feat-002 follow-ups) | Java, Go, C#, Rust, Ruby, PHP (Tier A) + C++ (Tier B) land so the "10 languages" claim is real | ⬜ (3/10 shipped: Py/TS/JS) |
 | **W4** | **MCP consumption proven + documented** | a real agent answers real questions over MCP unattended on ≥1 repo per tier; guide shipped (`docs/guides/using-over-mcp.md` ✅) | 🔨 guide done; dogfood pending |
@@ -201,6 +201,13 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-14** — **W1 TypeScript run (`colinhacks/zod` v3.23.8).** TS parsing +
+  extensionless relative-import resolution solid (131 in-repo imports resolve).
+  Found **BUG-005** — TS/JS `abstract class` declarations aren't extracted
+  (`abstract_class_declaration` not matched), so `ZodType` (zod's abstract root)
+  and its methods/`extends` edges are missing. Filed **ENH-008** (broaden TS/JS
+  extraction to interfaces/enums/type-aliases/arrow-consts — `ZodIssueCode` etc.
+  also absent). Run: `docs/validation/typescript-zod.md`.
 - **2026-06-14** — **BUG-004 fixed** (relative-import resolution). Python
   `structure.scm` now captures `relative_import` (relative imports were dropped
   at extraction) and `resolve_import` resolves leading dots against the importer's
