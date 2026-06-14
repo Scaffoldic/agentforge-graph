@@ -12,13 +12,17 @@ pick, and milestones. Specs live alongside in
 > in `.claude/state/current.md` once the project is scaffolded — this
 > tracker is the planning/dependency view, not the live work log.
 
-_Last updated: 2026-06-13 · **v0.1 MVP COMPLETE** — all 12 features ≥MVP
-(001/002/003/005/006/007/008 shipped; 004 incremental; 010 ADR + 011 frameworks
-MVP; 012 enrichment tags+summaries). Python/TS/JS packs. **OSS-prep done:**
-Apache-2.0 license (PR #17), README/ARCHITECTURE/CONTRIBUTING. **ENH-003 phase 1
-shipped** (PR #18 — pluggable model-provider registry). Only feat-009 (temporal)
-unstarted. Next: ENH-003 phase 2 (non-Bedrock adapters) / ENH-004 (Neo4j+pgvector)
-/ 0.1 release prep (version bump from 0.0.0, changelog, tag)._
+_Last updated: 2026-06-14 · **MVP feature-complete, NOT yet 0.1.** All 12 features
+≥MVP (001/002/003/005/006/007/008 shipped; 004 incremental; 010 ADR + 011
+frameworks MVP; 012 enrichment tags+summaries). Python/TS/JS packs. **OSS-prep
+done** (Apache-2.0 PR #17). **ENH-003 DONE** — registry seam (PR #18) + non-Bedrock
+adapters: direct Anthropic API + OpenAI/local embeddings (PR #20). **0.1 is now a
+PRODUCTION-GRADE bar, not "MVP complete"** — see [Road to 0.1](#road-to-01--production-hardening).
+Before tagging: validate graph knowledge on real OSS repos across every language
+we claim (`docs/validation/`), prove MCP consumption by a real agent
+(`docs/guides/using-over-mcp.md`), land the remaining language packs, fill gaps,
+resolve storage backends (ENH-004). Release prep (version bump / changelog / tag)
+comes AFTER hardening, not now._
 
 ---
 
@@ -111,12 +115,35 @@ ride alongside, not on, this chain.
 
 ## Version milestones
 
+> The feature work for 0.1–0.4 themes is **MVP-complete today**. 0.1 the *release*
+> is now gated on production hardening, not on more features — see below.
+
 | Version | Theme | Features | Exit criterion |
 |---|---|---|---|
-| **0.1** | MVP: index any repo, query from an agent | 001, 002, 003, 005, 006, 007, 008 | `ckg index .` then drive the graph from Claude Code over MCP across the 10 languages |
+| **0.1** | **Production-grade** CKG: trustworthy on real repos, consumable by agents | 001, 002, 003, 005, 006, 007, 008 (+ hardening) | Graph knowledge validated on real OSS repos for **every shipped language pack**; a real agent answers real questions over MCP unattended; storage-backend decision resolved; no open correctness blockers — see [Road to 0.1](#road-to-01--production-hardening) |
 | **0.2** | Keep it fresh cheaply | 004 | Re-index cost proportional to the diff; embeddings recompute only for dirty symbols |
 | **0.3** | History + decisions | 009, 010 | Point-in-time queries; ADRs/docs govern code as graph edges |
 | **0.4** | Framework & semantic knowledge | 011, 012 | Routes/ORM/DI edges; module summaries + design-pattern tags |
+
+---
+
+## Road to 0.1 — production hardening
+
+MVP proved each feature works on fixtures. 0.1 must prove the **whole pipeline
+produces correct, useful knowledge on real codebases** and that **agents can
+consume it**. Workstreams (run mostly in parallel; not feature-numbered):
+
+| # | Workstream | What "done" looks like | Status |
+|---|---|---|---|
+| **W1** | **Multi-language validation** on real OSS repos | every *shipped* language pack validated on ≥1 real repo; runs + scores logged in `docs/validation/` | 🔨 starting (dogfood partial, PR #15) |
+| **W2** | **Graph-knowledge quality** | measured parse coverage, resolution rates, impact correctness, retrieval/repo-map usefulness; gaps filed as BUG/ENH/KL | ⬜ |
+| **W3** | **Remaining language packs** (feat-002 follow-ups) | Java, Go, C#, Rust, Ruby, PHP (Tier A) + C++ (Tier B) land so the "10 languages" claim is real | ⬜ (3/10 shipped: Py/TS/JS) |
+| **W4** | **MCP consumption proven + documented** | a real agent answers real questions over MCP unattended on ≥1 repo per tier; guide shipped (`docs/guides/using-over-mcp.md` ✅) | 🔨 guide done; dogfood pending |
+| **W5** | **Storage backends** (ENH-004) | decision: embedded-only for 0.1, or ship Neo4j + pgvector behind the existing driver registry + conformance suites | ⬜ deferred until W1–W2 expose the need |
+| **W6** | **DX / packaging** | install/quickstart verified clean-room; version bump 0.0.0→0.1.0, CHANGELOG, tag — **last step, after W1–W4 green** | ⬜ |
+
+Findings feed `docs/{bugs,enhancements,known-limitations}/`; the campaign home and
+per-run template live in [`docs/validation/`](../validation/README.md).
 
 ---
 
@@ -174,6 +201,13 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-14** — **Reframed 0.1 as a production-grade bar, not "MVP complete."**
+  ENH-003 fully shipped: registry seam (PR #18) + non-Bedrock adapters — direct
+  Anthropic API judge/summarizer + OpenAI/local embeddings (PR #20), so non-AWS
+  users get a live path from config alone. Added the **[Road to 0.1](#road-to-01--production-hardening)**
+  hardening plan (W1–W6), the validation campaign home (`docs/validation/`), and
+  the MCP/in-process consumption guide (`docs/guides/using-over-mcp.md`). Next:
+  W1 — validate graph knowledge on real OSS repos across the languages we support.
 - **2026-06-12** — **v0.1 MVP COMPLETE.** feat-007 shipped; feat-008 (MCP
   server & tool API) implemented and in PR: six read-only tools
   (repo_map/search/symbol/impact/neighbors/status) bound as AgentForge

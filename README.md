@@ -83,6 +83,9 @@ from agentforge_graph.serve import code_graph_tools
 agent = Agent(model="anthropic:claude-sonnet-4-6", tools=code_graph_tools("."))
 ```
 
+→ Full guide (tool schemas, client config, guardrails, staleness envelope):
+[`docs/guides/using-over-mcp.md`](docs/guides/using-over-mcp.md).
+
 ---
 
 ## Storage — what DB, and can I switch it?
