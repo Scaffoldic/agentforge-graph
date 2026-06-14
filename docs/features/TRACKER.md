@@ -135,8 +135,8 @@ consume it**. Workstreams (run mostly in parallel; not feature-numbered):
 
 | # | Workstream | What "done" looks like | Status |
 |---|---|---|---|
-| **W1** | **Multi-language validation** on real OSS repos | every *shipped* language pack validated on ≥1 real repo; runs + scores logged in `docs/validation/` | 🔨 starting (dogfood partial, PR #15) |
-| **W2** | **Graph-knowledge quality** | measured parse coverage, resolution rates, impact correctness, retrieval/repo-map usefulness; gaps filed as BUG/ENH/KL | ⬜ |
+| **W1** | **Multi-language validation** on real OSS repos | every *shipped* language pack validated on ≥1 real repo; runs + scores logged in `docs/validation/` | 🔨 Python done ([click](../validation/python-click.md)); TS/JS next |
+| **W2** | **Graph-knowledge quality** | measured parse coverage, resolution rates, impact correctness, retrieval/repo-map usefulness; gaps filed as BUG/ENH/KL | 🔨 click: parsing solid; found BUG-004 (relative imports), ENH-006/007 |
 | **W3** | **Remaining language packs** (feat-002 follow-ups) | Java, Go, C#, Rust, Ruby, PHP (Tier A) + C++ (Tier B) land so the "10 languages" claim is real | ⬜ (3/10 shipped: Py/TS/JS) |
 | **W4** | **MCP consumption proven + documented** | a real agent answers real questions over MCP unattended on ≥1 repo per tier; guide shipped (`docs/guides/using-over-mcp.md` ✅) | 🔨 guide done; dogfood pending |
 | **W5** | **Storage backends** (ENH-004) | decision: embedded-only for 0.1, or ship Neo4j + pgvector behind the existing driver registry + conformance suites | ⬜ deferred until W1–W2 expose the need |
@@ -201,6 +201,15 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-14** — **W1 validation started — first real-OSS Python run
+  (`pallets/click` 8.1.7).** Parsing + symbol extraction solid (71/71 files,
+  public API extracted cleanly). Found the first real correctness gap:
+  **BUG-004** — relative `from .module import name` imports under-resolve, so
+  cross-module CALLS to popular utilities are missed (`echo`: 0/29 callers),
+  undercounting impact. Also filed ENH-006 (CLI path-arg inconsistency) and
+  ENH-007 (repo-map should bias toward the public API for orientation). Run +
+  scores in `docs/validation/python-click.md`. Embed/enrich/retrieval dimensions
+  pending a creds-enabled run. Next: fix BUG-004 + re-measure.
 - **2026-06-14** — **Reframed 0.1 as a production-grade bar, not "MVP complete."**
   ENH-003 fully shipped: registry seam (PR #18) + non-Bedrock adapters — direct
   Anthropic API judge/summarizer + OpenAI/local embeddings (PR #20), so non-AWS
