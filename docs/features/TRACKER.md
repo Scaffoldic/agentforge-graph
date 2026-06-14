@@ -201,6 +201,13 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-14** — **BUG-006 fixed (core)** — CommonJS support. JS pack now
+  captures `require()` (default + named) + `module.exports = <name>`; resolver
+  binds default requires to the module default export and resolves directory
+  imports (`./router`→`./router/index`, also helps ESM/TS). Re-run on express:
+  in-repo imports **0→53**, IMPORTS edges **0→386** — the dependency graph went
+  from empty to real. Regression tests added. Residual export forms
+  (`module.exports = {…}`/function-expr, `exports.X`) tracked in BUG-006.
 - **2026-06-14** — **W1 JavaScript run (`express` CommonJS + `chalk` ESM) — all 3
   shipped packs now validated.** ESM JS works (chalk: imports resolve). **CommonJS
   does not** — filed **BUG-006**: `require()` / `module.exports` aren't captured,

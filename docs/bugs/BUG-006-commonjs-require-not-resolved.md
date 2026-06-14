@@ -4,9 +4,10 @@
 |---|---|
 | **ID** | BUG-006 |
 | **Severity** | High |
-| **Status** | open |
+| **Status** | fixed (core patterns; residuals tracked below) |
 | **Found** | 2026-06-14 (W1 validation on `expressjs/express` 4.19.2) |
-| **Area** | `ingest.packs.javascript` (`structure.scm`) / `ingest.resolver` |
+| **Fixed** | 2026-06-14 (`bug/006-commonjs-require`) — JS `structure.scm` now captures `const x = require("./m")` (default), `const {a,b} = require("./m")` (named), and `module.exports = <name>` (default export); the resolver binds default requires to the target module's default export and resolves directory imports (`./router` → `./router/index`). Re-run on express: in-repo imports **0→53**, IMPORTS edges **0→386** (the dependency graph went from empty to real). ESM unaffected. |
+| **Area** | `ingest.packs.javascript` (`structure.scm`) / `ingest.extractor` / `ingest.resolver` |
 | **Affects** | feat-002 (JS import resolution) and everything downstream — on CommonJS repos there are **no cross-file edges**, so impact/neighbors/retrieval are empty |
 
 ## Summary
@@ -61,7 +62,24 @@ This is bigger than a one-line query add; do it deliberately:
 A scoped first pass (named-destructure require → existing by-name binding) would
 recover part of the graph; full parity needs the `module.exports` mapping.
 
+## Shipped vs residual
+
+**Shipped (this fix):**
+- `const x = require("./m")` (default) + `const { a, b } = require("./m")` (named).
+- `module.exports = <identifier>` (incl. chained `exports = module.exports = name`)
+  → module default export, so a default require binds to that symbol.
+- Directory imports: `require("./router")` → `./router/index` (also helps ESM/TS).
+
+**Residual (follow-ups — file as ENH when prioritised):**
+- `module.exports = { … }` / `module.exports = function () {}` (object/function-
+  expression default exports — e.g. express's `application.js` prototype object).
+- `exports.Name = …` named exports (these feed *member* access `pkg.Name()`,
+  which the resolver doesn't resolve regardless — a separate limitation).
+- `import x = require(...)` CommonJS-in-TS, and ESM `export { x }` / re-export
+  chains (explicit export modeling would unify these).
+
 ## Notes
 
-ESM JS is unaffected (validated on chalk). Decide whether to introduce explicit
-export modeling (also benefits ESM `export { x }` / re-exports) as part of this.
+ESM JS is unaffected (validated on chalk). The residuals are about *which* export
+forms bind; the dependency (`IMPORTS`) graph is now produced for CommonJS either
+way, which is the primary value for impact analysis.

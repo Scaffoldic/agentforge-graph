@@ -93,7 +93,7 @@ class TreeSitterExtractor(Extractor):
         prov = Provenance.parsed(self.name, self.commit)
         file_id = SymbolID.for_symbol(self.pack.lang_slug, self.repo, file.path, "")
 
-        defs, imports = self._structure(root, src)
+        defs, imports, default_export = self._structure(root, src)
         self._assign_symbol_ids(defs, file.path)
         by_tsid = {d.ts_id: d for d in defs}
         refs = self._references(root, src, by_tsid, file_id)
@@ -102,6 +102,8 @@ class TreeSitterExtractor(Extractor):
         file_attrs: dict[str, Any] = {}
         if imports:
             file_attrs["imports"] = imports
+        if default_export:
+            file_attrs["default_export"] = default_export
         if file_id in refs:
             file_attrs["refs"] = refs[file_id]
         nodes.append(
@@ -142,9 +144,10 @@ class TreeSitterExtractor(Extractor):
 
     # --- structure pass -------------------------------------------------
 
-    def _structure(self, root: TSNode, src: bytes) -> tuple[list[_Def], list[dict[str, Any]]]:
+    def _structure(self, root: TSNode, src: bytes) -> tuple[list[_Def], list[dict[str, Any]], str]:
         defs: list[_Def] = []
         imports: list[dict[str, Any]] = []
+        default_export = ""  # CommonJS `module.exports = <name>` (BUG-006)
         rules = self.pack.descriptor_rules
         for _pattern, caps in QueryCursor(self._structure_q).matches(root):
             def_cap = next((c for c in caps if c.startswith("def.")), None)
@@ -157,15 +160,22 @@ class TreeSitterExtractor(Extractor):
                 defs.append(_Def(ts_id=node.id, node=node, kind=kind, name=_text(names[0], src)))
             elif "import" in caps:
                 mods = caps.get("import.module", [])
+                dflt = caps.get("import.default")
                 imports.append(
                     {
                         "module": _text(mods[0], src) if mods else "",
                         "names": [_text(n, src) for n in caps.get("import.name", [])],
+                        # CommonJS default require binding: `const x = require(...)`
+                        "default": _text(dflt[0], src) if dflt else "",
                         "line": caps["import"][0].start_point[0] + 1,
                     }
                 )
+            elif "export" in caps:
+                ed = caps.get("export.default")
+                if ed:
+                    default_export = _text(ed[0], src)
         self._link_scopes(defs)
-        return defs, imports
+        return defs, imports, default_export
 
     def _link_scopes(self, defs: list[_Def]) -> None:
         idset = {d.ts_id for d in defs}

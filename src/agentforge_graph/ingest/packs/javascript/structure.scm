@@ -14,8 +14,36 @@
 (method_definition
   name: (property_identifier) @name) @def.function
 
-; --- imports ---
+; --- imports (ESM) ---
 ; `import { a, b } from "./mod"` -> module (relative path) + bound names
 (import_statement
   (import_clause (named_imports (import_specifier name: (identifier) @import.name)))
   source: (string (string_fragment) @import.module)) @import
+
+; --- imports (CommonJS require, BUG-006) ---
+; `const x = require("./mod")` -> module + the default-bound local name
+(variable_declarator
+  name: (identifier) @import.default
+  value: (call_expression
+    function: (identifier) @_require
+    arguments: (arguments (string (string_fragment) @import.module)))
+  (#eq? @_require "require")) @import
+
+; `const { a, b } = require("./mod")` -> module + named bindings
+(variable_declarator
+  name: (object_pattern (shorthand_property_identifier_pattern) @import.name)
+  value: (call_expression
+    function: (identifier) @_require
+    arguments: (arguments (string (string_fragment) @import.module)))
+  (#eq? @_require "require")) @import
+
+; --- exports (CommonJS, BUG-006) ---
+; `module.exports = name` (incl. chained `exports = module.exports = name`) ->
+; the module's default export, so a default require binds to this symbol.
+(assignment_expression
+  left: (member_expression
+    object: (identifier) @_mod
+    property: (property_identifier) @_exp)
+  right: (identifier) @export.default
+  (#eq? @_mod "module")
+  (#eq? @_exp "exports")) @export

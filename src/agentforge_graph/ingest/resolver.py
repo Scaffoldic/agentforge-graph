@@ -67,6 +67,7 @@ class ImportResolver:
         module_to_file: dict[str, str] = {}
         file_module: dict[str, str] = {}
         exports: dict[str, dict[str, str]] = {}
+        file_default: dict[str, str] = {}  # module -> CommonJS `module.exports = <name>` (BUG-006)
         for f in files:
             ps = SymbolID.parse(f.id)
             pack = self.registry.for_slug(ps.lang)
@@ -79,6 +80,9 @@ class ImportResolver:
             module = pack.module_path(key_path)
             module_to_file[module] = f.id
             file_module[f.id] = module
+            de = f.attrs.get("default_export", "")
+            if de:
+                file_default[module] = de
             members = await store.neighbors(f.id, [EdgeKind.CONTAINS], depth=1)
             exports[module] = {m.name: m.id for m in members}
 
@@ -146,6 +150,11 @@ class ImportResolver:
                     if pack
                     else module
                 )
+                # directory import: `require("./router")` / `import … "./router"`
+                # resolves to `./router/index` (BUG-006 — relative packs).
+                if key not in module_to_file and f"{key}/index" in module_to_file:
+                    key = f"{key}/index"
+                default_name = imp.get("default", "")
                 if key in module_to_file:
                     if _is_target(ps.path) and _add_edge(
                         f.id, module_to_file[key], EdgeKind.IMPORTS
@@ -155,12 +164,23 @@ class ImportResolver:
                         tgt = exports.get(key, {}).get(nm)
                         if tgt:
                             binding[nm] = tgt
+                    # CommonJS default require: bind the local name to the target
+                    # module's `module.exports = <name>` symbol (BUG-006).
+                    if default_name:
+                        exp = file_default.get(key, "")
+                        tgt = exports.get(key, {}).get(exp) if exp else None
+                        if tgt:
+                            binding[default_name] = tgt
                 else:
                     pid = _external(ps.lang, ps.repo, module)
                     if _is_target(ps.path) and _add_edge(f.id, pid, EdgeKind.IMPORTS):
                         stats.imports_external += 1
-                    for nm in names or [module.split(".")[-1]]:
+                    for nm in names:
                         binding.setdefault(nm, pid)
+                    if default_name:
+                        binding.setdefault(default_name, pid)
+                    if not names and not default_name:
+                        binding.setdefault(module.split(".")[-1], pid)
 
         # --- calls -> CALLS edges (unique match only) ---
         path_to_file = {SymbolID.parse(f.id).path: f.id for f in files}
