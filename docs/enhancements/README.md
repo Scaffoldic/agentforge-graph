@@ -16,6 +16,7 @@ One file per enhancement: `ENH-NNN-short-slug.md`. Keep this index current.
 | [ENH-005](ENH-005-http-mcp-transport-auth.md) | AuthN/AuthZ for the HTTP MCP transport | High | M | serve | proposed |
 | [ENH-006](ENH-006-cli-path-arg-consistency.md) | Unify the repo-path arg across `ckg` subcommands | Medium | S | cli | proposed |
 | [ENH-007](ENH-007-repomap-public-api-orientation.md) | Bias the repo map toward the public API | Medium | S–M | repomap | proposed |
+| [ENH-008](ENH-008-typescript-symbol-completeness.md) | Broaden TS/JS symbol extraction (interfaces/enums/types/arrow-consts) | Med–High | M | ingest.packs | proposed |
 
 ## Template
 
