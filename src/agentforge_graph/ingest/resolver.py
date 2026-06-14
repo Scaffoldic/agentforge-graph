@@ -137,9 +137,15 @@ class ImportResolver:
                 names = imp.get("names", [])
                 if not module:
                     continue
-                # Resolve the import as written (relative path / dotted module)
-                # to a key comparable to the module index.
-                key = pack.resolve_import(ps.path, module) if pack else module
+                # Resolve the import as written (relative path / dotted module,
+                # incl. Python leading-dot relative imports) to a key comparable
+                # to the module index. file_module gives the importer's own
+                # source-root-stripped module key for relative resolution.
+                key = (
+                    pack.resolve_import(ps.path, module, file_module.get(f.id, ""))
+                    if pack
+                    else module
+                )
                 if key in module_to_file:
                     if _is_target(ps.path) and _add_edge(
                         f.id, module_to_file[key], EdgeKind.IMPORTS

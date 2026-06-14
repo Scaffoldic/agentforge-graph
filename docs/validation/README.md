@@ -44,7 +44,7 @@ Pick small-but-real repos; keep them pinned to a commit for reproducibility.
 
 | Tier | Language | Candidate repo(s) | Run | Findings |
 |---|---|---|---|---|
-| A | Python | **pallets/click @ 8.1.7** | ✅ [run](python-click.md) (graph; embed/enrich pending creds) | BUG-004, ENH-006, ENH-007 |
+| A | Python | **pallets/click @ 8.1.7** | ✅ [run](python-click.md) (graph; embed/enrich pending creds) | BUG-004 (fixed), ENH-006, ENH-007 |
 | A | TypeScript | _tbd_ | ⬜ | — |
 | A | JavaScript | _tbd_ | ⬜ | — |
 | A | Java | _tbd_ | ⬜ | — |

@@ -4,8 +4,9 @@
 |---|---|
 | **ID** | BUG-004 |
 | **Severity** | High |
-| **Status** | open |
+| **Status** | fixed |
 | **Found** | 2026-06-14 (W1 validation on `pallets/click` 8.1.7) |
+| **Fixed** | 2026-06-14 (`bug/004-relative-import-resolution`) — two parts: (1) the Python `structure.scm` now captures `module_name: (relative_import)` (relative imports were never matched, so dropped entirely); (2) `LanguagePack.resolve_import` resolves leading-dot module keys against the importer's package. Re-run on click: in-repo imports **56→109**, resolved CALLS **292→404**, `echo` callers **0→18**, `impact(echo)` **1→19**. |
 | **Area** | `ingest.resolver` / `ingest.pack` |
 | **Affects** | feat-002 (resolution) and everything downstream — impact analysis, context retrieval, repo-map ranking, pattern signals that lean on `CALLS`/`IMPORTS` edges |
 | **Relates to** | [BUG-001](BUG-001-src-layout-import-resolution.md) (fixed *absolute* src-layout imports; this is the *relative* path) |
@@ -51,14 +52,31 @@ node (no ambiguity to refuse). General cross-file resolution *does* work — 109
 292 resolved CALLS are cross-file — so the gap is specific to the relative-import
 name binding, not cross-file resolution as a whole.
 
-## Hypothesis (confirm in the fix)
+## Root cause (confirmed)
 
-The resolver/pack builds the import name→module key for **absolute** dotted
-imports (BUG-001 made `src/` roots work) but does not resolve the leading-dot
-**relative** form: `from . import x`, `from .mod import x`, `from ..pkg import x`
-need the importing file's own package path to compute the target module key.
-Likely in `LanguagePack.module_path()` / the resolver's import handling
-(`ingest/pack.py`, `ingest/resolver.py`).
+Two compounding defects — the first was bigger than the initial hypothesis:
+
+1. **The query never captured relative imports.** Python's `structure.scm`
+   matched only `module_name: (dotted_name)`. The grammar parses
+   `from .utils import echo` with a **`relative_import`** node (leading-dot
+   `import_prefix` + optional `dotted_name`), so the pattern didn't match and the
+   import — and its bound names — were **dropped entirely** at extraction. No
+   `IMPORTS` record ever reached the resolver.
+2. **`resolve_import` couldn't resolve the dots.** Even once captured, the dotted
+   pack returned the raw module key as identity, so `.utils` never matched the
+   absolute key `click.utils` in the module index.
+
+## Fix
+
+- `structure.scm`: add `(import_from_statement module_name: (relative_import)
+  @import.module …)` so relative imports are captured (the node text — `.utils`,
+  `..pkg.mod`, `.` — becomes the raw module).
+- `LanguagePack.resolve_import(importer_path, raw_module, importer_module)`:
+  count leading dots and resolve against the importer's (source-root-stripped)
+  module key — one dot = the importer's package, each extra dot ascends a level.
+- `resolver.py` passes the importer's `file_module` key through.
+- Tests: `resolve_import` dot cases (`test_pack.py`) + an end-to-end
+  relative-import regression (`test_src_layout.py`).
 
 ## Impact on the 0.1 bar
 
