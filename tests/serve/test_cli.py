@@ -18,9 +18,17 @@ def _stub_serve(seen: dict[str, object]) -> object:
         host: str = "127.0.0.1",
         port: int = 8765,
         refresh_on_call: bool = False,
+        auth_token: str = "",
+        allow_unauthenticated: bool = False,
     ) -> None:
         seen.update(
-            repo=repo_path, transport=transport, host=host, port=port, refresh=refresh_on_call
+            repo=repo_path,
+            transport=transport,
+            host=host,
+            port=port,
+            refresh=refresh_on_call,
+            auth_token=auth_token,
+            allow_unauthenticated=allow_unauthenticated,
         )
 
     return fake_serve
@@ -58,8 +66,22 @@ def test_serve_mcp_http_dispatch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     assert seen["port"] == 9100
 
 
+def test_serve_mcp_auth_flags_dispatch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: dict[str, object] = {}
+    monkeypatch.setattr("agentforge_graph.serve.serve_mcp", _stub_serve(seen))
+    rc = main(
+        ["serve-mcp", "--repo", str(tmp_path), "--transport", "http",
+         "--auth-token", "sekret", "--allow-unauthenticated"]
+    )  # fmt: skip
+    assert rc == 0
+    assert seen["auth_token"] == "sekret"
+    assert seen["allow_unauthenticated"] is True
+
+
 def test_serve_mcp_parses() -> None:
     args = build_parser().parse_args(["serve-mcp", "--repo", "."])
     assert args.command == "serve-mcp"
     assert args.refresh_on_call is False
     assert args.transport is None  # resolved from ckg.yaml / default at dispatch
+    assert args.auth_token == ""
+    assert args.allow_unauthenticated is False

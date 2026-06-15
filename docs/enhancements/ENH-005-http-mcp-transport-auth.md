@@ -5,7 +5,7 @@
 | **ID** | ENH-005 |
 | **Value/Impact** | High (blocks any *remote*/multi-tenant HTTP deployment) |
 | **Effort** | M |
-| **Status** | proposed |
+| **Status** | **done** (2026-06-15) |
 | **Area** | `serve` (feat-008 HTTP transport) |
 | **Relates to** | feat-008 (MCP server); follows the HTTP transport (PR #22) |
 
@@ -57,6 +57,32 @@ configure rather than implement (mirrors the provider/storage-registry stance).
   silent default.
 - stdio transport is unchanged (no auth needed — the client owns the subprocess).
 - Guide updated; an env-gated test exercises the authed path.
+
+## Resolution (2026-06-15)
+
+Shipped the bearer-token gate + bind-safety (layers 1–2):
+
+- **Bearer gate** — `serve.http_auth_token` / `$CKG_HTTP_AUTH_TOKEN`. When set,
+  every HTTP request must carry a matching `Authorization: Bearer …` (constant-time
+  compare); others get `401` with a `WWW-Authenticate: Bearer` header. The token is
+  never logged. **Off by default** — the localhost loop is unchanged.
+- **Bind-safety** — `build_mcp_server` *refuses* a non-loopback bind (`0.0.0.0`)
+  with no token unless `--allow-unauthenticated` (a loud, deliberate opt-in). The
+  check runs **before** the engine opens, so a misconfig fails fast.
+- **stdio** is untouched (no auth — the client owns the subprocess).
+
+**Implementation:** `agentforge-mcp` exposes no auth/middleware hook (see
+`docs/framework/2026-06-15-mcp-http-no-auth-hook.md`), but `from_http(runner=…)`
+lets us inject a runner. So the no-auth path stays 100% framework (default runner),
+and the **authed** path uses `serve/http_runner.py` — `CkgHttpRunner` mirrors the
+framework's HTTP wiring and wraps the Starlette app in a pure-ASGI
+`BearerAuthMiddleware`. CLI: `--auth-token` / `--allow-unauthenticated`.
+
+**Verified:** always-on unit tests cover the middleware (401 missing/wrong, 200
+correct, lifespan pass-through) + the bind-safety guard; a live HTTP test
+(`CKG_LIVE_MCP_HTTP=1`) starts a real uvicorn server and confirms 401 for
+unauthenticated and pass-through for the right token. 463 passed, 93% cov. Layer 3
+(per-token scoping) deferred — file as a follow-up if a deployment needs it.
 
 ## Notes / alternatives
 

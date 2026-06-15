@@ -50,8 +50,9 @@ def test_build_mcp_server_registers_tools(tmp_path: Path) -> None:
 def test_build_mcp_server_http_transport(tmp_path: Path) -> None:
     repo = tmp_path / "proj"
     shutil.copytree(FIXTURES, repo)
-    # http builds the streamable-HTTP server (mounted at /mcp) without serving
-    server = build_mcp_server(repo, transport="http", host="0.0.0.0", port=9001)
+    # http builds the streamable-HTTP server (mounted at /mcp) without serving.
+    # loopback default needs no auth (ENH-005); 0.0.0.0 without a token is refused.
+    server = build_mcp_server(repo, transport="http", host="127.0.0.1", port=9001)
     assert server is not None
 
 

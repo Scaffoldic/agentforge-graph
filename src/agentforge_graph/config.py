@@ -153,6 +153,9 @@ class ServeConfig(_Block):
     transport: str = "stdio"  # feat-008: stdio | http (streamable-HTTP at /mcp)
     host: str = "127.0.0.1"  # http transport bind host
     port: int = 8765  # http transport port
+    # ENH-005: bearer token for the HTTP transport (empty = no auth, localhost
+    # default). Prefer $CKG_HTTP_AUTH_TOKEN over putting the secret in ckg.yaml.
+    http_auth_token: str = ""
     max_depth: int = 3
     max_k: int = 50
     response_token_cap: int = 6000
