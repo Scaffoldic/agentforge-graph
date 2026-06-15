@@ -53,6 +53,20 @@ indexed 81 files: 1047 nodes, 1598 edges
     (e.g. some enum/nested bodies). Cosmetic (kind label), not a missing symbol.
   - Method-call resolution = the shared ADR-0004 boundary.
 
+## Creds-enabled run (2026-06-15, live AWS Bedrock)
+
+embed 1333 chunks (Cohere embed-v4) + enrich (Claude Haiku), **~$0.18**.
+
+- **Retrieval — strong** (~2.5/3): "how is an object serialized to json" →
+  `Gson.toJson` (exact); "how is json parsed into an object" → `JsonReader`
+  (adjacent); "how are type adapters used" → `TypeAdapters` (file summary, adjacent).
+- **Summaries** accurate (repo summary frames gson around `Gson` + the `TypeAdapter`
+  registry + `GsonBuilder` + the `JsonElement` tree). ✅
+- **Pattern tags — 30** (52 candidates): **Adapter 16, Factory 11, Builder 1,
+  Strategy 2** — the most of any repo, faithfully reflecting gson's adapter/factory
+  architecture (`TypeAdapter`, `TypeAdapterFactory`, `GsonBuilder`). The enrich
+  judge is precise *and* recalls real patterns where the codebase has them.
+
 ## Next
 
 1. ✅ **Java pack shipped + validated on gson** (this run).

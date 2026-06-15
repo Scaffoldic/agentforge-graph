@@ -62,6 +62,19 @@ indexed 19 files: 340 nodes, 972 edges
     (matches other packs; revisit if field-level retrieval proves valuable).
   - Selector/member call resolution is the shared ADR-0004 boundary.
 
+## Creds-enabled run (2026-06-15, live AWS Bedrock)
+
+embed 599 chunks (Cohere embed-v4) + enrich (Claude Haiku), **~$0.03**.
+
+- **Retrieval — 3/3 exact** (the sharpest of the new packs): "how is a command
+  executed" → `Command.execute`, "how do I add a subcommand" → `Command.AddCommand`,
+  "how are flags defined and parsed" → `Command.ParseFlags`. Go's explicit method
+  names + clean method extraction make NL→symbol retrieval surgical.
+- **Summaries** accurate (repo summary frames cobra around the `Command` struct +
+  execution lifecycle + completion). ✅
+- **Pattern tags — 0** (0 candidates): correct — cobra is struct/receiver-method
+  Go, not GoF-class shaped; the heuristics rightly found nothing to judge.
+
 ## Next
 
 1. ✅ **Go pack shipped + validated on cobra** (this run).

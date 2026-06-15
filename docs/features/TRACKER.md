@@ -204,6 +204,15 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-15** — **Creds-enabled runs on all 7 new packs** (Go/Ruby/PHP/Java/C#/
+  C++/Rust), live Bedrock embed+retrieval+enrich, ≈\$1.0. Embed/retrieval/enrich
+  work on every language. Retrieval is sharpest where naming is explicit — **Go
+  (cobra) and Rust (serde_json) hit 3/3 exact**; strong on Java/Ruby/C#; fair on
+  template-heavy C++. Pattern tagging scales precisely with OO density: gson **30**
+  (adapter-heavy), Newtonsoft.Json **28**, serde 11, monolog 7, fmt 4, cobra/thor 0
+  — real patterns recalled, no false positives. Summaries accurate everywhere. Each
+  pack's `docs/validation/<lang>-<repo>.md` gained a creds section; cross-language
+  summary in `docs/validation/README.md`. **All 10 packs now have a creds run.**
 - **2026-06-15** — **ENH-009 retrieval precision — partial (opt-in lexical rerank).**
   Turned the `NoopReranker` stub into a real seam + a deterministic, dependency-free
   **lexical reranker** (`retrieve.rerank: lexical`): blends cosine with query↔candidate

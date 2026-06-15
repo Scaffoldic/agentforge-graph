@@ -54,6 +54,21 @@ indexed 233 files: 3206 nodes, 10321 edges
     resolved; aliases/static are a query extension.
   - Member-call resolution = the shared ADR-0004 boundary.
 
+## Creds-enabled run (2026-06-15, live AWS Bedrock)
+
+embed 2594 chunks (Cohere embed-v4) + enrich (Claude Haiku), **~$0.33** (the
+priciest — largest repo). One transient Bedrock connection reset mid-embed; a
+re-run completed cleanly.
+
+- **Retrieval — good** (~2/3): "how is a json string deserialized" →
+  `JsonConvert.DeserializeObject` (exact); "how is a json token read" →
+  `JTokenReader.SetToken` (exact-ish); "how is an object serialized to json" →
+  `JsonConvert` (adjacent — landed near `SerializeObject`).
+- **Summaries** accurate (repo summary frames it around JsonReader/JsonWriter +
+  the `JToken` hierarchy with LINQ). ✅
+- **Pattern tags — 28** (63 candidates): **Factory 19, Strategy 5, Builder 2,
+  Adapter 2** — Json.NET is factory-heavy; precise and well-recalled.
+
 ## Next
 
 1. ✅ **C# pack shipped + validated on Newtonsoft.Json** (this run).

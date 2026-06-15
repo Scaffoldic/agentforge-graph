@@ -52,6 +52,18 @@ indexed 36 files: 624 nodes, 649 edges
     lib-root detection (a follow-up; many gems mix both styles).
   - Method/`send` dynamic dispatch is out of scope for static resolution.
 
+## Creds-enabled run (2026-06-15, live AWS Bedrock)
+
+embed 842 chunks (Cohere embed-v4) + enrich (Claude Haiku), **~$0.04**.
+
+- **Retrieval — strong** (~2.5/3): "how is a command invoked" → `invoke_command`
+  (exact); "how are command line options parsed" → `Options#parse` (exact); "how
+  is a CLI command defined" → `command.rb` (file summary, adjacent).
+- **Summaries** accurate (repo summary frames thor around the `Thor` base class,
+  CLI commands as methods, command parsing). ✅
+- **Pattern tags — 0** (6 candidates judged): correct — the judge declined all 6
+  (no false positives; recall is the ENH-001 question, as on click).
+
 ## Next
 
 1. ✅ **Ruby pack shipped + validated on thor** (this run).

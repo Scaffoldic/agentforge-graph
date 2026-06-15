@@ -54,6 +54,19 @@ indexed 39 files: 1624 nodes, 2298 edges
   - `self::`/`super::` relative paths and method-call resolution = follow-ups /
     the ADR-0004 boundary.
 
+## Creds-enabled run (2026-06-15, live AWS Bedrock)
+
+embed 1932 chunks (Cohere embed-v4) + enrich (Claude Haiku), **~$0.12**.
+
+- **Retrieval — 3/3 exact** (tied with Go for sharpest): "how is a value
+  serialized" → `to_value`, "how is json deserialized into a value" → `from_value`,
+  "how is a number parsed" → `parse_number`. Rust's explicit free-function names
+  make NL→symbol retrieval surgical.
+- **Summaries** accurate (repo summary frames serde_json around `Deserializer` /
+  `Serializer` / the `Value` type). ✅
+- **Pattern tags — 11 Factory** (45 candidates judged): the `*::new`/`from_*`
+  constructor idiom reads as Factory; precise (no false positives across 45).
+
 ## Next
 
 1. ✅ **Rust pack shipped + validated on serde_json** — **W3 complete: 10/10
