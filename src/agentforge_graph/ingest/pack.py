@@ -41,9 +41,11 @@ class LanguagePack(BaseModel):
     structure_queries: str  # .scm: defs/classes/imports
     reference_queries: str  # .scm: calls/attribute refs
     descriptor_rules: DescriptorRules = Field(default_factory=DescriptorRules)
-    # How imports name modules: "dotted" (Python `a.b.c`) or "relative"
-    # (TS/JS path specifiers like `./util`). Drives module_path + resolve_import.
-    module_style: Literal["dotted", "relative"] = "dotted"
+    # How imports name modules: "dotted" (Python `a.b.c`), "relative" (TS/JS path
+    # specifiers like `./util`), or "go" (a package is a *directory*; import paths
+    # are full module paths the resolver suffix-matches to a repo dir). Drives
+    # module_path + resolve_import.
+    module_style: Literal["dotted", "relative", "go"] = "dotted"
 
     def _strip_ext(self, path: str) -> str:
         for ext in self.extensions:
@@ -54,8 +56,12 @@ class LanguagePack(BaseModel):
     def module_path(self, repo_relative_path: str) -> str:
         """The module key a file is imported as. ``dotted``: ``a/b/c.py`` ->
         ``a.b.c`` (drops a trailing ``__init__``). ``relative``: the
-        extension-stripped path, ``a/b/c.ts`` -> ``a/b/c``."""
+        extension-stripped path, ``a/b/c.ts`` -> ``a/b/c``. ``go``: a package is
+        a directory, so the key is the file's *directory*, ``a/b/c.go`` ->
+        ``a/b`` (every ``.go`` file in a dir shares one package key)."""
         no_ext = self._strip_ext(repo_relative_path)
+        if self.module_style == "go":
+            return posixpath.dirname(repo_relative_path)
         if self.module_style == "relative":
             return no_ext
         segs = [s for s in no_ext.split("/") if s]
@@ -75,6 +81,11 @@ class LanguagePack(BaseModel):
         is resolved against ``importer_module`` — the importer's own (source-root
         stripped) module key — to an absolute key (BUG-004). One leading dot is the
         importer's package; each extra dot ascends one level."""
+        if self.module_style == "go":
+            # A Go import is a full module path ("example.com/m/internal/bar").
+            # We can't know the go.mod module prefix here, so return it as-is;
+            # the resolver suffix-matches it against in-repo package dirs.
+            return raw_module
         if self.module_style == "relative":
             target = self._strip_ext(raw_module)
             if target.startswith("./") or target.startswith("../"):

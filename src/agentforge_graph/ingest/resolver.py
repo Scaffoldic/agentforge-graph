@@ -50,9 +50,10 @@ def _strip_root(path: str, roots: set[str]) -> str:
 
 
 class ImportResolver:
-    def __init__(self, registry: PackRegistry, commit: str = "") -> None:
+    def __init__(self, registry: PackRegistry, commit: str = "", go_module: str = "") -> None:
         self.registry = registry
         self.commit = commit
+        self.go_module = go_module  # go.mod module path (Go import-prefix stripping)
         self.name = "import-resolver"
 
     async def resolve(
@@ -78,13 +79,19 @@ class ImportResolver:
             # packs (TS/JS) resolve by path and need no stripping.
             key_path = _strip_root(ps.path, roots) if pack.module_style == "dotted" else ps.path
             module = pack.module_path(key_path)
-            module_to_file[module] = f.id
+            # Go packages are directory-level: many files share one module key.
+            # Keep the first file as the package's IMPORTS target, but *merge*
+            # every file's top-level defs into the package's export map so
+            # same-package cross-file calls resolve (no import needed in Go).
+            # File-level packs (Python/TS/JS) have unique keys, so setdefault +
+            # update behave exactly like plain assignment for them.
+            module_to_file.setdefault(module, f.id)
             file_module[f.id] = module
             de = f.attrs.get("default_export", "")
             if de:
                 file_default[module] = de
             members = await store.neighbors(f.id, [EdgeKind.CONTAINS], depth=1)
-            exports[module] = {m.name: m.id for m in members}
+            exports.setdefault(module, {}).update({m.name: m.id for m in members})
 
         stats = ResolveStats()
         new_nodes: list[Node] = []
@@ -154,6 +161,25 @@ class ImportResolver:
                 # resolves to `./router/index` (BUG-006 — relative packs).
                 if key not in module_to_file and f"{key}/index" in module_to_file:
                     key = f"{key}/index"
+                # Go: an import path is `<go.mod module>/<dir>`. If we know the
+                # module prefix (from go.mod), strip it exactly — this maps both the
+                # *root* package (key "") and any sub-package. Otherwise fall back to
+                # suffix-matching leading segments to an in-repo dir. stdlib/third-
+                # party never match → stay external.
+                if key not in module_to_file and pack is not None and pack.module_style == "go":
+                    if self.go_module and (
+                        key == self.go_module or key.startswith(self.go_module + "/")
+                    ):
+                        rel = key[len(self.go_module) :].lstrip("/")
+                        if rel in module_to_file:
+                            key = rel
+                    if key not in module_to_file:
+                        segs = key.split("/")
+                        for i in range(1, len(segs)):
+                            cand = "/".join(segs[i:])
+                            if cand in module_to_file:
+                                key = cand
+                                break
                 default_name = imp.get("default", "")
                 if key in module_to_file:
                     if _is_target(ps.path) and _add_edge(

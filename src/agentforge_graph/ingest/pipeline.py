@@ -19,7 +19,7 @@ from .extractor import TreeSitterExtractor
 from .pack import LanguagePack, PackRegistry
 from .report import IndexReport
 from .resolver import ImportResolver
-from .source import RepoSource
+from .source import RepoSource, read_go_module
 
 
 def _extract_one(
@@ -105,7 +105,9 @@ class IngestPipeline:
             # right import-graph scope. Edge tallies come from that pass.
             return report
 
-        stats = await ImportResolver(registry, self.commit).resolve(store)
+        stats = await ImportResolver(
+            registry, self.commit, go_module=read_go_module(source.root)
+        ).resolve(store)
         report.resolve = stats
         imports = stats.imports_resolved + stats.imports_external
         report.by_edge_kind["IMPORTS"] = report.by_edge_kind.get("IMPORTS", 0) + imports
