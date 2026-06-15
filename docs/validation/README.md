@@ -48,7 +48,7 @@ Pick small-but-real repos; keep them pinned to a commit for reproducibility.
 | A | TypeScript | **colinhacks/zod @ v3.23.8** | ✅ [run](typescript-zod.md) — **creds run done** (2026-06-15, ~$0.09; ENH-008 verified: Interface/TypeAlias/Variable 0→57/241/21) | BUG-005 (fixed), ENH-008 (done) |
 | A | JavaScript | **expressjs/express @ 4.19.2 (CommonJS) + chalk @ v5.3.0 (ESM)** | ✅ [run](javascript-express-chalk.md) — **creds run done** (2026-06-15, express `lib/`, ~$0.02) | BUG-006 (fixed); ESM works |
 | A | Go | **spf13/cobra @ v1.8.0** | ✅ [run](go-cobra.md) — **pack shipped** (first directory-package lang): 19 files, 511 same-package CALLS, go.mod-aware imports | no bug; follow-ups: receiver→method link, struct fields |
-| A | Java | _tbd_ | ⬜ | — |
+| A | Java | **google/gson @ 2.10.1** | ✅ [run](java-gson.md) — **pack shipped** (FQN model reused, sep `.`): 81 files, 84 classes, 264 in-repo imports resolved | no bug; follow-up: wildcard/static imports |
 | A | C# | _tbd_ | ⬜ | — |
 | A | Rust | _tbd_ | ⬜ | — |
 | A | Ruby | **rails/thor @ v1.3.0** | ✅ [run](ruby-thor.md) — **pack shipped**: 36 files, 97 classes/modules, 394 methods, 42 require_relative imports | no bug; follow-up: load-path `require` |
@@ -57,8 +57,8 @@ Pick small-but-real repos; keep them pinned to a commit for reproducibility.
 | — | **dogfood** | this repo (agentforge-graph, Python) | ⬜ | partially done (PR #15) |
 
 > Note the gap between the **language packs that ship** (Python, TypeScript,
-> JavaScript, **Go**, **Ruby**, **PHP**) and the **10-language v0.1 scope**:
-> Java/C#/Rust/C++ packs are still to land (feat-002 follow-ups). Validation
+> JavaScript, **Go**, **Ruby**, **PHP**, **Java**) and the **10-language v0.1
+> scope**: C#/Rust/C++ packs are still to land (feat-002 follow-ups). Validation
 > per language is blocked on its pack existing — track both here.
 
 ## Per-run template
