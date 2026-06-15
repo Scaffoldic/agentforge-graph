@@ -77,7 +77,9 @@ class LanceVectorStore(VectorStore):
         self._closed = False
 
     @classmethod
-    async def open(cls, path: str | Path) -> LanceVectorStore:
+    async def open(cls, path: str | Path, config: dict[str, Any] | None = None) -> LanceVectorStore:
+        """``config`` (the ``store.vectors.config`` block) is unused by the
+        embedded driver — server adapters use it for connection details."""
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
         db = await lancedb.connect_async(str(p))

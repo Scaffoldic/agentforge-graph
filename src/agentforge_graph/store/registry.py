@@ -1,8 +1,10 @@
 """Driver registry: config driver-name → adapter class.
 
-Built-in embedded drivers are registered here; opt-in server adapters
-(Neo4j, FalkorDB, pgvector) register out-of-tree via entry-point groups, so
-they install as ``pip install`` + one config line with no core change.
+Embedded drivers (Kuzu, LanceDB) ship by default; first-party **server** drivers
+(Neo4j graph, pgvector — ENH-004) are registered too but their DB SDK is imported
+lazily inside the adapter's ``open``, so they cost nothing until selected and
+need only their extra installed (``pip install agentforge-graph[neo4j|pgvector]``).
+Third-party adapters still register out-of-tree via the entry-point groups.
 """
 
 from __future__ import annotations
@@ -13,12 +15,14 @@ from typing import Any
 from .errors import DriverNotFound
 from .kuzu_store import KuzuGraphStore
 from .lance_store import LanceVectorStore
+from .neo4j_store import Neo4jGraphStore
+from .pgvector_store import PgVectorStore
 
 GRAPH_GROUP = "agentforge_graph.graph_drivers"
 VECTOR_GROUP = "agentforge_graph.vector_drivers"
 
-_GRAPH_BUILTINS: dict[str, Any] = {"kuzu": KuzuGraphStore}
-_VECTOR_BUILTINS: dict[str, Any] = {"lancedb": LanceVectorStore}
+_GRAPH_BUILTINS: dict[str, Any] = {"kuzu": KuzuGraphStore, "neo4j": Neo4jGraphStore}
+_VECTOR_BUILTINS: dict[str, Any] = {"lancedb": LanceVectorStore, "pgvector": PgVectorStore}
 
 
 def _resolve(name: str, builtins: dict[str, Any], group: str) -> Any:

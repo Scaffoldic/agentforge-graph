@@ -16,7 +16,6 @@ keeps multi-statement writes (``upsert``) atomic on one thread.
 from __future__ import annotations
 
 import asyncio
-import json
 from pathlib import Path
 from typing import Any
 
@@ -31,15 +30,25 @@ from agentforge_graph.core import (
     GraphStore,
     Node,
     NodeKind,
-    Provenance,
     QueryResult,
     Source,
-    SymbolID,
 )
 
-# Trust ordering (PARSED is highest-trust): a node passes a ``min_source``
-# floor iff its source rank is >= the floor's. Mirrors the InMemory reference.
-_SOURCE_RANK = {Source.LLM: 0, Source.RESOLVED: 1, Source.MANUAL: 1, Source.PARSED: 2}
+from ._rowmap import (
+    acceptable_sources as _acceptable_sources,
+)
+from ._rowmap import (
+    edge_from_row as _edge_from_rel,
+)
+from ._rowmap import (
+    edge_params as _edge_params,
+)
+from ._rowmap import (
+    node_from_row as _node_from_row,
+)
+from ._rowmap import (
+    node_params as _node_params,
+)
 
 SCHEMA_VERSION = 1
 
@@ -61,83 +70,6 @@ _DDL = [
 ]
 
 
-def _dump_attrs(attrs: dict[str, Any]) -> str:
-    return json.dumps(attrs, sort_keys=True)
-
-
-def _load_attrs(s: str | None) -> dict[str, Any]:
-    return json.loads(s) if s else {}
-
-
-def _node_params(node: Node, origin_path: str) -> dict[str, Any]:
-    span_start, span_end = node.span if node.span is not None else (None, None)
-    p = node.provenance
-    return {
-        "id": node.id,
-        "kind": node.kind.value,
-        "name": node.name,
-        "span_start": span_start,
-        "span_end": span_end,
-        "attrs": _dump_attrs(node.attrs),
-        "sym_path": SymbolID.parse(node.id).path,
-        "prov_source": p.source.value,
-        "prov_extractor": p.extractor,
-        "prov_commit": p.commit,
-        "prov_confidence": p.confidence,
-        "origin_path": origin_path,
-    }
-
-
-def _edge_params(edge: Edge, origin_path: str) -> dict[str, Any]:
-    p = edge.provenance
-    return {
-        "src": edge.src,
-        "dst": edge.dst,
-        "kind": edge.kind.value,
-        "attrs": _dump_attrs(edge.attrs),
-        "prov_source": p.source.value,
-        "prov_extractor": p.extractor,
-        "prov_commit": p.commit,
-        "prov_confidence": p.confidence,
-        # An edge that carries its own owner file (resolver edges, feat-004)
-        # wins; otherwise the caller's stamp (the upserted file's path).
-        "origin_path": edge.origin_path or origin_path,
-        "resolved_from": "",
-    }
-
-
-def _prov_from_row(d: dict[str, Any]) -> Provenance:
-    # The validating constructor — a corrupt row fails loudly, not silently.
-    return Provenance(
-        source=Source(d["prov_source"]),
-        extractor=d["prov_extractor"],
-        commit=d["prov_commit"],
-        confidence=d["prov_confidence"],
-    )
-
-
-def _edge_from_rel(rel: dict[str, Any], src: str, dst: str) -> Edge:
-    return Edge(
-        src=src,
-        dst=dst,
-        kind=EdgeKind(rel["kind"]),
-        attrs=_load_attrs(rel["attrs"]),
-        provenance=_prov_from_row(rel),
-    )
-
-
-def _node_from_row(d: dict[str, Any]) -> Node:
-    span = (d["span_start"], d["span_end"]) if d["span_start"] is not None else None
-    return Node(
-        id=d["id"],
-        kind=NodeKind(d["kind"]),
-        name=d["name"],
-        span=span,
-        attrs=_load_attrs(d["attrs"]),
-        provenance=_prov_from_row(d),
-    )
-
-
 def _rows(result: Any) -> list[Any]:
     # kuzu's execute() returns QueryResult | list[QueryResult] (multi-statement)
     # and get_next() a list|dict row; we always issue single statements.
@@ -145,11 +77,6 @@ def _rows(result: Any) -> list[Any]:
     while result.has_next():
         out.append(result.get_next())
     return out
-
-
-def _acceptable_sources(floor: Source) -> list[str]:
-    threshold = _SOURCE_RANK[floor]
-    return [s.value for s, rank in _SOURCE_RANK.items() if rank >= threshold]
 
 
 class KuzuGraphStore(GraphStore):
@@ -163,9 +90,11 @@ class KuzuGraphStore(GraphStore):
         self._closed = False
 
     @classmethod
-    async def open(cls, path: str | Path) -> KuzuGraphStore:
+    async def open(cls, path: str | Path, config: dict[str, Any] | None = None) -> KuzuGraphStore:
         """Open (creating if needed) a Kuzu database at ``path`` and ensure
-        the schema exists. ``path`` is the graph DB directory/file."""
+        the schema exists. ``path`` is the graph DB directory/file. ``config``
+        is the ``store.graph.config`` block — unused by the embedded driver
+        (server adapters use it for connection details)."""
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
         db, conn = await asyncio.to_thread(cls._connect, p)
