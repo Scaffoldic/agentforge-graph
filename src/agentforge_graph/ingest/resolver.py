@@ -69,9 +69,12 @@ class ImportResolver:
         file_module: dict[str, str] = {}
         exports: dict[str, dict[str, str]] = {}
         file_default: dict[str, str] = {}  # module -> CommonJS `module.exports = <name>` (BUG-006)
-        # namespace FQN index (PHP/Java/C#): "App/Foo/Bar" -> (file id, symbol id)
+        # namespace FQN index (PHP/Java): "App/Foo/Bar" -> (file id, symbol id)
         fqn_to_file: dict[str, str] = {}
         fqn_to_sym: dict[str, str] = {}
+        # namespace-prefix index (C#): "App/Geo" -> ({file ids}, {symbol name -> id})
+        ns_to_files: dict[str, set[str]] = {}
+        ns_to_syms: dict[str, dict[str, str]] = {}
         for f in files:
             ps = SymbolID.parse(f.id)
             pack = self.registry.for_slug(ps.lang)
@@ -99,10 +102,13 @@ class ImportResolver:
             # name (file's declared namespace + symbol name), normalized to "/".
             ns = f.attrs.get("namespace", "")
             if ns and pack.namespace_sep:
+                ns_key = ns.replace(pack.namespace_sep, "/")
+                ns_to_files.setdefault(ns_key, set()).add(f.id)
                 for m in members:
-                    fqn = f"{ns}{pack.namespace_sep}{m.name}".replace(pack.namespace_sep, "/")
+                    fqn = f"{ns_key}/{m.name}"
                     fqn_to_file.setdefault(fqn, f.id)
                     fqn_to_sym.setdefault(fqn, m.id)
+                    ns_to_syms.setdefault(ns_key, {}).setdefault(m.name, m.id)
 
         stats = ResolveStats()
         new_nodes: list[Node] = []
@@ -159,17 +165,32 @@ class ImportResolver:
                 names = imp.get("names", [])
                 if not module:
                     continue
-                # namespace FQN import (PHP/Java/C#): `use App\Foo\Bar` -> resolve
-                # to the file declaring Bar (via the FQN index) and bind the class
-                # name; not in-repo -> external. Path-based handling is skipped.
+                # namespace imports (PHP/Java/C#). Path-based handling is skipped.
                 if pack is not None and pack.namespace_sep:
-                    fqn = module.replace(pack.namespace_sep, "/")
-                    tgt_file = fqn_to_file.get(fqn)
+                    norm = module.replace(pack.namespace_sep, "/")
+                    if pack.namespace_import_prefix:
+                        # C#: `using App.Geo` names a namespace -> IMPORTS to every
+                        # in-repo file declaring it, and bind all its symbols.
+                        tgt_files = ns_to_files.get(norm)
+                        if tgt_files:
+                            for tf in sorted(tgt_files):
+                                if _is_target(ps.path) and _add_edge(f.id, tf, EdgeKind.IMPORTS):
+                                    stats.imports_resolved += 1
+                            for nm, sym in ns_to_syms.get(norm, {}).items():
+                                binding.setdefault(nm, sym)
+                        else:
+                            pid = _external(ps.lang, ps.repo, module)
+                            if _is_target(ps.path) and _add_edge(f.id, pid, EdgeKind.IMPORTS):
+                                stats.imports_external += 1
+                        continue
+                    # PHP/Java: `use App\Foo\Bar` names a class FQN -> the file
+                    # declaring Bar; bind the class name.
+                    tgt_file = fqn_to_file.get(norm)
                     if tgt_file is not None:
                         if _is_target(ps.path) and _add_edge(f.id, tgt_file, EdgeKind.IMPORTS):
                             stats.imports_resolved += 1
                         local_name = module.rsplit(pack.namespace_sep, 1)[-1]
-                        binding[local_name] = fqn_to_sym[fqn]
+                        binding[local_name] = fqn_to_sym[norm]
                     else:
                         pid = _external(ps.lang, ps.repo, module)
                         if _is_target(ps.path) and _add_edge(f.id, pid, EdgeKind.IMPORTS):

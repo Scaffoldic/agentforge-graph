@@ -60,6 +60,10 @@ class LanguagePack(BaseModel):
     # the resolver maps an FQN import (`use App\Foo\Bar`) to the file declaring that
     # class via the file's namespace declaration + symbol name. "" = no FQN model.
     namespace_sep: str = ""
+    # When True (C#), an import names a *namespace* (`using App.Geo`), not a class:
+    # resolve it to every in-repo file declaring that namespace and bind all their
+    # symbols. When False (PHP/Java), an import is a single class FQN.
+    namespace_import_prefix: bool = False
 
     def _strip_ext(self, path: str) -> str:
         for ext in self.extensions:
