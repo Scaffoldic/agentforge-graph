@@ -197,6 +197,11 @@ class ImportResolver:
                         tgt = exports.get(key, {}).get(exp) if exp else None
                         if tgt:
                             binding[default_name] = tgt
+                    # wildcard import (Ruby `require_relative`): a name-less in-repo
+                    # import makes all the target file's top-level defs callable.
+                    if pack is not None and pack.wildcard_import and not names and not default_name:
+                        for nm, tgt in exports.get(key, {}).items():
+                            binding.setdefault(nm, tgt)
                 else:
                     pid = _external(ps.lang, ps.repo, module)
                     if _is_target(ps.path) and _add_edge(f.id, pid, EdgeKind.IMPORTS):
