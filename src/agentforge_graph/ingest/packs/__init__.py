@@ -13,6 +13,7 @@ from .javascript import JAVASCRIPT_PACK
 from .php import PHP_PACK
 from .python import PYTHON_PACK
 from .ruby import RUBY_PACK
+from .rust import RUST_PACK
 from .typescript import TYPESCRIPT_PACK
 
 BUILTIN_PACKS = [
@@ -25,6 +26,7 @@ BUILTIN_PACKS = [
     JAVA_PACK,
     CSHARP_PACK,
     CPP_PACK,
+    RUST_PACK,
 ]
 
 

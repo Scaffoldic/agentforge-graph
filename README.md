@@ -33,7 +33,7 @@ agent can traverse — every fact carrying its provenance.**
 
 **Status:** the full pipeline works end-to-end on real code — `index → embed →
 enrich → query / map / decisions / routes / explain`, served over MCP. Language
-packs: **Python, TypeScript, JavaScript, Go, Ruby, PHP, Java, C#, C++**. Of the 12 planned features, **11 are
+packs: **all 10 — Python, TypeScript, JavaScript, Go, Ruby, PHP, Java, C#, C++, Rust**. Of the 12 planned features, **11 are
 at least MVP-shipped**; only the temporal/git-evolution layer (feat-009) is
 unstarted. See [`docs/features/TRACKER.md`](docs/features/TRACKER.md).
 
