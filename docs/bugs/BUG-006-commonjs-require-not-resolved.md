@@ -70,11 +70,23 @@ recover part of the graph; full parity needs the `module.exports` mapping.
   → module default export, so a default require binds to that symbol.
 - Directory imports: `require("./router")` → `./router/index` (also helps ESM/TS).
 
-**Residual (follow-ups — file as ENH when prioritised):**
-- `module.exports = { … }` / `module.exports = function () {}` (object/function-
-  expression default exports — e.g. express's `application.js` prototype object).
+**Residual — `module.exports = function name(){}` ✅ closed (2026-06-15,
+`bug/006-residual-fn-export`):** the named function-expression default export (the
+express-style router factory, incl. chained `var p = module.exports = function
+name(){}`) is now extracted as a `Function` symbol AND marked the module default
+export, so `const r = require("./m"); r()` resolves to it. Verified on express
+`lib/`: `router/index.js`'s `module.exports = function router(){}` now appears as
+a Function (Function 37→38, its default-require CALL now resolves). Anonymous
+`module.exports = function(){}` / `= () => {}` have no name → no symbol (the
+IMPORTS edge still exists). Note: `module.exports = { a, b }` needs **no** special
+handling — named destructure (`const { a } = require("./m")`) already binds via
+the resolver's by-name top-level export map.
+
+**Residual (still open — file as ENH when prioritised):**
 - `exports.Name = …` named exports (these feed *member* access `pkg.Name()`,
   which the resolver doesn't resolve regardless — a separate limitation).
+- Default-require of an object-exporting module then member access
+  (`const app = require("./application"); app.init()`) — same member-access limit.
 - `import x = require(...)` CommonJS-in-TS, and ESM `export { x }` / re-export
   chains (explicit export modeling would unify these).
 

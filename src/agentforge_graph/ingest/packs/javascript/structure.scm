@@ -71,3 +71,28 @@
   right: (identifier) @export.default
   (#eq? @_mod "module")
   (#eq? @_exp "exports")) @export
+
+; `module.exports = function name() {}` (named function-expression default export —
+; the express-style router-factory pattern, incl. chained `var p = module.exports =
+; function name(){}`; BUG-006 residual). Two patterns on the same assignment: the
+; first makes the function a Function symbol, the second marks it the module default
+; export — so `const r = require("./m"); r()` resolves to it. (Anonymous
+; `module.exports = function(){}` / `= () => {}` have no name → no symbol; the
+; IMPORTS edge still exists.)
+(assignment_expression
+  left: (member_expression
+    object: (identifier) @_mod
+    property: (property_identifier) @_exp)
+  right: (function_expression
+    name: (identifier) @name) @def.function
+  (#eq? @_mod "module")
+  (#eq? @_exp "exports"))
+
+(assignment_expression
+  left: (member_expression
+    object: (identifier) @_mod
+    property: (property_identifier) @_exp)
+  right: (function_expression
+    name: (identifier) @export.default)
+  (#eq? @_mod "module")
+  (#eq? @_exp "exports")) @export
