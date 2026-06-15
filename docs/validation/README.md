@@ -52,13 +52,13 @@ Pick small-but-real repos; keep them pinned to a commit for reproducibility.
 | A | C# | _tbd_ | ⬜ | — |
 | A | Rust | _tbd_ | ⬜ | — |
 | A | Ruby | **rails/thor @ v1.3.0** | ✅ [run](ruby-thor.md) — **pack shipped**: 36 files, 97 classes/modules, 394 methods, 42 require_relative imports | no bug; follow-up: load-path `require` |
-| A | PHP | _tbd_ | ⬜ | — |
+| A | PHP | **Seldaek/monolog @ 3.6.0** | ✅ [run](php-monolog.md) — **pack shipped** (first namespace/FQN model): 119 files, 112 classes, 284 in-repo `use` imports resolved | no bug; follow-up: grouped/aliased `use` |
 | B | C++ | _tbd_ (structure + heuristic refs only) | ⬜ | — |
 | — | **dogfood** | this repo (agentforge-graph, Python) | ⬜ | partially done (PR #15) |
 
 > Note the gap between the **language packs that ship** (Python, TypeScript,
-> JavaScript, **Go**, **Ruby**) and the **10-language v0.1 scope**:
-> Java/C#/Rust/PHP/C++ packs are still to land (feat-002 follow-ups). Validation
+> JavaScript, **Go**, **Ruby**, **PHP**) and the **10-language v0.1 scope**:
+> Java/C#/Rust/C++ packs are still to land (feat-002 follow-ups). Validation
 > per language is blocked on its pack existing — track both here.
 
 ## Per-run template

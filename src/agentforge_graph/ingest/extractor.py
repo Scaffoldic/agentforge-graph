@@ -93,7 +93,7 @@ class TreeSitterExtractor(Extractor):
         prov = Provenance.parsed(self.name, self.commit)
         file_id = SymbolID.for_symbol(self.pack.lang_slug, self.repo, file.path, "")
 
-        defs, imports, default_export = self._structure(root, src)
+        defs, imports, default_export, namespace = self._structure(root, src)
         self._assign_symbol_ids(defs, file.path)
         by_tsid = {d.ts_id: d for d in defs}
         refs = self._references(root, src, by_tsid, file_id)
@@ -104,6 +104,8 @@ class TreeSitterExtractor(Extractor):
             file_attrs["imports"] = imports
         if default_export:
             file_attrs["default_export"] = default_export
+        if namespace:
+            file_attrs["namespace"] = namespace  # PHP/Java/C# package (FQN resolution)
         if file_id in refs:
             file_attrs["refs"] = refs[file_id]
         nodes.append(
@@ -144,10 +146,13 @@ class TreeSitterExtractor(Extractor):
 
     # --- structure pass -------------------------------------------------
 
-    def _structure(self, root: TSNode, src: bytes) -> tuple[list[_Def], list[dict[str, Any]], str]:
+    def _structure(
+        self, root: TSNode, src: bytes
+    ) -> tuple[list[_Def], list[dict[str, Any]], str, str]:
         defs: list[_Def] = []
         imports: list[dict[str, Any]] = []
         default_export = ""  # CommonJS `module.exports = <name>` (BUG-006)
+        namespace = ""  # PHP/Java/C# package declaration (FQN import resolution)
         rules = self.pack.descriptor_rules
         for _pattern, caps in QueryCursor(self._structure_q).matches(root):
             def_cap = next((c for c in caps if c.startswith("def.")), None)
@@ -170,12 +175,16 @@ class TreeSitterExtractor(Extractor):
                         "line": caps["import"][0].start_point[0] + 1,
                     }
                 )
+            elif "namespace" in caps:
+                ns = caps.get("namespace")
+                if ns:
+                    namespace = _text(ns[0], src)
             elif "export" in caps:
                 ed = caps.get("export.default")
                 if ed:
                     default_export = _text(ed[0], src)
         self._link_scopes(defs)
-        return defs, imports, default_export
+        return defs, imports, default_export, namespace
 
     def _link_scopes(self, defs: list[_Def]) -> None:
         idset = {d.ts_id for d in defs}

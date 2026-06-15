@@ -56,6 +56,10 @@ class LanguagePack(BaseModel):
     # external package — Ruby `require_relative "thor/command"` is file-relative
     # regardless of a leading `./`. Off for TS/JS where bare = npm package.
     relative_bare: bool = False
+    # Separator for namespace/package FQN imports (PHP `\`, Java/C# `.`). When set,
+    # the resolver maps an FQN import (`use App\Foo\Bar`) to the file declaring that
+    # class via the file's namespace declaration + symbol name. "" = no FQN model.
+    namespace_sep: str = ""
 
     def _strip_ext(self, path: str) -> str:
         for ext in self.extensions:
