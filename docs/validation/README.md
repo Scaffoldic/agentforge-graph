@@ -50,16 +50,17 @@ Pick small-but-real repos; keep them pinned to a commit for reproducibility.
 | A | Go | **spf13/cobra @ v1.8.0** | ✅ [run](go-cobra.md) — **pack shipped** (first directory-package lang): 19 files, 511 same-package CALLS, go.mod-aware imports | no bug; follow-ups: receiver→method link, struct fields |
 | A | Java | **google/gson @ 2.10.1** | ✅ [run](java-gson.md) — **pack shipped** (FQN model reused, sep `.`): 81 files, 84 classes, 264 in-repo imports resolved | no bug; follow-up: wildcard/static imports |
 | A | C# | **JamesNK/Newtonsoft.Json @ 13.0.3** | ✅ [run](csharp-newtonsoft-json.md) — **pack shipped** (namespace-prefix model): 233 files, 303 classes, 6175 in-repo namespace imports | no bug; follow-up: namespace-node to collapse fan-out |
-| A | Rust | _tbd_ | ⬜ | — |
+| A | Rust | **serde-rs/json @ v1.0.108** | ✅ [run](rust-serde-json.md) — **pack shipped** (path-derived modules): 39 files, 197 classes, 608 resolved calls | no bug; follow-up: grouped/glob `use` |
 | A | Ruby | **rails/thor @ v1.3.0** | ✅ [run](ruby-thor.md) — **pack shipped**: 36 files, 97 classes/modules, 394 methods, 42 require_relative imports | no bug; follow-up: load-path `require` |
 | A | PHP | **Seldaek/monolog @ 3.6.0** | ✅ [run](php-monolog.md) — **pack shipped** (first namespace/FQN model): 119 files, 112 classes, 284 in-repo `use` imports resolved | no bug; follow-up: grouped/aliased `use` |
 | B | C++ | **fmtlib/fmt @ 10.2.1** | ✅ [run](cpp-fmt.md) — **pack shipped** (Tier B): 16 files, 235 classes, 579 functions, 17 quoted includes resolved | no bug; follow-up: template kind-classification |
 | — | **dogfood** | this repo (agentforge-graph, Python) | ⬜ | partially done (PR #15) |
 
 > Note the gap between the **language packs that ship** (Python, TypeScript,
-> JavaScript, **Go**, **Ruby**, **PHP**, **Java**, **C#**, **C++**) and the
-> **10-language v0.1 scope**: only the **Rust** pack remains (feat-002 follow-up).
-> Validation per language is blocked on its pack existing — track both here.
+> **All 10 language packs now ship** (Python, TypeScript, JavaScript, Go, Ruby,
+> PHP, Java, C#, C++, Rust) — the "10 languages" v0.1 claim is real. Each is
+> validated on ≥1 real OSS repo above. Creds-enabled retrieval/enrich passes on the
+> new packs are the remaining per-language validation work.
 
 ## Per-run template
 

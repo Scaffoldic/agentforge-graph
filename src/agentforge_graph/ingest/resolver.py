@@ -49,6 +49,18 @@ def _strip_root(path: str, roots: set[str]) -> str:
     return path
 
 
+def _path_namespace(path: str) -> str:
+    """Rust: the crate-relative module path derived from a file path, in `/` form.
+    ``src/a/b.rs`` -> ``a/b``; ``src/a/mod.rs`` -> ``a``; ``src/lib.rs`` /
+    ``src/main.rs`` -> ``"" `` (the crate root)."""
+    p = path[4:] if path.startswith("src/") else path
+    if p.endswith(".rs"):
+        p = p[:-3]
+    if p.endswith("/mod"):
+        p = p[:-4]
+    return "" if p in ("lib", "main", "mod") else p
+
+
 class ImportResolver:
     def __init__(self, registry: PackRegistry, commit: str = "", go_module: str = "") -> None:
         self.registry = registry
@@ -100,7 +112,11 @@ class ImportResolver:
             exports.setdefault(module, {}).update({m.name: m.id for m in members})
             # namespace packs: index each top-level symbol by its fully-qualified
             # name (file's declared namespace + symbol name), normalized to "/".
-            ns = f.attrs.get("namespace", "")
+            ns = (
+                _path_namespace(ps.path)
+                if pack.namespace_from_path
+                else f.attrs.get("namespace", "")
+            )
             if ns and pack.namespace_sep:
                 ns_key = ns.replace(pack.namespace_sep, "/")
                 ns_to_files.setdefault(ns_key, set()).add(f.id)
@@ -183,8 +199,12 @@ class ImportResolver:
                             if _is_target(ps.path) and _add_edge(f.id, pid, EdgeKind.IMPORTS):
                                 stats.imports_external += 1
                         continue
-                    # PHP/Java: `use App\Foo\Bar` names a class FQN -> the file
-                    # declaring Bar; bind the class name.
+                    # Rust: `use crate::a::b::Item` -> strip the crate root prefix
+                    # so the path matches a file-derived module key.
+                    if pack.namespace_from_path and norm.startswith("crate/"):
+                        norm = norm[len("crate/") :]
+                    # PHP/Java/Rust: a path naming a single item (class/struct/fn)
+                    # -> the file declaring it; bind the item name.
                     tgt_file = fqn_to_file.get(norm)
                     if tgt_file is not None:
                         if _is_target(ps.path) and _add_edge(f.id, tgt_file, EdgeKind.IMPORTS):

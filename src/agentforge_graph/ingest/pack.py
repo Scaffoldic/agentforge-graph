@@ -64,6 +64,10 @@ class LanguagePack(BaseModel):
     # resolve it to every in-repo file declaring that namespace and bind all their
     # symbols. When False (PHP/Java), an import is a single class FQN.
     namespace_import_prefix: bool = False
+    # When True (Rust), the file's "namespace" is derived from its path (the
+    # crate-relative module path, `src/a/b.rs` -> `a/b`) rather than a declaration,
+    # and a leading `crate::` is stripped from imports. Used with namespace_sep="::".
+    namespace_from_path: bool = False
 
     def _strip_ext(self, path: str) -> str:
         for ext in self.extensions:
