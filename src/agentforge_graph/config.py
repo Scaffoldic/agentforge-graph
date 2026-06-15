@@ -138,6 +138,12 @@ class RepoMapConfig(_Block):
     damping: float = 0.85
     kinds: list[str] = Field(default_factory=lambda: ["Class", "Function", "Method"])
     edge_weights: dict[str, float] = Field(default_factory=_default_edge_weights)
+    # ENH-007: down-weight clearly-private symbols (leading-underscore names or
+    # `_`-prefixed modules) so the map surfaces the public API first. A weight,
+    # not a filter: private hubs can still appear when genuinely central. In
+    # [0, 1]; 0.0 = pure centrality, higher demotes private harder. Private
+    # symbols are multiplied by (1 - public_bias).
+    public_bias: float = 0.5
 
 
 class ServeConfig(_Block):

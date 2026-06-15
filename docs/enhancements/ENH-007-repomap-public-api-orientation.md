@@ -5,7 +5,7 @@
 | **ID** | ENH-007 |
 | **Value/Impact** | Medium (the repo map's whole job is "orient me fast") |
 | **Effort** | S–M |
-| **Status** | proposed |
+| **Status** | **done** (2026-06-15) |
 | **Area** | `repomap` |
 | **Relates to** | feat-007 (budget-aware repo map) |
 
@@ -47,6 +47,28 @@ Add a light **public-API bias** to the ranking (tunable, not a hard filter):
 - Behavior is tunable and defaults sensibly; pure-centrality remains available.
 - A fixture asserts the ordering shift on a repo with a clear public/private
   split.
+
+## Resolution (2026-06-15)
+
+Added `repomap.public_bias` (float in [0, 1], default `0.5`) and applied it in
+`rank_symbols` as a **post-PageRank display weight**: clearly-private symbols are
+multiplied by `(1 - public_bias)`, leaving the graph propagation untouched
+(private hubs still pass their centrality on; they just sort lower themselves).
+"Private" = a leading-underscore name (dunders like `__init__`/`__call__`
+excluded as public protocol) **or** a `_`-prefixed module (`_compat.py`;
+`__init__.py` excluded as the package root). `0.0` restores pure centrality.
+
+Verified on `pallets/click@8.1.7` (index + map, no creds): at `public_bias=0.5`
+the private `_compat.py` helpers `_create_progress` / `strip_ansi` drop out of
+the top-15 and the public `Command` / `Option` rise in. `isatty` (in `_compat`)
+stays #1 — its centrality is so dominant that ×0.5 still tops everything, which
+is precisely the intended **weight-not-filter** behaviour. Tests:
+`test_privacy_classification` (unit) + `test_public_bias_demotes_private_peer`
+(equal-centrality peers → the bias alone flips their order). 402 passed, 97%.
+
+The optional `__all__` / package-root re-export *up-weight* is deferred — the
+private down-weight alone meets the acceptance criterion; up-weighting can follow
+if validation shows a need.
 
 ## Notes
 

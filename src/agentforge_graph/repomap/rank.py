@@ -33,6 +33,29 @@ def _edge_weight(weights: dict[str, float], source: Source) -> float:
     return weights.get(source.value, 0.5)
 
 
+def _is_private_name(name: str) -> bool:
+    """A leading-underscore name is private — except dunders (``__init__``,
+    ``__call__``), which are public protocol surface."""
+    return name.startswith("_") and not (name.startswith("__") and name.endswith("__"))
+
+
+def _is_private_module(path: str) -> bool:
+    """A ``_``-prefixed module is internal (``_compat.py``, ``_winconsole.py``).
+    ``__init__`` is the package root — the de-facto public surface, not private."""
+    stem = path.rsplit("/", 1)[-1].split(".", 1)[0]
+    return stem.startswith("_") and stem != "__init__"
+
+
+def _privacy_multiplier(name: str, path: str, public_bias: float) -> float:
+    """ENH-007: a display-rank weight (not a filter) that demotes clearly-private
+    symbols. ``public_bias`` in [0, 1]; 0 disables. Private → ``1 - public_bias``."""
+    if public_bias <= 0.0:
+        return 1.0
+    if _is_private_name(name) or _is_private_module(path):
+        return max(0.0, 1.0 - public_bias)
+    return 1.0
+
+
 def _pagerank(
     nodes: list[str],
     out_edges: dict[str, dict[str, float]],
@@ -77,6 +100,7 @@ async def rank_symbols(
     edge_weights: dict[str, float],
     focus: Sequence[str] | None = None,
     scope: str | None = None,
+    public_bias: float = 0.0,
 ) -> list[RankedSymbol]:
     nodes = (await store.graph.query(GraphQuery(kinds=kinds, limit=_ALL))).nodes
     if scope is not None:
@@ -100,17 +124,23 @@ async def rank_symbols(
             personalization = {nid: (1.0 if nid in focus_ids else 0.0) for nid in by_id}
 
     scores = _pagerank(list(by_id), dict(out_edges), damping, personalization)
-    ranked = [
-        RankedSymbol(
-            id=node.id,
-            name=node.name,
-            kind=node.kind,
-            path=SymbolID.parse(node.id).path,
-            rank=scores.get(node.id, 0.0),
-            signature=str(node.attrs.get("signature", "")),
+    ranked = []
+    for node in nodes:
+        path = SymbolID.parse(node.id).path
+        # ENH-007: bias the *display* rank toward the public API. Applied after
+        # PageRank so the graph propagation is unchanged — private hubs still
+        # pass their centrality on; they just sort lower themselves.
+        rank = scores.get(node.id, 0.0) * _privacy_multiplier(node.name, path, public_bias)
+        ranked.append(
+            RankedSymbol(
+                id=node.id,
+                name=node.name,
+                kind=node.kind,
+                path=path,
+                rank=rank,
+                signature=str(node.attrs.get("signature", "")),
+            )
         )
-        for node in nodes
-    ]
     ranked.sort(key=lambda r: (-r.rank, r.id))  # id tiebreak for determinism
     return ranked
 
