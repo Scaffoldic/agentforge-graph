@@ -49,7 +49,7 @@ Pick small-but-real repos; keep them pinned to a commit for reproducibility.
 | A | JavaScript | **expressjs/express @ 4.19.2 (CommonJS) + chalk @ v5.3.0 (ESM)** | ✅ [run](javascript-express-chalk.md) — **creds run done** (2026-06-15, express `lib/`, ~$0.02) | BUG-006 (fixed); ESM works |
 | A | Go | **spf13/cobra @ v1.8.0** | ✅ [run](go-cobra.md) — **pack shipped** (first directory-package lang): 19 files, 511 same-package CALLS, go.mod-aware imports | no bug; follow-ups: receiver→method link, struct fields |
 | A | Java | **google/gson @ 2.10.1** | ✅ [run](java-gson.md) — **pack shipped** (FQN model reused, sep `.`): 81 files, 84 classes, 264 in-repo imports resolved | no bug; follow-up: wildcard/static imports |
-| A | C# | _tbd_ | ⬜ | — |
+| A | C# | **JamesNK/Newtonsoft.Json @ 13.0.3** | ✅ [run](csharp-newtonsoft-json.md) — **pack shipped** (namespace-prefix model): 233 files, 303 classes, 6175 in-repo namespace imports | no bug; follow-up: namespace-node to collapse fan-out |
 | A | Rust | _tbd_ | ⬜ | — |
 | A | Ruby | **rails/thor @ v1.3.0** | ✅ [run](ruby-thor.md) — **pack shipped**: 36 files, 97 classes/modules, 394 methods, 42 require_relative imports | no bug; follow-up: load-path `require` |
 | A | PHP | **Seldaek/monolog @ 3.6.0** | ✅ [run](php-monolog.md) — **pack shipped** (first namespace/FQN model): 119 files, 112 classes, 284 in-repo `use` imports resolved | no bug; follow-up: grouped/aliased `use` |
@@ -57,8 +57,8 @@ Pick small-but-real repos; keep them pinned to a commit for reproducibility.
 | — | **dogfood** | this repo (agentforge-graph, Python) | ⬜ | partially done (PR #15) |
 
 > Note the gap between the **language packs that ship** (Python, TypeScript,
-> JavaScript, **Go**, **Ruby**, **PHP**, **Java**) and the **10-language v0.1
-> scope**: C#/Rust/C++ packs are still to land (feat-002 follow-ups). Validation
+> JavaScript, **Go**, **Ruby**, **PHP**, **Java**, **C#**) and the **10-language
+> v0.1 scope**: Rust/C++ packs are still to land (feat-002 follow-ups). Validation
 > per language is blocked on its pack existing — track both here.
 
 ## Per-run template
