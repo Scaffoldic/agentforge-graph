@@ -53,13 +53,13 @@ Pick small-but-real repos; keep them pinned to a commit for reproducibility.
 | A | Rust | _tbd_ | ⬜ | — |
 | A | Ruby | **rails/thor @ v1.3.0** | ✅ [run](ruby-thor.md) — **pack shipped**: 36 files, 97 classes/modules, 394 methods, 42 require_relative imports | no bug; follow-up: load-path `require` |
 | A | PHP | **Seldaek/monolog @ 3.6.0** | ✅ [run](php-monolog.md) — **pack shipped** (first namespace/FQN model): 119 files, 112 classes, 284 in-repo `use` imports resolved | no bug; follow-up: grouped/aliased `use` |
-| B | C++ | _tbd_ (structure + heuristic refs only) | ⬜ | — |
+| B | C++ | **fmtlib/fmt @ 10.2.1** | ✅ [run](cpp-fmt.md) — **pack shipped** (Tier B): 16 files, 235 classes, 579 functions, 17 quoted includes resolved | no bug; follow-up: template kind-classification |
 | — | **dogfood** | this repo (agentforge-graph, Python) | ⬜ | partially done (PR #15) |
 
 > Note the gap between the **language packs that ship** (Python, TypeScript,
-> JavaScript, **Go**, **Ruby**, **PHP**, **Java**, **C#**) and the **10-language
-> v0.1 scope**: Rust/C++ packs are still to land (feat-002 follow-ups). Validation
-> per language is blocked on its pack existing — track both here.
+> JavaScript, **Go**, **Ruby**, **PHP**, **Java**, **C#**, **C++**) and the
+> **10-language v0.1 scope**: only the **Rust** pack remains (feat-002 follow-up).
+> Validation per language is blocked on its pack existing — track both here.
 
 ## Per-run template
 
