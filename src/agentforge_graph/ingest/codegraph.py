@@ -329,13 +329,17 @@ class CodeGraph:
         from agentforge_graph.config import EmbedConfig, RetrieveConfig
         from agentforge_graph.embed import Embedder, embedder_from_config
         from agentforge_graph.retrieve import Retriever
+        from agentforge_graph.retrieve.rerank import reranker_from_config
 
         emb = (
             embedder
             if isinstance(embedder, Embedder)
             else embedder_from_config(EmbedConfig.load(self._config))
         )
-        retriever = Retriever(self._store, emb, RetrieveConfig.load(self._config))
+        rcfg = RetrieveConfig.load(self._config)
+        retriever = Retriever(
+            self._store, emb, rcfg, reranker=reranker_from_config(rcfg.rerank, rcfg.rerank_weight)
+        )
         return await retriever.retrieve(
             query=query,
             symbol=symbol,
