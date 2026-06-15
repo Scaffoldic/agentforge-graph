@@ -50,6 +50,19 @@ indexed 119 files: 971 nodes, 1192 edges
     `use A\B;` is captured; grouped/aliased forms are a query extension.
   - Method/member call resolution = the shared ADR-0004 boundary.
 
+## Creds-enabled run (2026-06-15, live AWS Bedrock)
+
+embed (119 files) + enrich (Claude Haiku), **~$0.23**.
+
+- **Retrieval — good** (~2/3): "how is a log message formatted" →
+  `GelfMessageFormatter.format` (a formatter's `format`, exact-ish); "how is a log
+  record handled" → `Logger` (adjacent, the handle pipeline); "how are log handlers
+  configured" → `FlowdockHandler` (summary, adjacent).
+- **Summaries** accurate (repo summary frames monolog around `Logger` →
+  `Handlers` + `Processors` + `Formatters`). ✅
+- **Pattern tags — 7** (73 candidates): **Factory 4, Strategy 2, Observer 1** —
+  monolog's handler/formatter design genuinely uses these; precise.
+
 ## Next
 
 1. ✅ **PHP pack shipped + validated on monolog** (this run). The FQN resolver

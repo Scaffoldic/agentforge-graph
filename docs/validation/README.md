@@ -59,8 +59,28 @@ Pick small-but-real repos; keep them pinned to a commit for reproducibility.
 > Note the gap between the **language packs that ship** (Python, TypeScript,
 > **All 10 language packs now ship** (Python, TypeScript, JavaScript, Go, Ruby,
 > PHP, Java, C#, C++, Rust) — the "10 languages" v0.1 claim is real. Each is
-> validated on ≥1 real OSS repo above. Creds-enabled retrieval/enrich passes on the
-> new packs are the remaining per-language validation work.
+> validated on ≥1 real OSS repo above, **with a creds-enabled run** (live Bedrock:
+> embed + retrieval + enrich).
+
+### Creds-enabled retrieval/enrich — all 10 packs (2026-06-15)
+
+Live AWS Bedrock (Cohere embed-v4 + Claude Haiku) across every shipped pack's
+validation repo. **Total ≈ \$1.4** (the 7 new packs ≈ \$1.0; click/zod/express
+earlier). Cross-language findings:
+
+- **Embed + retrieval + enrich work on all 10** — no language-specific failures
+  (one transient Bedrock connection reset on the largest repo, fixed by a re-run).
+- **Retrieval precision tracks naming explicitness.** Sharpest where symbols are
+  named directly: **Go (cobra 3/3 exact)** and **Rust (serde_json 3/3 exact)**;
+  strong on Java/Ruby/C# (the canonical symbol is usually the exact hit);
+  fair on dense/template C++ and prose-light code. Same pattern as zod/express:
+  good-always, surgical where naming is explicit (ENH-009 is the precision lever).
+- **Pattern tags scale with OO/GoF density, precisely.** gson **30** (Adapter 16/
+  Factory 11), Newtonsoft.Json **28** (Factory 19/Strategy 5), serde **11**,
+  monolog **7**, fmt **4**, cobra/thor **0** — the judge recalls real patterns
+  where the codebase has them and declines cleanly where it doesn't (no false
+  positives across hundreds of candidates).
+- **Summaries** are accurate and architecture-grounded on every repo.
 
 ## Per-run template
 

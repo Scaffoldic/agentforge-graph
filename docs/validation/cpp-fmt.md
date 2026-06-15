@@ -51,6 +51,20 @@ indexed 16 files: 1072 nodes, 1378 edges
 - No correctness bug for the Tier-B scope. Template kind-classification and the
   out-of-line-def duplicate are the notable follow-ups.
 
+## Creds-enabled run (2026-06-15, live AWS Bedrock)
+
+embed 1693 chunks (Cohere embed-v4) + enrich (Claude Haiku), **~$0.08**.
+
+- **Retrieval — fair** (~2/3): "how is formatted output written" → `core.h`
+  "Formats a string and writes the output to …" (exact-ish); "how is a string
+  formatted" → `compile.h` (adjacent); "how are format arguments handled" →
+  `format.h on_text` (adjacent). Template-heavy headers make exact-symbol
+  retrieval harder (consistent with the Tier-B extraction caveat).
+- **Summaries** accurate (repo summary frames fmt around compile-time format
+  strings, chrono support, ANSI color). ✅
+- **Pattern tags — 4 Factory** (31 candidates): the `make_*`/`create*` helpers;
+  precise.
+
 ## Next
 
 1. ✅ **C++ pack shipped + validated on fmt** (this run).
