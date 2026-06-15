@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from agentforge_graph.ingest.pack import PackRegistry
 
+from .cpp import CPP_PACK
 from .csharp import CSHARP_PACK
 from .go import GO_PACK
 from .java import JAVA_PACK
@@ -23,6 +24,7 @@ BUILTIN_PACKS = [
     PHP_PACK,
     JAVA_PACK,
     CSHARP_PACK,
+    CPP_PACK,
 ]
 
 
