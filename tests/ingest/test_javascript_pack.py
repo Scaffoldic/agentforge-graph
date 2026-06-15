@@ -187,6 +187,34 @@ async def test_js_commonjs_named_require_and_index_dir(tmp_path: Path) -> None:
         await cg.close()
 
 
+async def test_js_commonjs_named_function_export_resolves(tmp_path: Path) -> None:
+    """BUG-006 residual: `module.exports = function name() {}` (express-style router
+    factory) — the named function expression is now a Function symbol AND the
+    module default export, so a default require + call resolves cross-file."""
+    repo = tmp_path / "proj"
+    repo.mkdir()
+    # chained `var proto = module.exports = function router(){}` (express's form)
+    (repo / "router.js").write_text(
+        "var proto = module.exports = function router(options) {\n  return proto;\n};\n"
+    )
+    (repo / "app.js").write_text(
+        "const makeRouter = require('./router');\n\n"
+        "function build() {\n  return makeRouter({});\n}\n"
+    )
+    cg = await CodeGraph.index(repo_path=repo)
+    try:
+        nodes = (await cg.store.graph.query(GraphQuery(limit=10000))).nodes
+        # the named function expression is extracted as a Function
+        assert any(n.name == "router" and n.kind is NodeKind.FUNCTION for n in nodes), (
+            "module.exports = function router(){} should extract `router` as a Function"
+        )
+        assert cg.stats().resolve.imports_resolved >= 1
+        # default require bound to the default export -> cross-file CALL resolves
+        assert "router()." in await _calls_from(cg, "build().")
+    finally:
+        await cg.close()
+
+
 # --- conformance ------------------------------------------------------------
 
 
