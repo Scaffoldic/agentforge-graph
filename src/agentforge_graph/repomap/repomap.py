@@ -24,7 +24,12 @@ class RepoMap:
         self, k: int = 100, focus: Sequence[str] | None = None
     ) -> list[RankedSymbol]:
         ranked = await rank_symbols(
-            self.store, self._kinds(None), self.config.damping, self.config.edge_weights, focus
+            self.store,
+            self._kinds(None),
+            self.config.damping,
+            self.config.edge_weights,
+            focus,
+            public_bias=self.config.public_bias,
         )
         return ranked[:k]
 
@@ -43,6 +48,7 @@ class RepoMap:
             self.config.edge_weights,
             focus,
             scope,
+            public_bias=self.config.public_bias,
         )
         return render_map(ranked, budget, await self._file_summaries())
 
