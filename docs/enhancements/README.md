@@ -12,7 +12,7 @@ One file per enhancement: `ENH-NNN-short-slug.md`. Keep this index current.
 | [ENH-001](ENH-001-pattern-recall-tuning.md) | Improve pattern-tag candidate recall | Medium | M | enrich.heuristics | done |
 | [ENH-002](ENH-002-parallelize-enrichment-calls.md) | Parallelize summary/judge LLM calls | Medium | S–M | enrich | done |
 | [ENH-003](ENH-003-pluggable-model-provider-registry.md) | Pluggable model-provider registry (consumer LLM/embeddings choice) | High | M | embed/enrich | done (phase 1 + 2) |
-| [ENH-004](ENH-004-first-party-storage-backends.md) | First-party storage backends (Neo4j/pgvector) | Med–High | M–L | store | proposed |
+| [ENH-004](ENH-004-first-party-storage-backends.md) | First-party storage backends (Neo4j/pgvector) | Med–High | M–L | store | done |
 | [ENH-005](ENH-005-http-mcp-transport-auth.md) | AuthN/AuthZ for the HTTP MCP transport | High | M | serve | proposed |
 | [ENH-006](ENH-006-cli-path-arg-consistency.md) | Unify the repo-path arg across `ckg` subcommands | Medium | S | cli | done |
 | [ENH-007](ENH-007-repomap-public-api-orientation.md) | Bias the repo map toward the public API | Medium | S–M | repomap | done |

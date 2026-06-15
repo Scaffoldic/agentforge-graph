@@ -7,11 +7,17 @@
 store:                          # feat-003 / ADR-0006 — embedded-first, pluggable
   path: ".ckg"                  # gitignored index dir at repo root
   graph:
-    driver: "kuzu"              # default embedded graph store; opt-in: neo4j
+    driver: "kuzu"              # default embedded graph store
     config: {}
+    # Server backend (ENH-004): pip install agentforge-graph[neo4j]
+    # driver: "neo4j"
+    # config: { uri: "bolt://localhost:7687", user: "neo4j" }  # password: $CKG_NEO4J_PASSWORD
   vectors:
     driver: "lancedb"           # default embedded vector store
     config: {}
+    # Server backend (ENH-004): pip install agentforge-graph[pgvector]
+    # driver: "pgvector"
+    # config: { dsn: "postgresql://user@localhost:5432/ckg" }  # or $CKG_PGVECTOR_DSN
 
 ingest:                         # feat-002 / ADR-0009 — top-10 languages, A/B tiers
   languages: auto               # auto-detect; packs: py, ts, js, java, go, c#, rust, ruby, php, c++

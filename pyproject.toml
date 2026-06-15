@@ -30,8 +30,10 @@ engine = [
 ]
 # Optional reranker (feat-006, OFF by default — pulls torch). `--extra rerank`.
 rerank = ["agentforge-reranker-sentence-transformers"]
-# Opt-in graph-store server backend (feat-003 / ADR-0006). `--extra neo4j`.
-neo4j = ["agentforge-memory-neo4j"]
+# Opt-in server graph backend: Neo4j (ENH-004 / ADR-0006). `--extra neo4j`.
+neo4j = ["neo4j>=5"]
+# Opt-in server vector backend: Postgres + pgvector (ENH-004). `--extra pgvector`.
+pgvector = ["asyncpg>=0.30", "pgvector>=0.3"]
 # Opt-in hosted embeddings (feat-005). `--extra voyage`.
 voyage = ["agentforge-voyage"]
 # AWS Bedrock embeddings + LLM enrichment (feat-005/012, Cohere + Claude). `--extra bedrock`.
@@ -90,6 +92,9 @@ module = [
     "networkx.*",
     "openai.*",       # ENH-003 openai embedder; in the `openai` extra, not the base/dev env
     "anthropic.*",    # ENH-003 anthropic enrichers; SDK ships with the base install
+    "neo4j.*",        # ENH-004 Neo4j graph backend; in the `neo4j` extra
+    "asyncpg.*",      # ENH-004 pgvector backend; in the `pgvector` extra
+    "pgvector.*",     # ENH-004 pgvector backend; in the `pgvector` extra
     "agentforge.*",
     "agentforge_core.*",
     "agentforge_mcp.*",

@@ -142,7 +142,7 @@ consume it**. Workstreams (run mostly in parallel; not feature-numbered):
 | **W2** | **Graph-knowledge quality** | measured parse coverage, resolution rates, impact correctness, retrieval/repo-map usefulness; gaps filed as BUG/ENH/KL | 🔨 click: parsing solid; BUG-004 fixed; **creds run — retrieval 4/4 NL questions correct, summaries accurate+honest, tags precise (0 false positives)** |
 | **W3** | **Remaining language packs** (feat-002 follow-ups) | all 10 languages ship | ✅ **10/10 shipped** (Py/TS/JS/Go/Ruby/PHP/Java/C#/C++/Rust); validated on real repos: cobra/thor/monolog/gson/njson/fmt/[serde_json](../validation/rust-serde-json.md) |
 | **W4** | **MCP consumption proven + documented** | a real agent answers real questions over MCP unattended on ≥1 repo per tier; guide shipped (`docs/guides/using-over-mcp.md` ✅) | 🔨 guide done; tool outputs validated (retrieval 4/4); full agent loop needs an Anthropic API key (framework Agent is API-key, our creds are Bedrock) |
-| **W5** | **Storage backends** (ENH-004) | decision: embedded-only for 0.1, or ship Neo4j + pgvector behind the existing driver registry + conformance suites | ⬜ deferred until W1–W2 expose the need |
+| **W5** | **Storage backends** (ENH-004) | ✅ **done** — shipped Neo4j (graph) + pgvector (vectors) server backends behind the driver registry, each passing the unchanged conformance suite; verified in CI against live containers. Embedded Kuzu/LanceDB stays default. [Guide](../guides/storage-backends.md) | ✅ |
 | **W6** | **DX / packaging** | install/quickstart verified clean-room; version bump 0.0.0→0.1.0, CHANGELOG, tag — **last step, after W1–W4 green** | ⬜ |
 
 Findings feed `docs/{bugs,enhancements,known-limitations}/`; the campaign home and
@@ -204,6 +204,20 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-15** — **ENH-004 storage backends shipped (W5 done).** Two first-party
+  *server* backends behind the existing driver registry, each passing the
+  **unchanged** conformance suite: **Neo4j** graph (`[neo4j]` extra — a Cypher port
+  of the embedded Kuzu default, shared `_rowmap` mapping, id-uniqueness constraint,
+  transactional upsert) and **pgvector** vectors (`[pgvector]` extra — asyncpg +
+  pgvector, `ON CONFLICT` upsert, cosine `<=>` similarity in [0,1]). `Store.open`
+  now threads `store.{graph,vectors}.config` to each driver (`open(path, config)`);
+  SDKs lazy-import inside `open` so the modules load without the extras. Verified
+  against live Neo4j 5 + Postgres/pgvector — locally **and in CI** (new
+  `server-backends` job, public service containers, no secrets) — plus an
+  end-to-end `index→embed→query` against both. Embedded Kuzu/LanceDB stays the
+  zero-config default. Guide: `docs/guides/storage-backends.md`.
+- **2026-06-15** — **W3 complete: all 10 language packs ship** (Go/Ruby/PHP/Java/
+  C#/C++/Rust added to Py/TS/JS), each validated on a real OSS repo. See the W3 row.
 - **2026-06-15** — **Go language pack shipped (W3, first directory-package lang).**
   4th Tier-A pack: extracts func/method/struct(→Class)/interface/defined-type
   (→TypeAlias)/package-const+var(→Variable) + imports. Two pack-agnostic resolver

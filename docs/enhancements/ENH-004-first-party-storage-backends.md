@@ -5,7 +5,7 @@
 | **ID** | ENH-004 |
 | **Value/Impact** | Medium–High (team/server deployments beyond a single embedded repo) |
 | **Effort** | M–L (per backend) |
-| **Status** | proposed |
+| **Status** | **done** (2026-06-15) |
 | **Area** | `store` |
 | **Relates to** | feat-003 (storage adapters), ADR-0006 (embedded-first, pluggable) |
 
@@ -57,6 +57,36 @@ store:
   test, env-gated where it needs a live server / via a container in CI).
 - Embedded (Kuzu/LanceDB) stays the **zero-config default**; server backends are
   strictly opt-in.
+
+## Resolution (2026-06-15)
+
+Shipped both server backends, each passing the **unchanged** conformance suite:
+
+- **Graph — Neo4j** (`store/neo4j_store.py`, `[neo4j]` extra → `neo4j>=5`). Neo4j
+  speaks Cypher like the embedded Kuzu default, so it's a close port: same open
+  schema (one `:CkgNode` label + one `:CkgEdge` rel type, `kind` a property,
+  `attrs` a JSON string), an `id` uniqueness constraint, and multi-statement
+  `upsert` run in one `execute_write` transaction. Passes `GraphStoreConformance`.
+- **Vectors — pgvector** (`store/pgvector_store.py`, `[pgvector]` extra →
+  `asyncpg` + `pgvector`). One `ckg_vectors` table (dim fixed from the first
+  batch), `INSERT … ON CONFLICT` upsert, cosine `<=>` distance exposed as a
+  similarity in `[0, 1]` (BUG-002), the same `ref`/`kind`/`path` filter columns.
+  Passes `VectorStoreConformance`.
+
+**Enabling work (verifiable, embedded unaffected):** `Store.open` now passes the
+`store.{graph,vectors}.config` block to each driver's `open(path, config)`
+(embedded drivers ignore it). The pure `Node`/`Edge` ↔ row mapping was extracted to
+`store/_rowmap.py` and shared by Kuzu + Neo4j. Both server SDKs are imported
+**lazily** inside `open`, so the registry references them unconditionally and the
+modules import with no extra installed. Connection coords live in `ckg.yaml`;
+passwords come from `$CKG_NEO4J_PASSWORD` / `$CKG_PGVECTOR_DSN`.
+
+**Verified:** the full server conformance (19 tests) runs against live Neo4j 5 +
+Postgres/pgvector — locally and **in CI** via a dedicated `server-backends` job
+with public service containers (no secrets). End-to-end `ckg index → embed →
+query` confirmed against Neo4j + pgvector together. Embedded Kuzu/LanceDB stays
+the zero-config default. Guide: `docs/guides/storage-backends.md`. Coverage held
+≥90% (server adapters covered by the live job; main gate at ~94%).
 
 ## Notes / alternatives
 

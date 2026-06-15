@@ -41,8 +41,12 @@ class Store:
         _check_or_init_meta(root)  # fail-at-startup on schema mismatch
         graph_cls = graph_driver(cfg.graph.driver)
         vector_cls = vector_driver(cfg.vectors.driver)
-        graph: GraphStore = await graph_cls.open(root / "graph.kuzu")
-        vectors: VectorStore = await vector_cls.open(root / "vectors.lance")
+        # Embedded drivers use the path under .ckg/; server drivers (ENH-004)
+        # ignore the path and read connection details from their config block.
+        graph: GraphStore = await graph_cls.open(root / "graph.kuzu", config=cfg.graph.config)
+        vectors: VectorStore = await vector_cls.open(
+            root / "vectors.lance", config=cfg.vectors.config
+        )
         return cls(graph, vectors, cfg)
 
     async def expand(
