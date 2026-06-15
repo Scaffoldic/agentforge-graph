@@ -16,6 +16,32 @@ from agentforge_graph.ingest import CodeGraph
 from agentforge_graph.ingest.report import IndexReport
 
 
+def _add_repo_arg(parser: argparse.ArgumentParser, *, positional: bool = True) -> None:
+    """Attach the standard repo-path argument (ENH-006).
+
+    Convention: a positional ``[path]`` defaulting to ``.`` on every subcommand,
+    with ``--path`` / ``--repo`` accepted as back-compat aliases. Precedence
+    (resolved in :func:`main`): positional > ``--path``/``--repo`` > ``.``.
+
+    ``positional=False`` is for subcommands whose positional slot is already
+    taken (e.g. ``query`` / ``tagged``'s leading argument); they keep only the
+    ``--path`` / ``--repo`` aliases.
+    """
+    if positional:
+        parser.add_argument("path", nargs="?", default=None, help="repository path (default: .)")
+    primary = "repository path" + ("" if positional else " (default: .)")
+    parser.add_argument("--path", dest="path_alias", default=None, help=primary)
+    parser.add_argument(
+        "--repo", dest="path_alias", default=None, help="repository path (alias of --path)"
+    )
+
+
+def _resolve_repo_path(args: argparse.Namespace) -> None:
+    """Collapse positional ``path`` + ``--path``/``--repo`` alias into ``args.path``."""
+    if hasattr(args, "path") or hasattr(args, "path_alias"):
+        args.path = getattr(args, "path", None) or getattr(args, "path_alias", None) or "."
+
+
 def _format_report(report: IndexReport) -> str:
     lines = [
         f"indexed {report.files_indexed} files: {report.nodes} nodes, {report.edges} edges",
@@ -220,7 +246,7 @@ async def _serve_mcp(args: argparse.Namespace) -> int:
     port = args.port if args.port is not None else cfg.port
 
     await serve_mcp(
-        repo_path=args.repo,
+        repo_path=args.path,
         config=args.config,
         transport=transport,
         host=host,
@@ -260,7 +286,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     idx = sub.add_parser("index", help="index a repository into the graph")
-    idx.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    _add_repo_arg(idx)
     idx.add_argument("--lang", action="append", help="restrict to a language (repeatable)")
     idx.add_argument(
         "--include", action="append", help="only index paths matching GLOB (repeatable)"
@@ -278,19 +304,19 @@ def build_parser() -> argparse.ArgumentParser:
     idx.set_defaults(func=_index)
 
     st = sub.add_parser("status", help="show the index commit, staleness and node counts")
-    st.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    _add_repo_arg(st)
     st.add_argument("--config", default=None, help="path to ckg.yaml")
     st.set_defaults(func=_status)
 
     emb = sub.add_parser("embed", help="chunk + embed an already-indexed repository")
-    emb.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    _add_repo_arg(emb)
     emb.add_argument("--lang", action="append", help="restrict to a language (repeatable)")
     emb.add_argument("--config", default=None, help="path to ckg.yaml")
     emb.set_defaults(func=_embed)
 
     qry = sub.add_parser("query", help="retrieve connected context for a question")
     qry.add_argument("query", nargs="?", default=None, help="natural-language query")
-    qry.add_argument("--path", default=".", help="repository path (default: .)")
+    _add_repo_arg(qry, positional=False)
     qry.add_argument("--symbol", default=None, help="anchor at an exact symbol id")
     qry.add_argument(
         "--mode",
@@ -305,7 +331,7 @@ def build_parser() -> argparse.ArgumentParser:
     qry.set_defaults(func=_query)
 
     mp = sub.add_parser("map", help="print a budget-aware, centrality-ranked repo map")
-    mp.add_argument("--path", default=".", help="repository path (default: .)")
+    _add_repo_arg(mp)
     mp.add_argument("--budget", type=int, default=2000, help="token budget (default: 2000)")
     mp.add_argument(
         "--focus", action="append", help="path or symbol id to focus ranking (repeatable)"
@@ -315,21 +341,21 @@ def build_parser() -> argparse.ArgumentParser:
     mp.set_defaults(func=_map)
 
     rt = sub.add_parser("routes", help="list extracted framework routes (method, path → handler)")
-    rt.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    _add_repo_arg(rt)
     rt.add_argument("--config", default=None, help="path to ckg.yaml")
     rt.set_defaults(func=_routes)
 
     dec = sub.add_parser(
         "decisions", help="list architecture decisions (ADRs) and what they govern"
     )
-    dec.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    _add_repo_arg(dec)
     dec.add_argument("--scope", default=None, help="restrict to decisions governing a path subtree")
     dec.add_argument("--status", default=None, help="filter by status (e.g. accepted)")
     dec.add_argument("--config", default=None, help="path to ckg.yaml")
     dec.set_defaults(func=_decisions)
 
     enr = sub.add_parser("enrich", help="LLM enrichment (pattern tags / summaries; Bedrock Claude)")
-    enr.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    _add_repo_arg(enr)
     enr.add_argument("--patterns", action="store_true", help="run pattern tagging (default)")
     enr.add_argument("--summaries", action="store_true", help="run module summaries")
     enr.add_argument("--all", action="store_true", help="run both patterns and summaries")
@@ -338,14 +364,14 @@ def build_parser() -> argparse.ArgumentParser:
     enr.set_defaults(func=_enrich)
 
     sm = sub.add_parser("summaries", help="list stored module summaries")
-    sm.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    _add_repo_arg(sm)
     sm.add_argument("--level", default=None, help="filter by level (file|repo)")
     sm.add_argument("--config", default=None, help="path to ckg.yaml")
     sm.set_defaults(func=_summaries)
 
     tg = sub.add_parser("tagged", help="list symbols carrying a design-pattern tag")
     tg.add_argument("pattern", help="pattern name, e.g. Repository")
-    tg.add_argument("path", nargs="?", default=".", help="repository path (default: .)")
+    _add_repo_arg(tg)
     tg.add_argument("--min-confidence", type=float, default=0.7, help="confidence floor (0.7)")
     tg.add_argument("--config", default=None, help="path to ckg.yaml")
     tg.set_defaults(func=_tagged)
@@ -353,7 +379,7 @@ def build_parser() -> argparse.ArgumentParser:
     srv = sub.add_parser(
         "serve-mcp", help="run the MCP server (stdio or http) exposing the CKG tools"
     )
-    srv.add_argument("--repo", default=".", help="repository path (default: .)")
+    _add_repo_arg(srv)
     srv.add_argument("--config", default=None, help="path to ckg.yaml")
     srv.add_argument(
         "--transport",
@@ -374,5 +400,6 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    _resolve_repo_path(args)
     exit_code: int = asyncio.run(args.func(args))
     return exit_code
