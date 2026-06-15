@@ -46,6 +46,16 @@ class LanguagePack(BaseModel):
     # are full module paths the resolver suffix-matches to a repo dir). Drives
     # module_path + resolve_import.
     module_style: Literal["dotted", "relative", "go"] = "dotted"
+    # When True, an in-repo import that names no symbols (e.g. Ruby
+    # `require_relative "./x"`) binds *all* of the target file's top-level defs
+    # into the importer's scope — a wildcard import. Off for explicit-name
+    # languages (Python/TS/JS) where a bare import is side-effect-only.
+    wildcard_import: bool = False
+    # When True (with module_style="relative"), a *bare* specifier (no `./`) is
+    # still resolved against the importer's directory rather than treated as an
+    # external package — Ruby `require_relative "thor/command"` is file-relative
+    # regardless of a leading `./`. Off for TS/JS where bare = npm package.
+    relative_bare: bool = False
 
     def _strip_ext(self, path: str) -> str:
         for ext in self.extensions:
@@ -88,7 +98,7 @@ class LanguagePack(BaseModel):
             return raw_module
         if self.module_style == "relative":
             target = self._strip_ext(raw_module)
-            if target.startswith("./") or target.startswith("../"):
+            if target.startswith("./") or target.startswith("../") or self.relative_bare:
                 base = posixpath.dirname(importer_path)
                 return posixpath.normpath(posixpath.join(base, target))
             return target
