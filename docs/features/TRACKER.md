@@ -204,6 +204,17 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-15** — **Creds-enabled validation runs on zod + express** (live
+  Bedrock, ~$0.11 total). **zod** (TS, src-only, ~$0.09): ENH-008 verified —
+  Interface/TypeAlias/Variable **0 → 57/241/21**, and `ZodIssueCode`/`ZodParsedType`/
+  `ZodFirstPartyTypeKind` now extracted. Embed 1047 chunks; retrieval 1/4 exact +
+  3/4 adjacent; summaries accurate; **2 Factory tags** (precise, 6/8 rejected).
+  **express** (JS `lib/`, ~$0.02): BUG-006 holds (12 in-repo imports); retrieval
+  2/4 exact (routing, `res.send`) + 2/4 adjacent; summaries architecturally precise;
+  1 Factory tag. Both confirm the engine is sound; retrieval is **good-not-surgical**
+  on dense (zod `types.ts`) / terse (express) code — filed **ENH-009**
+  (rerank / symbol-anchoring / summary-augmented embeddings). All 3 shipped packs
+  now have a creds run. W4 agent-loop still needs `ANTHROPIC_API_KEY`.
 - **2026-06-15** — **3 validation-driven enhancements DONE.** **ENH-006** (PR #32):
   every `ckg` subcommand now takes a positional `[path]` (default `.`) with
   `--path`/`--repo` as back-compat aliases — the W1 path-arg papercut is gone.
