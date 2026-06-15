@@ -143,7 +143,7 @@ consume it**. Workstreams (run mostly in parallel; not feature-numbered):
 | **W3** | **Remaining language packs** (feat-002 follow-ups) | all 10 languages ship | ✅ **10/10 shipped** (Py/TS/JS/Go/Ruby/PHP/Java/C#/C++/Rust); validated on real repos: cobra/thor/monolog/gson/njson/fmt/[serde_json](../validation/rust-serde-json.md) |
 | **W4** | **MCP consumption proven + documented** | a real agent answers real questions over the CKG tools unattended; guide shipped (`docs/guides/using-over-mcp.md` ✅) | ✅ **done** — `Agent` (Sonnet 4.6) dogfood on this repo: tool-chose + chained `ckg_search`/`ckg_impact`/`ckg_decisions`/`ckg_repo_map`/`ckg_symbol`, answered 3/3 correctly (languages, ADRs, impact), unattended (~$0.24). [run](../validation/w4-agent-dogfood.md) |
 | **W5** | **Storage backends** (ENH-004) | ✅ **done** — shipped Neo4j (graph) + pgvector (vectors) server backends behind the driver registry, each passing the unchanged conformance suite; verified in CI against live containers. Embedded Kuzu/LanceDB stays default. [Guide](../guides/storage-backends.md) | ✅ |
-| **W6** | **DX / packaging** | install/quickstart verified clean-room; version bump 0.0.0→0.1.0, CHANGELOG, tag — **last step, after W1–W4 green** | ⬜ |
+| **W6** | **DX / packaging** | install/quickstart verified clean-room; version bump 0.0.0→0.1.0, CHANGELOG, tag | 🔨 **prep done** — version → 0.1.0, `CHANGELOG.md` written, wheel builds with all 21 `.scm`, clean-room `pip install [engine]` → `ckg index` works. **Tag `v0.1.0` held** pending a final validation pass (user's call) |
 
 Findings feed `docs/{bugs,enhancements,known-limitations}/`; the campaign home and
 per-run template live in [`docs/validation/`](../validation/README.md).
@@ -204,6 +204,13 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-15** — **W6 prep — 0.1.0 release prep (tag held).** Version bumped
+  `0.0.0 → 0.1.0`; `CHANGELOG.md` written (the full 0.1 surface). Packaging verified:
+  `uv build` ships all 21 `.scm` query files across the 10 packs + fastapi; a
+  **clean-room** `pip install agentforge-graph[engine]` into a fresh venv → `ckg
+  --help` + `ckg index` work end-to-end and report version 0.1.0. README "Status"
+  → 0.1.0. **The `v0.1.0` tag is intentionally NOT cut yet** — a final validation
+  pass first (user's request). All roadmap W1–W5 + W4 are done; W6 is the tag.
 - **2026-06-15** — **W4 done — agent dogfood over the CKG tools.** A real framework
   `Agent` (Sonnet 4.6, live Anthropic key) answered 3 real questions about this repo
   **unattended**, choosing + chaining the CKG tools on its own: languages

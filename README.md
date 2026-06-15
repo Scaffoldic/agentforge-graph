@@ -31,11 +31,15 @@ agent can traverse — every fact carrying its provenance.**
 | **Agent-native** | Served read-only over MCP (9 tools) or as a native AgentForge toolset. Every response carries a staleness envelope. |
 | **Embedded-first** | Local Kuzu graph + LanceDB vectors under `.ckg/`. No server to run. Storage and models are pluggable (see below). |
 
-**Status:** the full pipeline works end-to-end on real code — `index → embed →
-enrich → query / map / decisions / routes / explain`, served over MCP. Language
-packs: **all 10 — Python, TypeScript, JavaScript, Go, Ruby, PHP, Java, C#, C++, Rust**. Of the 12 planned features, **11 are
-at least MVP-shipped**; only the temporal/git-evolution layer (feat-009) is
-unstarted. See [`docs/features/TRACKER.md`](docs/features/TRACKER.md).
+**Status: 0.1.0 — production-grade.** The full pipeline works end-to-end on real
+code — `index → embed → enrich → query / map / decisions / routes / explain`,
+served over MCP. Language packs: **all 10 — Python, TypeScript, JavaScript, Go,
+Ruby, PHP, Java, C#, C++, Rust** (each validated on a real OSS repo, with a
+creds-enabled embed/retrieval/enrich run). Opt-in server storage (Neo4j /
+pgvector); HTTP MCP auth; a real agent answers questions over the tools
+unattended. Of the 12 planned features, **11 are shipped**; only the temporal/
+git-evolution layer (feat-009) is post-0.1. See the
+[`CHANGELOG`](CHANGELOG.md) and [`docs/features/TRACKER.md`](docs/features/TRACKER.md).
 
 ---
 

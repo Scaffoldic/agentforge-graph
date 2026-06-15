@@ -22,3 +22,6 @@ docs/framework/
 
 # Keep .agentforge-state checked in — it tracks framework managed
 # files for upgrade.
+
+# build artifacts (uv build / hatchling)
+/dist/
