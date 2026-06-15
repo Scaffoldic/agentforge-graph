@@ -98,6 +98,7 @@ module = [
     "agentforge.*",
     "agentforge_core.*",
     "agentforge_mcp.*",
+    "mcp.*",          # ENH-005 HTTP-auth runner; mcp SDK ships in the [mcp] extra
 ]
 ignore_missing_imports = true
 

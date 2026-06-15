@@ -61,27 +61,40 @@ The client owns the process lifetime; scoped to one repo.
 ### http — a long-running server clients reach by URL
 
 ```bash
-ckg serve-mcp --repo . --transport http                 # → http://127.0.0.1:8765/mcp
+ckg serve-mcp --repo . --transport http                 # → http://127.0.0.1:8765/mcp (localhost, no auth)
+export CKG_HTTP_AUTH_TOKEN=$(openssl rand -hex 32)      # exposed port → require a token
 ckg serve-mcp --repo . --transport http --host 0.0.0.0 --port 9000
 ```
 
-Connect by **`url`** (streamable-HTTP, mounted at `/mcp`):
+Connect by **`url`** (streamable-HTTP, mounted at `/mcp`), sending the token as a
+bearer header:
 
 ```json
 {
   "mcpServers": {
-    "ckg": { "url": "http://127.0.0.1:8765/mcp" }
+    "ckg": {
+      "url": "http://your-host:9000/mcp",
+      "headers": { "Authorization": "Bearer <CKG_HTTP_AUTH_TOKEN>" }
+    }
   }
 }
 ```
 
 Use http when the server should outlive the client, be shared by several
-agents/clients, or run on another host/container. Defaults bind `127.0.0.1` —
-**there's no built-in auth at 0.1, so for remote access front it with a
-reverse proxy + TLS + authN.** Run one server per repo (or one process per repo).
+agents/clients, or run on another host/container. Defaults bind `127.0.0.1`.
+
+**Auth (ENH-005):** set a **bearer token** — `serve.http_auth_token` in `ckg.yaml`
+or, preferably, `$CKG_HTTP_AUTH_TOKEN` — and every request must carry a matching
+`Authorization: Bearer …` (others get `401`; the token is never logged). It's
+**off by default** so the localhost loop needs nothing. Binding a **non-loopback**
+host (`0.0.0.0`) with no token is **refused** unless you pass
+`--allow-unauthenticated` — an exposed port is never silently wide open. For
+public/multi-tenant exposure, still front it with TLS + a proxy; the token makes
+the *simple* secure deployment need no extra infrastructure. stdio needs no auth
+(the client owns the subprocess). Run one server per repo.
 
 Either transport can be set as the default in `ckg.yaml` (`serve.transport`,
-`serve.host`, `serve.port`); the CLI flags override it.
+`serve.host`, `serve.port`, `serve.http_auth_token`); the CLI flags override it.
 
 ## 2b. Use in-process (AgentForge agents)
 

@@ -244,6 +244,7 @@ async def _serve_mcp(args: argparse.Namespace) -> int:
     transport = cast(Transport, args.transport or cfg.transport)
     host = args.host or cfg.host
     port = args.port if args.port is not None else cfg.port
+    auth_token = args.auth_token or cfg.http_auth_token  # env fallback in build_mcp_server
 
     await serve_mcp(
         repo_path=args.path,
@@ -252,6 +253,8 @@ async def _serve_mcp(args: argparse.Namespace) -> int:
         host=host,
         port=port,
         refresh_on_call=args.refresh_on_call,
+        auth_token=auth_token,
+        allow_unauthenticated=args.allow_unauthenticated,
     )
     return 0
 
@@ -389,6 +392,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     srv.add_argument("--host", default=None, help="http transport bind host (default: 127.0.0.1)")
     srv.add_argument("--port", type=int, default=None, help="http transport port (default: 8765)")
+    srv.add_argument(
+        "--auth-token",
+        default="",
+        help="http: require this bearer token (ENH-005; or $CKG_HTTP_AUTH_TOKEN / ckg.yaml)",
+    )
+    srv.add_argument(
+        "--allow-unauthenticated",
+        action="store_true",
+        help="http: permit binding a non-loopback host with no auth (deliberate opt-in)",
+    )
     srv.add_argument(
         "--refresh-on-call",
         action="store_true",

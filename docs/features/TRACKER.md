@@ -204,6 +204,15 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-15** — **ENH-005 HTTP MCP auth shipped.** A bearer-token gate for the
+  streamable-HTTP transport: `serve.http_auth_token` / `$CKG_HTTP_AUTH_TOKEN` →
+  every request needs a matching `Authorization: Bearer …` (else 401; constant-time
+  compare; token never logged). **Off by default** (localhost loop unchanged), and
+  binding a non-loopback host with no token is **refused** unless
+  `--allow-unauthenticated`. The framework exposes no auth hook, so the authed path
+  uses `serve/http_runner.py` (`CkgHttpRunner` + pure-ASGI `BearerAuthMiddleware`)
+  via `from_http(runner=…)`; the no-auth path stays 100% framework. Verified by
+  unit tests + a live-HTTP test (real uvicorn → 401/pass-through). stdio untouched.
 - **2026-06-15** — **ENH-004 storage backends shipped (W5 done).** Two first-party
   *server* backends behind the existing driver registry, each passing the
   **unchanged** conformance suite: **Neo4j** graph (`[neo4j]` extra — a Cypher port
