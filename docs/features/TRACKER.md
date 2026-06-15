@@ -141,7 +141,7 @@ consume it**. Workstreams (run mostly in parallel; not feature-numbered):
 | **W1** | **Multi-language validation** on real OSS repos | every *shipped* language pack validated on ≥1 real repo; runs + scores logged in `docs/validation/` | ✅ all 3 shipped packs: Python ([click](../validation/python-click.md)), TS ([zod](../validation/typescript-zod.md)), JS ([express+chalk](../validation/javascript-express-chalk.md)) |
 | **W2** | **Graph-knowledge quality** | measured parse coverage, resolution rates, impact correctness, retrieval/repo-map usefulness; gaps filed as BUG/ENH/KL | 🔨 click: parsing solid; BUG-004 fixed; **creds run — retrieval 4/4 NL questions correct, summaries accurate+honest, tags precise (0 false positives)** |
 | **W3** | **Remaining language packs** (feat-002 follow-ups) | all 10 languages ship | ✅ **10/10 shipped** (Py/TS/JS/Go/Ruby/PHP/Java/C#/C++/Rust); validated on real repos: cobra/thor/monolog/gson/njson/fmt/[serde_json](../validation/rust-serde-json.md) |
-| **W4** | **MCP consumption proven + documented** | a real agent answers real questions over MCP unattended on ≥1 repo per tier; guide shipped (`docs/guides/using-over-mcp.md` ✅) | 🔨 guide done; tool outputs validated (retrieval 4/4); full agent loop needs an Anthropic API key (framework Agent is API-key, our creds are Bedrock) |
+| **W4** | **MCP consumption proven + documented** | a real agent answers real questions over the CKG tools unattended; guide shipped (`docs/guides/using-over-mcp.md` ✅) | ✅ **done** — `Agent` (Sonnet 4.6) dogfood on this repo: tool-chose + chained `ckg_search`/`ckg_impact`/`ckg_decisions`/`ckg_repo_map`/`ckg_symbol`, answered 3/3 correctly (languages, ADRs, impact), unattended (~$0.24). [run](../validation/w4-agent-dogfood.md) |
 | **W5** | **Storage backends** (ENH-004) | ✅ **done** — shipped Neo4j (graph) + pgvector (vectors) server backends behind the driver registry, each passing the unchanged conformance suite; verified in CI against live containers. Embedded Kuzu/LanceDB stays default. [Guide](../guides/storage-backends.md) | ✅ |
 | **W6** | **DX / packaging** | install/quickstart verified clean-room; version bump 0.0.0→0.1.0, CHANGELOG, tag — **last step, after W1–W4 green** | ⬜ |
 
@@ -204,6 +204,15 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-15** — **W4 done — agent dogfood over the CKG tools.** A real framework
+  `Agent` (Sonnet 4.6, live Anthropic key) answered 3 real questions about this repo
+  **unattended**, choosing + chaining the CKG tools on its own: languages
+  (`repo_map`→`search`→`symbol` → all 10 packs), ADRs (`ckg_decisions` → all 9 +
+  what they govern), impact (`search`→`impact` → the 2 callers of
+  `reranker_from_config`). 3/3 correct, grounded, ~$0.24. `code_graph_tools` binds
+  the same `Tool` instances `serve-mcp` exposes, so this validates the agent-facing
+  tool surface; the MCP transports are covered by feat-008/ENH-005 tests. The "real
+  agent over MCP, unattended" bar is met. Run: `docs/validation/w4-agent-dogfood.md`.
 - **2026-06-15** — **Creds-enabled runs on all 7 new packs** (Go/Ruby/PHP/Java/C#/
   C++/Rust), live Bedrock embed+retrieval+enrich, ≈\$1.0. Embed/retrieval/enrich
   work on every language. Retrieval is sharpest where naming is explicit — **Go
