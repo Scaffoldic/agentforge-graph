@@ -12,17 +12,20 @@ pick, and milestones. Specs live alongside in
 > in `.claude/state/current.md` once the project is scaffolded — this
 > tracker is the planning/dependency view, not the live work log.
 
-_Last updated: 2026-06-14 (eod) · **MVP feature-complete; hardening 0.1 in progress.**
+_Last updated: 2026-06-15 · **MVP feature-complete; hardening 0.1 in progress.**
 All 12 features ≥MVP. **OSS-prep done** (Apache-2.0 PR #17); **ENH-003 DONE** — registry
 + non-Bedrock adapters (PR #18/#20); **MCP dual transport** stdio+HTTP (PR #22). **0.1
 is a PRODUCTION-GRADE bar** — see [Road to 0.1](#road-to-01--production-hardening).
-**Today: W1 multi-language validation DONE for all 3 shipped packs** (Python/click,
+**W1 multi-language validation DONE for all 3 shipped packs** (Python/click,
 TS/zod, JS/express+chalk) — each surfaced + **fixed a real bug**: BUG-004 (Py relative
 imports), BUG-005 (TS abstract classes), BUG-006 (JS CommonJS require). **First
 creds-enabled run** (live Bedrock, click, ~$0.13): retrieval 4/4, summaries
-accurate+honest, tags precise. Open: ENH-005/006/007/008, BUG-006 residuals, full
-MCP agent-loop (needs ANTHROPIC_API_KEY), W3 (other 7 packs), storage (ENH-004).
-Release (version/changelog/tag) is LAST, after W1–W4 green._
+accurate+honest, tags precise. **2026-06-15: 3 validation ENH wins DONE** — ENH-006
+(CLI path-arg unify, PR #32), ENH-008 (TS/JS interfaces/enums/types/arrow-consts, PR
+#33), ENH-007 (repo-map public-API bias, PR #34, verified on click). Open: ENH-005
+(HTTP MCP auth), BUG-006 residuals, full MCP agent-loop (needs ANTHROPIC_API_KEY), W3
+(other 7 packs), storage (ENH-004). Release (version/changelog/tag) is LAST, after
+W1–W4 green._
 
 ---
 
@@ -201,6 +204,19 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-15** — **3 validation-driven enhancements DONE.** **ENH-006** (PR #32):
+  every `ckg` subcommand now takes a positional `[path]` (default `.`) with
+  `--path`/`--repo` as back-compat aliases — the W1 path-arg papercut is gone.
+  **ENH-008** (PR #33): the TS/JS packs now extract interfaces (→Interface), enums
+  incl. `const enum` (→Class), type aliases (→TypeAlias), arrow/function-bound
+  consts (→Function), and top-level const object/array tables (→Variable) — much
+  of the real TS surface that was previously invisible. Sprawl-controlled:
+  top-level only, and call-result consts excluded so `require(...)` bindings stay
+  import-only. **ENH-007** (PR #34): added `repomap.public_bias` (default 0.5), a
+  post-PageRank display weight that demotes leading-underscore names and
+  `_`-prefixed modules — verified on click, the public `Command`/`Option` now
+  surface ahead of `_compat.py` internals. All three: 402 tests, 97% cov, mypy+ruff
+  clean. No schema changes (vocab was locked, ADR-0005).
 - **2026-06-14** — **First creds-enabled run (live AWS Bedrock, click, ~$0.13).**
   W2/W4 dimensions that were "pending creds" now scored: **retrieval 4/4** NL
   questions returned the correct symbol (`invoke`, `style`, `UsageError`, option
