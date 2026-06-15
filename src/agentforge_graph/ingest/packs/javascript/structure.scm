@@ -14,6 +14,30 @@
 (method_definition
   name: (property_identifier) @name) @def.function
 
+; --- value bindings (ENH-008, shared with TS) ---
+; `const f = (…) => …` / `const f = function () {}` -> Function (named from the
+; binding). Captured at any depth — these are genuine functions. (JS has no
+; interface/enum/type-alias, so those TS captures are absent here.)
+(lexical_declaration
+  (variable_declarator
+    name: (identifier) @name
+    value: [(arrow_function) (function_expression)])) @def.function
+
+; module-level const data tables -> Variable. Scoped to the top level (program /
+; export) so locals don't inflate it. Only object/array initializers — NOT call
+; results: `const x = require(...)` is an import binding (BUG-006), not a symbol.
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier) @name
+      value: [(object) (array)])) @def.variable)
+(program
+  (export_statement
+    (lexical_declaration
+      (variable_declarator
+        name: (identifier) @name
+        value: [(object) (array)])) @def.variable))
+
 ; --- imports (ESM) ---
 ; `import { a, b } from "./mod"` -> module (relative path) + bound names
 (import_statement

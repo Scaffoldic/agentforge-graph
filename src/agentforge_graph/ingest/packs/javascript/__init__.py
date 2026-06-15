@@ -26,6 +26,8 @@ JAVASCRIPT_PACK = LanguagePack(
         kinds={
             "def.class": NodeKind.CLASS,
             "def.function": NodeKind.FUNCTION,  # promoted to METHOD inside a class
+            # ENH-008: arrow/function-bound consts + module-level const tables.
+            "def.variable": NodeKind.VARIABLE,
         }
     ),
     module_style="relative",  # JS imports are path specifiers (./util), not dotted

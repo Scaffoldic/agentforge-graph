@@ -85,6 +85,25 @@ def test_js_signature_captured() -> None:
     assert by_desc["square()."].attrs["signature"].startswith("function square")
 
 
+def test_js_value_bindings_extracted() -> None:
+    # ENH-008: arrow/function-bound consts -> Function; module-level const
+    # tables -> Variable. JS has no interface/enum/type-alias.
+    src = (
+        "export const handler = (x) => x + 1;\n"
+        "export const fn = function (y) { return y; };\n"
+        "export const TABLE = { a: 1 };\n"
+        "const plain = 5;\n"
+    )
+    sf = SourceFile(
+        path="t.js", text=src, language="js", content_hash=hashlib.sha256(src.encode()).hexdigest()
+    )
+    by_desc = {SymbolID.parse(n.id).descriptor: n for n in _extractor().extract(sf).nodes}
+    assert by_desc["handler()."].kind is NodeKind.FUNCTION
+    assert by_desc["fn()."].kind is NodeKind.FUNCTION
+    assert by_desc["TABLE."].kind is NodeKind.VARIABLE
+    assert "plain." not in by_desc  # scalar const not captured
+
+
 # --- end-to-end resolution --------------------------------------------------
 
 

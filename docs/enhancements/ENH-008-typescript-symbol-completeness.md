@@ -5,7 +5,7 @@
 | **ID** | ENH-008 |
 | **Value/Impact** | Medium–High (large share of real TS surface is non-class/function) |
 | **Effort** | M |
-| **Status** | proposed |
+| **Status** | **done** (2026-06-15) |
 | **Area** | `ingest.packs.typescript` / `ingest.packs.javascript` |
 | **Relates to** | feat-002 (extraction); follows W1 validation on zod |
 
@@ -53,6 +53,24 @@ distinction). Sequence after BUG-005 (abstract classes), which is a strict bug.
 - New kinds (if any) are reflected in the schema, conformance suite, and the MCP
   tool outputs without breaking the locked v1 tool schemas.
 - No regression to class/function/method extraction.
+
+## Resolution (2026-06-15)
+
+Extended `structure.scm` for both packs + the kind maps. New TS captures:
+`interface_declaration` → **Interface**, `enum_declaration` (incl. `const enum`)
+→ **Class** (no dedicated Enum kind — a named nominal type), `type_alias_declaration`
+→ **TypeAlias**. New TS+JS captures: arrow/function-bound consts (`const f = (…) =>
+…` / `= function(){}`) → **Function** (named from the binding, at any depth), and
+**top-level** `const` object/array tables → **Variable**.
+
+Two scoping decisions kept sprawl down: (1) Variable capture is **program/export
+top-level only**, so locals inside function bodies don't inflate the graph; (2)
+call-result consts are **deliberately not** captured as Variables — `const x =
+require(...)` is an import binding (BUG-006) and capturing it would shadow the
+cross-file CALL resolution. Call-bound public constants (zod's `ZodIssueCode =
+arrayToEnum([...])`) stay findable via their companion `type X = …` alias. All
+new kinds were already in the locked v1 vocabulary (ADR-0005), so no schema
+change. Conformance fixtures added to both pack tests. 400 passed, 97%.
 
 ## Notes
 

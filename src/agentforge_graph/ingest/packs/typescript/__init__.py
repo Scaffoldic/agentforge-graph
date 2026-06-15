@@ -20,6 +20,11 @@ TYPESCRIPT_PACK = LanguagePack(
         kinds={
             "def.class": NodeKind.CLASS,
             "def.function": NodeKind.FUNCTION,  # promoted to METHOD inside a class
+            # ENH-008: broaden the TS surface beyond class/function/method.
+            "def.interface": NodeKind.INTERFACE,
+            "def.enum": NodeKind.CLASS,  # no dedicated Enum kind; a nominal type
+            "def.type": NodeKind.TYPE_ALIAS,
+            "def.variable": NodeKind.VARIABLE,  # module-level const tables/enums
         }
     ),
     module_style="relative",  # TS imports are path specifiers (./util), not dotted
