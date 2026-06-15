@@ -5,7 +5,7 @@
 | **ID** | ENH-006 |
 | **Value/Impact** | Medium (DX — surprising, costs every new user a `--help`) |
 | **Effort** | S |
-| **Status** | proposed |
+| **Status** | **done** (2026-06-15) |
 | **Area** | `cli` |
 | **Relates to** | feat-002/006/007/008 (the subcommands) |
 
@@ -37,6 +37,17 @@ Pick one convention and make the others aliases for backward-compatibility:
 - The same path argument works on every subcommand.
 - Existing `--path` (`map`) and `--repo` (`serve-mcp`) invocations still parse.
 - A parser test enforces the convention so it can't drift again.
+
+## Resolution (2026-06-15)
+
+Added `_add_repo_arg(parser, *, positional=True)` in `cli.py`: a positional
+`[path]` (default `.`) plus `--path` / `--repo` aliases (shared dest
+`path_alias`). `main()` calls `_resolve_repo_path` to collapse them with
+precedence **positional > `--path`/`--repo` > `.`**. `serve-mcp` now reads
+`args.path` (was `args.repo`); `query` / `tagged` keep their leading positional
+and take the path via the aliases only. `tests/test_cli_path_args.py`
+parametrizes every subcommand over all three forms + precedence + the legacy
+`--path`/`--repo` invocations so the convention can't drift. 398 passed, 97%.
 
 ## Notes
 
