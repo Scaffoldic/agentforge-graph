@@ -47,8 +47,8 @@ Pick small-but-real repos; keep them pinned to a commit for reproducibility.
 | A | Python | **pallets/click @ 8.1.7** | ✅ [run](python-click.md) — **full creds run done** (embed+retrieval+enrich on live Bedrock, ~$0.13) | BUG-004 (fixed), ENH-006 (done), ENH-007 (done) |
 | A | TypeScript | **colinhacks/zod @ v3.23.8** | ✅ [run](typescript-zod.md) — **creds run done** (2026-06-15, ~$0.09; ENH-008 verified: Interface/TypeAlias/Variable 0→57/241/21) | BUG-005 (fixed), ENH-008 (done) |
 | A | JavaScript | **expressjs/express @ 4.19.2 (CommonJS) + chalk @ v5.3.0 (ESM)** | ✅ [run](javascript-express-chalk.md) — **creds run done** (2026-06-15, express `lib/`, ~$0.02) | BUG-006 (fixed); ESM works |
+| A | Go | **spf13/cobra @ v1.8.0** | ✅ [run](go-cobra.md) — **pack shipped** (first directory-package lang): 19 files, 511 same-package CALLS, go.mod-aware imports | no bug; follow-ups: receiver→method link, struct fields |
 | A | Java | _tbd_ | ⬜ | — |
-| A | Go | _tbd_ | ⬜ | — |
 | A | C# | _tbd_ | ⬜ | — |
 | A | Rust | _tbd_ | ⬜ | — |
 | A | Ruby | _tbd_ | ⬜ | — |
@@ -57,7 +57,7 @@ Pick small-but-real repos; keep them pinned to a commit for reproducibility.
 | — | **dogfood** | this repo (agentforge-graph, Python) | ⬜ | partially done (PR #15) |
 
 > Note the gap between the **language packs that ship** (Python, TypeScript,
-> JavaScript) and the **10-language v0.1 scope**: Java/Go/C#/Rust/Ruby/PHP/C++
+> JavaScript, **Go**) and the **10-language v0.1 scope**: Java/C#/Rust/Ruby/PHP/C++
 > packs are still to land (feat-002 follow-ups). Validation per language is
 > blocked on its pack existing — track both here.
 

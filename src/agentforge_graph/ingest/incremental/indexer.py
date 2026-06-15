@@ -27,7 +27,7 @@ from agentforge_graph.store import Store
 from ..pack import PackRegistry
 from ..report import IndexReport
 from ..resolver import ImportResolver
-from ..source import RepoSource
+from ..source import RepoSource, read_go_module
 from .detect import ChangeSet
 from .dirty import DirtySet
 
@@ -82,9 +82,9 @@ class IncrementalIndexer:
         # (4) scoped re-resolve: clear the scope's resolved edges, rebuild them
         scope = await self._resolve_scope(changes)
         await self.store.graph.clear_resolved(sorted(scope))
-        stats = await ImportResolver(self.registry, self.commit).resolve(
-            self.store.graph, changed_files=sorted(scope)
-        )
+        stats = await ImportResolver(
+            self.registry, self.commit, go_module=read_go_module(self.source.root)
+        ).resolve(self.store.graph, changed_files=sorted(scope))
         report.resolve = stats
         imports = stats.imports_resolved + stats.imports_external
         report.by_edge_kind["IMPORTS"] = report.by_edge_kind.get("IMPORTS", 0) + imports

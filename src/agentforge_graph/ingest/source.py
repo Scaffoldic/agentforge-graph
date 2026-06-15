@@ -18,6 +18,22 @@ from agentforge_graph.core import SourceFile
 from .pack import PackRegistry
 
 
+def read_go_module(root: str | Path) -> str:
+    """The ``module`` path from a repo's ``go.mod`` (e.g.
+    ``github.com/spf13/cobra``), or ``""`` if absent. The resolver strips this
+    prefix to map a Go import path to an in-repo package dir, including the
+    *root* package (whose dir key is ``""`` and can't be suffix-matched)."""
+    try:
+        text = (Path(root) / "go.mod").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("module "):
+            return stripped[len("module ") :].strip()
+    return ""
+
+
 class RepoSource:
     def __init__(
         self,
