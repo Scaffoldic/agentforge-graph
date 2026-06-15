@@ -96,6 +96,41 @@ def test_ts_abstract_class_extracted() -> None:
     assert by_desc["ZodString#"].kind is NodeKind.CLASS  # concrete sibling unaffected
 
 
+def test_ts_extended_symbol_surface() -> None:
+    # ENH-008: interface / enum / type-alias / arrow-const / module-const are
+    # extracted, broadening the TS surface beyond class/function/method.
+    src = (
+        "export interface Shape { area(): number; }\n"
+        "export enum Color { Red, Green }\n"
+        "export const enum Dir { Up }\n"
+        "export type ID = string | number;\n"
+        "export const handler = (x: number): number => x + 1;\n"
+        "export const fn = function (y: number) { return y; };\n"
+        "export const ZodIssueCode = arrayToEnum(['a', 'b']);\n"
+        "export type ZodIssueCode = string;\n"  # companion alias -> findable
+        "export const TABLE = { a: 1 };\n"
+        "export const LIST = [1, 2, 3];\n"
+        "const plain = 5;\n"
+    )
+    sf = SourceFile(
+        path="t.ts", text=src, language="ts", content_hash=hashlib.sha256(src.encode()).hexdigest()
+    )
+    by_desc = {SymbolID.parse(n.id).descriptor: n for n in _extractor().extract(sf).nodes}
+    assert by_desc["Shape#"].kind is NodeKind.INTERFACE
+    assert by_desc["Color#"].kind is NodeKind.CLASS  # enum -> Class (no Enum kind)
+    assert by_desc["Dir#"].kind is NodeKind.CLASS  # const enum too
+    assert by_desc["ID."].kind is NodeKind.TYPE_ALIAS
+    assert by_desc["handler()."].kind is NodeKind.FUNCTION  # arrow const
+    assert by_desc["fn()."].kind is NodeKind.FUNCTION  # function-expr const
+    assert by_desc["TABLE."].kind is NodeKind.VARIABLE  # const object table
+    assert by_desc["LIST."].kind is NodeKind.VARIABLE  # const array table
+    # call-bound const (`= arrayToEnum(...)`) is NOT captured as a Variable —
+    # that would also swallow `require(...)`; the companion `type` alias makes it
+    # findable instead.
+    assert by_desc["ZodIssueCode."].kind is NodeKind.TYPE_ALIAS
+    assert "plain." not in by_desc  # scalar const is NOT captured (no sprawl)
+
+
 def test_ts_imports_and_refs_recorded() -> None:
     sg = _extractor().extract(_sf(FIXTURES / "shapes.ts", "shapes.ts"))
     file_node = next(n for n in sg.nodes if n.kind is NodeKind.FILE)
