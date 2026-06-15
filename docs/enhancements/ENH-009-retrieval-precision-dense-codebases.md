@@ -5,7 +5,7 @@
 | **ID** | ENH-009 |
 | **Value/Impact** | High (retrieval is the core agent-facing surface) |
 | **Effort** | M |
-| **Status** | proposed |
+| **Status** | **partial** (2026-06-15) — reranker seam landed + opt-in lexical; default-on precision win still open (cross-encoder) |
 | **Area** | `retrieve` (rerank / chunking / embedding inputs) |
 | **Relates to** | feat-006 (retrieval), feat-005 (chunking/embeddings), feat-012 (summaries) |
 
@@ -64,6 +64,41 @@ the right symbol" tool it's the gap between *fair* and *sharp*.
   blind default flip).
 - No new always-on cost unless it demonstrably moves hit-rate (re-embedding /
   rerank latency called out).
+
+## Progress (2026-06-15) — lever #3 (lexical) landed opt-in; measured
+
+Shipped the **reranker as a real seam** (it was a `NoopReranker` stub): a
+deterministic, dependency-free **lexical reranker** (`retrieve.rerank: lexical`,
+`rerank_weight`) that blends cosine with query↔candidate **subtoken overlap**
+(camelCase/snake split, so `ZodObject._parse` → {zod, object, parse}). Config
+resolution wired through `CodeGraph.retrieve`; unit-tested + deterministic.
+
+**Measured it (creds run, off vs lexical@0.5, the seeded questions):**
+
+| Repo | Effect |
+|---|---|
+| **click** | neutral-to-worse — baseline was ~4/4 (`style`/`invoke`/`UsageError` exact); lexical **regressed** Q3/Q4 (a comment/empty chunk outranked `style`/`UsageError`) |
+| **zod** | mixed — Q1 stayed exact (`ZodObject._parse`); Q3 **regressed** to a `*.test.ts` chunk (test body shared query tokens); Q4 arguably better (`handleResults`) |
+| **express** | mixed — some queries surfaced a header comment / `File` node instead of code |
+
+**Conclusion:** lexical overlap over chunk *bodies* is too crude — test files,
+license/header comments, and `File` nodes that happen to share query tokens get
+over-boosted, and the Cohere `embed-v4` baseline is **already strong** on these NL
+questions, leaving little upside and real downside. A signature-scoped variant
+(name + def line, test-file penalty, lower weight) was also tried — still mixed.
+
+So lexical reranking ships **opt-in (`rerank` default `off`)**: genuinely useful
+for **keyword / symbol-naming** queries (`res.send`, `validate_token`,
+`ZodObject`), not a safe default for prose questions. **Per the ENH's own
+"measure, don't blind-flip" guidance, the default is unchanged.**
+
+**Still open (the default-on precision win):**
+- **Cross-encoder rerank** (lever #1) — a semantic re-score is the real lever for
+  NL→symbol precision; it needs the `rerank` extra (torch model, can't run in CI)
+  + a tuning campaign. The seam now resolves any `rerank` ref, so an out-of-tree
+  cross-encoder adapter drops in.
+- **Summary-augmented embedding inputs** (lever #2) — prepend signature/summary to
+  chunk text before embedding (re-embed cost); not yet attempted.
 
 ## Notes
 

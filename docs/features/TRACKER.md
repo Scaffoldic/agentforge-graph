@@ -204,6 +204,17 @@ follows the workspace pipeline's scaffold step.
 
 ## Change log
 
+- **2026-06-15** — **ENH-009 retrieval precision — partial (opt-in lexical rerank).**
+  Turned the `NoopReranker` stub into a real seam + a deterministic, dependency-free
+  **lexical reranker** (`retrieve.rerank: lexical`): blends cosine with query↔candidate
+  **subtoken** overlap (camelCase/snake split). **Measured off-vs-lexical on the seeded
+  click/zod/express questions (creds run): a mixed bag** — the Cohere `embed-v4`
+  baseline is already strong, and full-body lexical overlap over-boosts test files /
+  header comments / `File` nodes, regressing some baseline-exact hits. So it ships
+  **opt-in (default `off`)** — useful for keyword/symbol-naming queries, not a safe
+  default for prose. The default-on win needs a **cross-encoder** (out-of-tree adapter,
+  `rerank` extra) or summary-augmented embeddings — both documented as follow-ups; the
+  seam now resolves any `rerank` ref. Honest measurement in `ENH-009`.
 - **2026-06-15** — **ENH-005 HTTP MCP auth shipped.** A bearer-token gate for the
   streamable-HTTP transport: `serve.http_auth_token` / `$CKG_HTTP_AUTH_TOKEN` →
   every request needs a matching `Authorization: Bearer …` (else 401; constant-time
