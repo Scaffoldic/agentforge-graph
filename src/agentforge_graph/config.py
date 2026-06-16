@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, ClassVar, Self
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 # Default directories excluded from ingestion (mirrors ckg.yaml's ingest.exclude).
 DEFAULT_EXCLUDES = [
@@ -134,6 +134,17 @@ class RetrieveConfig(_Block):
     rerank: str = "off"
     rerank_weight: float = 0.5  # lexical: final = (1-w)*cosine + w*subtoken-overlap
     edge_weights: dict[str, float] = Field(default_factory=_default_edge_weights)
+
+    @field_validator("rerank", mode="before")
+    @classmethod
+    def _coerce_rerank(cls, v: Any) -> Any:
+        # YAML 1.1 parses bare `off`/`on` as booleans, so `rerank: off` (as shipped
+        # in ckg.yaml) arrives as False and would fail string validation. Map the
+        # booleans back to the canonical modes: off -> disabled, on -> the lexical
+        # reranker (the only enabled mode).
+        if isinstance(v, bool):
+            return "lexical" if v else "off"
+        return v
 
 
 class RepoMapConfig(_Block):
