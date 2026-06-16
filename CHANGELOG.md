@@ -8,6 +8,10 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+_Work toward 0.2.0 (`0.2.0.dev0`). Planned: temporal / git-evolution layer
+(feat-009), a cross-encoder reranker for ENH-009, and BUG-006 member-access
+residuals._
+
 ## [0.1.0] — 2026-06-16
 
 First production-grade release: a deterministic **Code Knowledge Graph** engine
