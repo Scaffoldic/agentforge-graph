@@ -30,6 +30,7 @@ from ..resolver import ImportResolver
 from ..source import RepoSource, read_go_module
 from .detect import ChangeSet
 from .dirty import DirtySet
+from .ports import TemporalRecorder
 
 _ALL = 10_000_000
 
@@ -45,6 +46,8 @@ class IncrementalIndexer:
         resolve_scope_hops: int = 1,
         dirty: DirtySet | None = None,
         frameworks: FrameworkExtractor | None = None,
+        recorder: TemporalRecorder | None = None,
+        commit_ts: int = 0,
     ) -> None:
         self.store = store
         self.source = source
@@ -54,6 +57,9 @@ class IncrementalIndexer:
         self.resolve_scope_hops = resolve_scope_hops
         self.dirty = dirty
         self.frameworks = frameworks
+        # feat-009: optional evolution-log recorder (None when temporal off).
+        self.recorder = recorder
+        self.commit_ts = commit_ts
 
     async def refresh(self, changes: ChangeSet) -> IndexReport:
         if changes.is_empty():
@@ -64,6 +70,13 @@ class IncrementalIndexer:
 
         removed = changes.removed_paths()
         touched = set(changes.touched_paths())
+
+        # (0) feat-009: snapshot the symbols of every file the diff touches
+        # (removed + touched) *before* any mutation — diffing against the
+        # post-upsert set yields exactly the opened/closed lifecycle events.
+        before_symbols: set[str] = set()
+        if self.recorder is not None:
+            before_symbols = await self._symbols_in(sorted({*removed, *touched}))
 
         # (1) symbols that will vanish with the removed files — dirty them now
         dirty_ids: set[str] = await self._symbols_in(removed)
@@ -92,10 +105,19 @@ class IncrementalIndexer:
         report.edges += imports + stats.refs_resolved
 
         # (5) dirty propagation: touched symbols + 1-hop neighbours of all dirty
-        dirty_ids |= await self._symbols_in(sorted(touched))
+        after_symbols = await self._symbols_in(sorted(touched))
+        dirty_ids |= after_symbols
         dirty_ids |= await self._neighbours_of(dirty_ids)
         if self.dirty is not None:
             await self.dirty.add(sorted(dirty_ids))
+
+        # (6) feat-009: record lifecycle. opened = now present, weren't before;
+        # closed = were present, now gone (deleted files + symbols dropped from a
+        # modified file). Written in one transaction at flush.
+        if self.recorder is not None:
+            self.recorder.open(sorted(after_symbols - before_symbols), self.commit, self.commit_ts)
+            self.recorder.close(sorted(before_symbols - after_symbols), self.commit, self.commit_ts)
+            await self.recorder.flush()
         return report
 
     # --- helpers ----------------------------------------------------------

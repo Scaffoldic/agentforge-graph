@@ -234,3 +234,19 @@ class KnowledgeConfig(_Block):
     commit_messages: bool = False  # follow-up
     infer_governs: bool = False  # follow-up: LLM matcher (off by default)
     infer_budget_usd: float = 1.0
+
+
+class TemporalConfig(_Block):
+    """The ``temporal:`` block of ckg.yaml (feat-009 — git-evolution layer).
+
+    **Opt-in (default off).** When on (and the source is a git repo), the
+    feat-004 refresh records symbol lifecycle into a ``.ckg/temporal.db``
+    sidecar — the basis for history / changed-since / as-of and churn ranking
+    signals. Off means delete-on-refresh, exactly as before. See
+    ``docs/design/design-009-temporal-evolution-layer.md``."""
+
+    KEY: ClassVar[str] = "temporal"
+    enabled: bool = False
+    history_backfill: int = 0  # commits to replay at first index (chunk 4)
+    retention_commits: int = 1000  # prune closed events beyond this horizon (chunk 5)
+    rename_detection: str = "file"  # file (exact git renames) | signature (intra-file, chunk 6)
