@@ -108,7 +108,17 @@ class ImportResolver:
             de = f.attrs.get("default_export", "")
             if de:
                 file_default[module] = de
-            members = await store.neighbors(f.id, [EdgeKind.CONTAINS], depth=1)
+            # Sort by id so the name->symbol maps below are deterministic when a
+            # file has several same-named callables (e.g. Python @overload stubs):
+            # the dict build is last-write-wins and store.neighbors() order is not
+            # stable across an incremental vs a full build. Without this, a call
+            # resolves to a different (but equally valid) overload instance
+            # depending on build history, breaking the incremental == full
+            # contract (feat-004).
+            members = sorted(
+                await store.neighbors(f.id, [EdgeKind.CONTAINS], depth=1),
+                key=lambda m: m.id,
+            )
             exports.setdefault(module, {}).update({m.name: m.id for m in members})
             # namespace packs: index each top-level symbol by its fully-qualified
             # name (file's declared namespace + symbol name), normalized to "/".
