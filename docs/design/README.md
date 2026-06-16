@@ -30,5 +30,6 @@ history. Supersede with a new doc; never delete.
 | Design | Feature | Status |
 |---|---|---|
 | [design-001-core-contracts-module](design-001-core-contracts-module.md) | feat-001 | accepted |
+| [design-009-temporal-evolution-layer](design-009-temporal-evolution-layer.md) | feat-009 | accepted |
 
 _(Add a row per feature as its design is written.)_
