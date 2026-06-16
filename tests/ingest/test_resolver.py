@@ -102,3 +102,55 @@ async def test_resolve_is_idempotent(
     await resolver.resolve(store)  # second pass must not duplicate
     after = await _calls_from(store, "cube().")
     assert before == after == {"square()."}
+
+
+class _ReversedNeighbors:
+    """Wraps a GraphStore and reverses ``neighbors()`` order, leaving every other
+    method untouched. Used to simulate the store-order variance between an
+    incremental and a full build (kuzu's physical row order is not stable across
+    a delete+re-add), so a resolver that picked among same-named symbols by
+    iteration order would diverge."""
+
+    def __init__(self, inner: KuzuGraphStore) -> None:
+        self._inner = inner
+
+    def __getattr__(self, name: str):  # type: ignore[no-untyped-def]
+        return getattr(self._inner, name)
+
+    async def neighbors(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+        return list(reversed(await self._inner.neighbors(*args, **kwargs)))
+
+
+async def test_overload_resolution_is_order_independent(tmp_path: Path) -> None:
+    """A call to an overloaded (same-named) symbol must resolve to the *same*
+    target regardless of the order the store returns CONTAINS members in. Guards
+    the feat-004 incremental == full contract: the export name->id map is
+    last-write-wins, so without a deterministic tiebreak the CALLS edge target
+    differs between an incremental and a full build (seen on real repos with
+    Python ``@overload`` stubs)."""
+    src = {
+        "conv.py": "def pick(x):\n    return x\n\n\ndef pick(x, y):\n    return x + y\n",
+        "app.py": "from conv import pick\n\n\ndef use():\n    return pick(1)\n",
+    }
+
+    async def resolve_targets(reverse: bool) -> set[str]:
+        store = await KuzuGraphStore.open(tmp_path / f"g{int(reverse)}.kuzu")
+        extractor = TreeSitterExtractor(PYTHON_PACK, repo="fixture")
+        for rel, text in src.items():
+            sf = SourceFile(
+                path=rel,
+                text=text,
+                language="py",
+                content_hash=hashlib.sha256(text.encode()).hexdigest(),
+            )
+            await store.upsert(extractor.extract(sf))
+        target = _ReversedNeighbors(store) if reverse else store
+        await ImportResolver(PackRegistry([PYTHON_PACK])).resolve(target)
+        calls = await _calls_from(store, "use().")
+        await store.close()
+        return calls
+
+    natural = await resolve_targets(reverse=False)
+    flipped = await resolve_targets(reverse=True)
+    assert len(natural) == 1, "use() should resolve to exactly one pick overload"
+    assert natural == flipped, "overload choice must not depend on store order"

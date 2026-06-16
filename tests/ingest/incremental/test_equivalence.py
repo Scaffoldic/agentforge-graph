@@ -20,19 +20,36 @@ _ALL = 10_000_000
 
 # ---- repo states -----------------------------------------------------------
 
+# conv.py carries two same-named top-level callables (overload-style); a caller
+# resolves `pick` to exactly one of them. The export name->id map is last-write-
+# wins over store.neighbors() order, which is NOT stable across an incremental
+# (delete+re-add of a modified file) vs a full insert — so without a
+# deterministic tiebreak the CALLS edge would target a different (equally valid)
+# overload. This case guards that determinism (a real bug the prior fixtures
+# missed: none had same-named defs).
 S0 = {
     "m.py": ("def square(x):\n    return x * x\n\n\ndef cube(x):\n    return square(x) * x\n"),
-    "app.py": ("from m import square\n\n\ndef area(r):\n    return square(r)\n"),
+    "conv.py": ("def pick(x):\n    return x\n\n\ndef pick(x, y):\n    return x + y\n"),
+    "app.py": (
+        "from m import square\nfrom conv import pick\n\n\n"
+        "def area(r):\n    return square(r) + pick(r)\n"
+    ),
     "legacy.py": "def old():\n    return 1\n",
 }
 
-# m.py: cube -> cubed (symbol rename). app.py: + perimeter. newmod.py added
+# m.py: cube -> cubed (symbol rename). conv.py: + a third `pick` overload (forces
+# a delete+re-add of an overloaded file). app.py: + perimeter. newmod.py added
 # (imports m). legacy.py deleted.
 S1 = {
     "m.py": ("def square(x):\n    return x * x\n\n\ndef cubed(x):\n    return square(x) * x\n"),
+    "conv.py": (
+        "def pick(x):\n    return x\n\n\n"
+        "def pick(x, y):\n    return x + y\n\n\n"
+        "def pick(x, y, z):\n    return x + y + z\n"
+    ),
     "app.py": (
-        "from m import square\n\n\n"
-        "def area(r):\n    return square(r)\n\n\n"
+        "from m import square\nfrom conv import pick\n\n\n"
+        "def area(r):\n    return square(r) + pick(r)\n\n\n"
         "def perimeter(r):\n    return square(r) + r\n"
     ),
     "newmod.py": ("from m import square\n\n\ndef twice(x):\n    return square(x) + square(x)\n"),
@@ -75,7 +92,15 @@ async def test_refresh_equals_full_reindex(two_workspaces: tuple[Path, Path]) ->
     _write(repo_a, S0)
     cg_a = await CodeGraph.index(repo_path=repo_a)
     (repo_a / "legacy.py").unlink()
-    _write(repo_a, {"m.py": S1["m.py"], "app.py": S1["app.py"], "newmod.py": S1["newmod.py"]})
+    _write(
+        repo_a,
+        {
+            "m.py": S1["m.py"],
+            "conv.py": S1["conv.py"],
+            "app.py": S1["app.py"],
+            "newmod.py": S1["newmod.py"],
+        },
+    )
     report = await cg_a.refresh()
 
     # B: full index of S1 directly
@@ -117,7 +142,10 @@ async def test_delete_only_equivalence(two_workspaces: tuple[Path, Path]) -> Non
     (repo_a / "m.py").unlink()  # app.py now imports a missing module
     await cg_a.refresh()
 
-    _write(repo_b, {"app.py": S0["app.py"], "legacy.py": S0["legacy.py"]})
+    _write(
+        repo_b,
+        {"app.py": S0["app.py"], "conv.py": S0["conv.py"], "legacy.py": S0["legacy.py"]},
+    )
     cg_b = await CodeGraph.index(repo_path=repo_b, full=True)
     try:
         assert await _snapshot(cg_a.store) == await _snapshot(cg_b.store)
