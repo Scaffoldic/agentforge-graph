@@ -8,7 +8,7 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
-## [0.1.0] — 2026-06-15
+## [0.1.0] — 2026-06-16
 
 First production-grade release: a deterministic **Code Knowledge Graph** engine
 plus an agent tool surface, built on the AgentForge framework. The whole pipeline
@@ -71,8 +71,15 @@ questions over the tools, unattended.
 
 - Every language pack validated on ≥1 real OSS repo, with a creds-enabled
   (embed + retrieval + enrich) run; bugs found-and-fixed along the way
-  (BUG-001…006). A real `Agent` answered questions over the tools unattended (W4).
-  See `docs/validation/`.
+  (BUG-001…008). A real `Agent` answered questions over the tools unattended,
+  on both Python and Go repos (W4 + cross-language dogfood). See `docs/validation/`.
+- **Pre-release validation pass** on real repositories: incremental indexing is
+  byte-identical to a full re-index on real churn (`pallets/click`, modulo
+  provenance — fixed BUG-007, an overload-resolution non-determinism); the MCP
+  transports drive a real client over stdio + authed HTTP end-to-end; the
+  Neo4j + pgvector server path holds through `index → embed → enrich → query`
+  on a real repo (fixed BUG-008, a default-config `ckg query` break); and parse
+  coverage holds at scale (`django`, 2922 files, ~100%, no crash).
 
 [Unreleased]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/Scaffoldic/agentforge-grpah/releases/tag/v0.1.0
