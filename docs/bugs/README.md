@@ -17,6 +17,7 @@ One file per bug: `BUG-NNN-short-slug.md`. Keep this index current.
 | [BUG-005](BUG-005-typescript-abstract-class-not-extracted.md) | TS `abstract class` declarations not extracted | High | ingest.packs.typescript | fixed |
 | [BUG-006](BUG-006-commonjs-require-not-resolved.md) | CommonJS `require()` / `module.exports` not captured | High | ingest.packs.javascript | fixed (core) |
 | [BUG-007](BUG-007-overload-resolution-nondeterministic.md) | Same-named (overloaded) symbol resolution is store-order dependent | Medium | ingest.resolver | fixed |
+| [BUG-008](BUG-008-rerank-yaml-boolean-breaks-query.md) | `rerank: off` in shipped ckg.yaml (YAML bool) breaks `ckg query` | High | config | fixed |
 
 ## Template
 
