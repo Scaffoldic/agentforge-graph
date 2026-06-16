@@ -104,5 +104,8 @@ enrich:                         # feat-012 — LLM enrichment (pattern tagging)
   summary_max_words: 120        # module summaries
   summary_levels: ["file", "repo"]
 
-# Higher-layer features — config lands when the feature ships:
-# temporal:   (feat-009)   enabled, history_backfill, retention_commits
+temporal:                       # feat-009 — git-evolution layer (OPT-IN, default off)
+  enabled: false                # on + git repo → record symbol lifecycle to .ckg/temporal.db
+  history_backfill: 0           # commits to replay at first index (0 = accrue from adoption)
+  retention_commits: 1000       # prune closed events beyond this horizon
+  rename_detection: "file"      # file (exact git renames) | signature (intra-file, best-effort)

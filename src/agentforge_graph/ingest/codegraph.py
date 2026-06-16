@@ -43,6 +43,36 @@ def _git_commit(repo_path: str | Path) -> str:
         return ""
 
 
+def _commit_time(repo_path: str | Path, commit: str) -> int:
+    """Author time (epoch seconds) of ``commit`` — the timestamp stamped on
+    feat-009 events. 0 if non-git / unknown."""
+    if not commit:
+        return 0
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(repo_path), "show", "-s", "--format=%ct", commit],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return int(out.stdout.strip() or 0)
+    except (subprocess.SubprocessError, OSError, ValueError):
+        return 0
+
+
+def _build_recorder(repo_path: str | Path, config: str | Path | None, root: Path, commit: str):  # type: ignore[no-untyped-def]
+    """Build the feat-009 evolution-log recorder when ``temporal.enabled`` and
+    the source is a git repo; else ``None``. Lazy-imports ``temporal`` so the
+    module is never loaded when the feature is off."""
+    from agentforge_graph.config import TemporalConfig
+
+    if not commit or not TemporalConfig.load(config).enabled:
+        return None
+    from agentforge_graph.temporal import build_recorder
+
+    return build_recorder(str(root))
+
+
 def _framework_extractor(
     repo_path: str | Path, config: str | Path | None, registry: PackRegistry
 ) -> Any:
@@ -184,6 +214,7 @@ class CodeGraph:
         )
         cg = cls(store, repo_path, config, languages)
         frameworks = _framework_extractor(repo_path, config, registry)
+        recorder = _build_recorder(repo_path, config, root, commit)  # feat-009 (None if off)
         result = await ChangeDetector(repo_path).detect(source, meta, registry)
         if use_incremental:
             report = await cg._apply_changes(
@@ -195,11 +226,17 @@ class CodeGraph:
                 ingest_cfg.resolve_scope_hops,
                 root,
                 frameworks,
+                recorder,
+                _commit_time(repo_path, commit),
             )
         else:
             report = await IngestPipeline(repo=repo, commit=commit, frameworks=frameworks).run(
                 source, store.graph, registry
             )
+            if recorder is not None:  # full index: open intervals for all symbols
+                from agentforge_graph.temporal import seed_symbols
+
+                await seed_symbols(store.graph, recorder, commit, _commit_time(repo_path, commit))
         cg._report = report
         await _ingest_knowledge(store, repo_path, config, repo, commit, registry, report)
         _save_meta(root, commit, registry, result.file_hashes)
@@ -221,6 +258,7 @@ class CodeGraph:
         ingest_cfg = IngestConfig.load(self._config)
         meta = IndexMeta.load(root)
         frameworks = _framework_extractor(self._repo_path, self._config, registry)
+        recorder = _build_recorder(self._repo_path, self._config, root, commit)  # feat-009
         result = await ChangeDetector(self._repo_path).detect(source, meta, registry)
         report = await self._apply_changes(
             source,
@@ -231,6 +269,8 @@ class CodeGraph:
             ingest_cfg.resolve_scope_hops,
             root,
             frameworks,
+            recorder,
+            _commit_time(self._repo_path, commit),
         )
         self._report = report
         await _ingest_knowledge(
@@ -249,6 +289,8 @@ class CodeGraph:
         resolve_scope_hops: int,
         root: Path,
         frameworks: Any = None,
+        recorder: Any = None,
+        commit_ts: int = 0,
     ) -> IndexReport:
         from .incremental import ChangeSet, DirtySet, IncrementalIndexer
 
@@ -262,6 +304,8 @@ class CodeGraph:
             resolve_scope_hops=resolve_scope_hops,
             dirty=DirtySet(root),
             frameworks=frameworks,
+            recorder=recorder,
+            commit_ts=commit_ts,
         )
         return await indexer.refresh(changes)
 
