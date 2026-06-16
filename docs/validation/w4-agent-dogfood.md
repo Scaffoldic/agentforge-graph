@@ -44,8 +44,33 @@ target: Python, 9 ADRs, the differentiators present).
 - Cost/latency scale with the agent's step count; read-only tools keep each step
   cheap.
 
+## Cross-language dogfood — a NON-Python repo (Go / spf13 cobra)
+
+Pre-0.1 validation item 5: confirm the tools serve agents across languages, not
+just on this (Python) repo. Same harness, a Go codebase.
+
+- **date:** 2026-06-16
+- **model:** `anthropic:claude-sonnet-4-6` (framework `Agent`, live Anthropic API)
+- **repo / graph:** `spf13/cobra` — `ckg index --lang go --embed` → 36 files, 727
+  nodes (14 Class/struct, 168 Method, 427 Function, 1 Interface), 1592 CALLS
+  resolved (Go same-package resolution), 1078 chunks (Cohere embed-v4).
+- **tools:** `code_graph_tools("/tmp/ckg-cobra")` — the same nine `Tool` instances.
+
+| # | Question | Tools the agent chose (autonomously) | Verdict |
+|---|---|---|---|
+| 1 | "Core types of this Go CLI library and where commands get executed?" | `ckg_repo_map` → `ckg_search` → `ckg_symbol` (16 steps) | ✅ identified `Command` (`command.go:54`), `Group`, `PositionalArgs`, `CompletionFunc` with exact file:line, and the `Execute`/`ExecuteC`/`execute` path |
+| 2 | "Find `Execute` and report its callers." | `ckg_search` → `ckg_impact` (4 steps) | ✅ `(*Command).ExecuteContext` (public) + the test callers; even flagged a likely spurious template edge as such |
+| 3 | "List the methods on the `Command` type." | `ckg_search` → `ckg_neighbors` → `ckg_repo_map` (6 steps) | ✅ a comprehensive, grounded list of real `*Command` methods (`Execute`, `ExecuteContext`, `SetArgs`, `SetContext`, lifecycle setters, …) |
+
+**Total ≈ \$0.55** for the three (Sonnet 4.6). The agent chose and chained tools
+unattended on a Go graph, answers grounded against real cobra symbols/spans — no
+hallucinated symbols. Confirms cross-language agent tool-use (Go in addition to the
+Python run above; the other 9 packs are retrieval-validated in the sibling
+`docs/validation/*` files).
+
 ## Verdict
 
-**W4 met.** A real agent answers real questions over the CKG tool surface,
-unattended, choosing and chaining tools correctly — including the decision/impact
-differentiators.
+**W4 met** (Python + Go). A real agent answers real questions over the CKG tool
+surface, unattended, choosing and chaining tools correctly — including the
+decision/impact differentiators — and does so **across languages**, not just on the
+Python home repo.
