@@ -13,6 +13,14 @@
 (method_declaration
   name: (field_identifier) @name) @def.method
 
+; the method's receiver `(s *T)` / `(s T)` -> bind the var name + type, so a call
+; on `s` inside the method resolves to a method of type T (BUG-006).
+(method_declaration
+  receiver: (parameter_list (parameter_declaration
+    name: (identifier) @recv.var
+    type: [(type_identifier) @recv.type
+           (pointer_type (type_identifier) @recv.type)]))) @recv.method
+
 ; `type T struct {…}` -> Class, `type T interface {…}` -> Interface.
 (type_spec
   name: (type_identifier) @name

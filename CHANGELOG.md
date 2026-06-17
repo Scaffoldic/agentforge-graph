@@ -14,6 +14,14 @@ residuals._
 
 ### Added (unreleased, toward 0.2.0)
 
+- **Go receiver-method call resolution (BUG-006 residual).** Go's method receiver
+  is a named variable (`func (s *Server) …`), not a `self`/`this` keyword, so the
+  extractor now records each method's receiver var + type and the resolver indexes
+  methods by `(package, type)`. A call on the method's own receiver (`s.f()`) binds
+  to a method of that **type** — more precise than the prior bare-name match,
+  which could hit another type's same-named method. With this, intra-type method
+  calls resolve across all 9 of the 10 packs (C++ pending method modeling).
+
 - **Inherited-method call resolution (Python).** A `self.f()` whose method is
   defined on a base class now resolves by walking the `INHERITS` superclass map —
   binding to the base method when exactly one base defines it (an own-class
