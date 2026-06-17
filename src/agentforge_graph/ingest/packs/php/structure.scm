@@ -10,6 +10,11 @@
 (class_declaration
   name: (name) @name) @def.class
 
+; --- inheritance (INHERITS): `class B extends A` (implemented interfaces are a
+; separate relation, not captured here). ---
+(class_declaration
+  (base_clause (name) @base.name)) @base.def
+
 (interface_declaration
   name: (name) @name) @def.interface
 

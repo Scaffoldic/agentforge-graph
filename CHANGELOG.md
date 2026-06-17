@@ -19,14 +19,17 @@ residuals._
   binding to the base method when exactly one base defines it (an own-class
   override wins; ambiguous multi-base definers stay unresolved, no MRO guessing).
   Recovers inherited-call edges for the template-method / base-helper patterns.
-- **`INHERITS` edges (Python).** Class inheritance is now extracted and resolved:
-  a class's base classes are captured and bound to in-repo class nodes, emitting
-  `INHERITS` edges (subclass → base) for same-file and imported bases. The edge
+- **`INHERITS` edges + inherited-method calls (8 languages).** Class inheritance
+  is now extracted and resolved — a class's base classes are bound to in-repo
+  class nodes, emitting `INHERITS` edges (subclass → base) for same-file and
+  imported bases, and `self.f()`/`this.f()` calls to a base method resolve via
+  the superclass map. Covers **Python, TypeScript, JavaScript, Java, C#, Ruby,
+  and PHP** (each pack captures its own `extends`/`<`/`:` superclass). The edge
   kind was in the locked vocab but never produced — repo-map centrality ranking
   and retrieval expansion already reference it, so this fills a real gap.
   External / by-name-only bases stay unresolved (never guessed, ADR-0004);
-  qualified bases (`class B(mod.Base)`) and the other language packs are
-  follow-ups.
+  implemented interfaces (a separate relation), qualified bases, and Rust/Go/C++
+  (different inheritance models) are follow-ups.
 
 - **Intra-class call resolution (BUG-006 residual).** The reference queries now
   capture the call *receiver*, so the resolver binds `self.f()` / `this.f()` /

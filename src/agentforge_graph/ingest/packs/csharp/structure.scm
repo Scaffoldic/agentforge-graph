@@ -12,6 +12,13 @@
 (class_declaration
   name: (identifier) @name) @def.class
 
+; --- inheritance (INHERITS): `class B : A, IFoo`. The base_list mixes the base
+; class with interfaces (C# doesn't distinguish syntactically); only an entry
+; that resolves to an in-repo class becomes an INHERITS edge (interfaces, which
+; aren't Class nodes, drop out in the resolver). ---
+(class_declaration
+  (base_list (identifier) @base.name)) @base.def
+
 (interface_declaration
   name: (identifier) @name) @def.interface
 

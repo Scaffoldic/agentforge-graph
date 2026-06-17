@@ -12,6 +12,13 @@
 (abstract_class_declaration
   name: (type_identifier) @name) @def.class
 
+; --- inheritance (INHERITS): `class B extends A` (interfaces via `implements`
+; are a separate relation, not captured here). ---
+(class_declaration
+  (class_heritage (extends_clause value: (identifier) @base.name))) @base.def
+(abstract_class_declaration
+  (class_heritage (extends_clause value: (identifier) @base.name))) @base.def
+
 (function_declaration
   name: (identifier) @name) @def.function
 
