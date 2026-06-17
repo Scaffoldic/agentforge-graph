@@ -248,7 +248,15 @@ class TreeSitterExtractor(Extractor):
             while anc is not None and anc.id not in idset:
                 anc = anc.parent
             owner = by_tsid[anc.id].symbol_id if anc is not None else file_id
-            refs[owner].append(
-                {"name": _text(callees[0], src), "line": call_node.start_point[0] + 1}
-            )
+            ref: dict[str, Any] = {
+                "name": _text(callees[0], src),
+                "line": call_node.start_point[0] + 1,
+            }
+            # BUG-006: the receiver of an attribute call (`recv.f()`), when the pack
+            # captures it — lets the resolver bind `self.f()`/`this.f()` to the
+            # enclosing class's method and refuse to guess for other receivers.
+            recv = caps.get("call.recv")
+            if recv:
+                ref["recv"] = _text(recv[0], src)
+            refs[owner].append(ref)
         return dict(refs)

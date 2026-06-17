@@ -82,11 +82,26 @@ IMPORTS edge still exists). Note: `module.exports = { a, b }` needs **no** speci
 handling — named destructure (`const { a } = require("./m")`) already binds via
 the resolver's by-name top-level export map.
 
+**Residual — intra-class member calls ✅ closed (2026-06-17,
+`bug/006-self-this-member-calls`):** the reference queries now capture the call
+*receiver* (`@call.recv`) for Python / TypeScript / JavaScript, so the resolver
+binds `self.f()` / `this.f()` to a method **of the enclosing class** — a unique,
+safe match that recovers the intra-class call graph (previously these were
+unresolved, or — worse — silently mis-bound to a same-named module-level def).
+A member call on *any other* receiver (`obj.f()`, `a.b.f()`) is now explicitly
+left unresolved rather than guessed (ADR-0004). Verified on Python/TS/JS:
+`self.handle()`/`this.handle()` resolves to `Service#handle`, never the
+module-level `handle` decoy; `s.handle()` on a parameter stays unresolved.
+
 **Residual (still open — file as ENH when prioritised):**
-- `exports.Name = …` named exports (these feed *member* access `pkg.Name()`,
-  which the resolver doesn't resolve regardless — a separate limitation).
-- Default-require of an object-exporting module then member access
-  (`const app = require("./application"); app.init()`) — same member-access limit.
+- **Receiver capture for the other packs** (Go/Rust/Java/C#/Ruby/PHP/C++) — the
+  same `@call.recv` change per grammar, so their `this`/`self` calls resolve too.
+- **Inherited-method `self.f()`** — only methods *defined on* the enclosing class
+  resolve; a call to a superclass method (via `INHERITS`) is still unresolved.
+- **Module-member access** `pkg.Name()` / `app.init()` where `pkg`/`app` is a
+  bound import — a unique match against the module's export map, but needs the
+  resolver to track receiver→module aliases (not yet modeled). Subsumes the old
+  `exports.Name = …` / object-default-require residuals.
 - `import x = require(...)` CommonJS-in-TS, and ESM `export { x }` / re-export
   chains (explicit export modeling would unify these).
 

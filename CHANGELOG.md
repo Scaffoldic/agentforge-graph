@@ -14,6 +14,14 @@ residuals._
 
 ### Added (unreleased, toward 0.2.0)
 
+- **Intra-class call resolution (BUG-006 residual).** The Python/TS/JS reference
+  queries now capture the call *receiver*, so the resolver binds `self.f()` /
+  `this.f()` to a method **of the enclosing class** — recovering the intra-class
+  call graph (CALLS edges for impact/neighbors that were previously missing). It
+  also stops a latent mis-bind: a member call on any other receiver
+  (`obj.f()`) is left unresolved instead of being guessed onto a same-named
+  module-level function (ADR-0004). Other language packs and inherited-method
+  calls remain follow-ups.
 - **Cross-encoder reranker (ENH-009).** `retrieve.rerank: cross_encoder` adds a
   real semantic re-score of the top-k candidates via a `sentence-transformers`
   cross-encoder (the `rerank` extra; `rerank_model` to override), blended with
