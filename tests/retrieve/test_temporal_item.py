@@ -13,20 +13,31 @@ _ID = SymbolID.for_symbol("py", "sample", "m.py", "alpha().")
 
 def _node(attrs: dict) -> Node:
     return Node(
-        id=_ID, kind=NodeKind.FUNCTION, name="alpha", span=(1, 3),
-        attrs=attrs, provenance=Provenance.parsed("t"),
+        id=_ID,
+        kind=NodeKind.FUNCTION,
+        name="alpha",
+        span=(1, 3),
+        attrs=attrs,
+        provenance=Provenance.parsed("t"),
     )
 
 
 def test_temporal_attrs_extracted_when_present() -> None:
-    node = _node({
-        "code": "...", "signature": "alpha()",  # non-temporal keys ignored
-        "churn_90d": 7, "introduced": "abc", "last_changed": "def",
-        "top_authors": [{"name": "Ann", "commits": 2}],
-    })
+    node = _node(
+        {
+            "code": "...",
+            "signature": "alpha()",  # non-temporal keys ignored
+            "churn_90d": 7,
+            "introduced": "abc",
+            "last_changed": "def",
+            "top_authors": [{"name": "Ann", "commits": 2}],
+        }
+    )
     t = _temporal_attrs(node)
     assert t == {
-        "churn_90d": 7, "introduced": "abc", "last_changed": "def",
+        "churn_90d": 7,
+        "introduced": "abc",
+        "last_changed": "def",
         "top_authors": [{"name": "Ann", "commits": 2}],
     }
 
@@ -37,7 +48,12 @@ def test_temporal_attrs_none_when_absent() -> None:
 
 def test_item_serializes_temporal() -> None:
     item = ContextItem(
-        id=_ID, kind=NodeKind.FUNCTION, name="alpha", score=1.0, path="m.py",
-        provenance=Provenance.parsed("t").source, temporal={"churn_90d": 7},
+        id=_ID,
+        kind=NodeKind.FUNCTION,
+        name="alpha",
+        score=1.0,
+        path="m.py",
+        provenance=Provenance.parsed("t").source,
+        temporal={"churn_90d": 7},
     )
     assert item.model_dump()["temporal"] == {"churn_90d": 7}

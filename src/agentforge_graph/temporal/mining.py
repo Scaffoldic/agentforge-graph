@@ -102,17 +102,27 @@ class ChurnMiner:
     # --- internals --------------------------------------------------------
 
     def _git_log(self, paths: list[str]) -> str | None:
-        since = datetime.fromtimestamp(
-            max(self._now - self._window * _DAY, 0), tz=UTC
-        ).strftime("%Y-%m-%d")
+        since = datetime.fromtimestamp(max(self._now - self._window * _DAY, 0), tz=UTC).strftime(
+            "%Y-%m-%d"
+        )
         try:
             out = subprocess.run(
                 [
-                    "git", "-C", self._root, "log", "--no-renames", "--no-color",
-                    "-U0", f"--since={since}", f"--format={_SOH}%H%x09%ct%x09%an",
-                    "--", *paths,
+                    "git",
+                    "-C",
+                    self._root,
+                    "log",
+                    "--no-renames",
+                    "--no-color",
+                    "-U0",
+                    f"--since={since}",
+                    f"--format={_SOH}%H%x09%ct%x09%an",
+                    "--",
+                    *paths,
                 ],
-                capture_output=True, text=True, check=True,
+                capture_output=True,
+                text=True,
+                check=True,
             )
         except (subprocess.SubprocessError, OSError):
             return None

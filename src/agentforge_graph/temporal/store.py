@@ -151,10 +151,14 @@ class TemporalStore:
                 " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     (
-                        a.symbol_id, a.churn_30d, a.churn_90d,
+                        a.symbol_id,
+                        a.churn_30d,
+                        a.churn_90d,
                         json.dumps([{"name": n, "commits": c} for n, c in a.top_authors]),
-                        a.introduced_sha, a.introduced_ts,
-                        a.last_changed_sha, a.last_changed_ts,
+                        a.introduced_sha,
+                        a.introduced_ts,
+                        a.last_changed_sha,
+                        a.last_changed_ts,
                     )
                     for a in aggs
                 ],

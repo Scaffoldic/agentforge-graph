@@ -31,8 +31,10 @@ def _run(repo: Path, *args: str, author: str | None = None, ts: int | None = Non
     env = dict(os.environ)
     if author:
         env |= {
-            "GIT_AUTHOR_NAME": author, "GIT_AUTHOR_EMAIL": f"{author}@t",
-            "GIT_COMMITTER_NAME": author, "GIT_COMMITTER_EMAIL": f"{author}@t",
+            "GIT_AUTHOR_NAME": author,
+            "GIT_AUTHOR_EMAIL": f"{author}@t",
+            "GIT_COMMITTER_NAME": author,
+            "GIT_COMMITTER_EMAIL": f"{author}@t",
         }
     if ts is not None:  # pin distinct commit times so introduced/last ordering is exact
         env |= {"GIT_AUTHOR_DATE": f"{ts} +0000", "GIT_COMMITTER_DATE": f"{ts} +0000"}

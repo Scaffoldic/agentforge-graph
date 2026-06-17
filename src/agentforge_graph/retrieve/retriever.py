@@ -27,8 +27,15 @@ _FLOOR: dict[str, int] = {"parsed": 1, "resolved": 2}
 # feat-009 churn/authorship fields denormalised onto a symbol's node.attrs; the
 # Retriever surfaces them on the item without joining the temporal sidecar (it
 # stays in the deterministic core, ADR-0001). Empty → item.temporal stays None.
-_TEMPORAL_KEYS = ("introduced", "introduced_ts", "last_changed", "last_changed_ts",
-                  "churn_30d", "churn_90d", "top_authors")
+_TEMPORAL_KEYS = (
+    "introduced",
+    "introduced_ts",
+    "last_changed",
+    "last_changed_ts",
+    "churn_30d",
+    "churn_90d",
+    "top_authors",
+)
 
 
 def _temporal_attrs(node: Node) -> dict[str, object] | None:

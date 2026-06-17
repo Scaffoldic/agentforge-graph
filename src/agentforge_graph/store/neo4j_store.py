@@ -238,16 +238,20 @@ class Neo4jGraphStore(GraphStore):
     async def _set_attrs_tx(
         tx: AsyncManagedTransaction, node_id: str, attrs: dict[str, Any]
     ) -> None:
-        rows = [r async for r in await tx.run(
-            "MATCH (n:CkgNode {id: $id}) RETURN n.attrs AS a", id=node_id
-        )]
+        rows = [
+            r
+            async for r in await tx.run(
+                "MATCH (n:CkgNode {id: $id}) RETURN n.attrs AS a", id=node_id
+            )
+        ]
         if not rows:
             return  # absent node: no-op (contract)
         merged = {**load_attrs(rows[0]["a"]), **attrs}
         # SET only attrs — origin_path and every other property are left intact.
         await tx.run(
             "MATCH (n:CkgNode {id: $id}) SET n.attrs = $attrs",
-            id=node_id, attrs=dump_attrs(merged),
+            id=node_id,
+            attrs=dump_attrs(merged),
         )
 
     async def adjacent(
