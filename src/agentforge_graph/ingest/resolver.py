@@ -147,6 +147,10 @@ class ImportResolver:
         seen_edges: set[tuple[str, str, str]] = set()
         packages: dict[str, str] = {}  # package id -> module
         bindings: dict[str, dict[str, str]] = {}  # file id -> {imported name -> target id}
+        # BUG-006: file id -> {local module alias -> in-repo module key}, for
+        # whole-module imports (`import m`) and default requires (`const m =
+        # require("./m")`). Lets `m.f()` bind to module `m`'s top-level export `f`.
+        module_alias: dict[str, dict[str, str]] = {}
 
         def _add_edge(src: str, dst: str, kind: EdgeKind) -> bool:
             key = (src, dst, kind.value)
@@ -281,6 +285,13 @@ class ImportResolver:
                         tgt = exports.get(key, {}).get(exp) if exp else None
                         if tgt:
                             binding[default_name] = tgt
+                        # also a module alias, so `default_name.f()` reaches a
+                        # top-level export `f` of the module (BUG-006 member access).
+                        module_alias.setdefault(f.id, {})[default_name] = key
+                    # whole-module import (`import m`): `m` aliases the module, so
+                    # `m.f()` resolves to its top-level export `f` (BUG-006).
+                    elif not names:
+                        module_alias.setdefault(f.id, {})[module] = key
                     # wildcard import (Ruby `require_relative`): a name-less in-repo
                     # import makes all the target file's top-level defs callable.
                     if pack is not None and pack.wildcard_import and not names and not default_name:
@@ -339,6 +350,7 @@ class ImportResolver:
             owner_file = path_to_file.get(ps.path)
             local = exports.get(file_module.get(owner_file, ""), {}) if owner_file else {}
             binding = bindings.get(owner_file, {}) if owner_file else {}
+            aliases = module_alias.get(owner_file, {}) if owner_file else {}
             for ref in refs:
                 nm = ref.get("name")
                 recv = ref.get("recv")
@@ -351,9 +363,12 @@ class ImportResolver:
                     if cls is not None:
                         target = (await _methods_of(cls)).get(nm)
                 elif recv is not None:
-                    # a member call on some other object — not a unique target;
-                    # never guess it onto a same-named module-level def (ADR-0004).
-                    target = None
+                    # `m.f()` where `m` is an imported module → its export `f`;
+                    # any other receiver is not a unique target (never guessed
+                    # onto a same-named module-level def, ADR-0004).
+                    mod_key = aliases.get(recv)
+                    if mod_key is not None:
+                        target = exports.get(mod_key, {}).get(nm)
                 else:
                     target = local.get(nm) or binding.get(nm)
                 if target and target not in packages:  # external pkg isn't a callable target

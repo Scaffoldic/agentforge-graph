@@ -109,10 +109,14 @@ bind to).
 - **Go receiver-variable calls** and **C++ method modeling** (above).
 - **Inherited-method `self.f()`** — only methods *defined on* the enclosing class
   resolve; a call to a superclass method (via `INHERITS`) is still unresolved.
-- **Module-member access** `pkg.Name()` / `app.init()` where `pkg`/`app` is a
-  bound import — a unique match against the module's export map, but needs the
-  resolver to track receiver→module aliases (not yet modeled). Subsumes the old
-  `exports.Name = …` / object-default-require residuals.
+- **Module-member access** `m.f()` ✅ partially closed (2026-06-17,
+  `bug/006-module-member-access`): the resolver now tracks receiver→module
+  aliases for whole-module imports (`import m`) and default requires (`const m =
+  require("./m")`), so `m.f()` binds to module `m`'s top-level export `f`. **Still
+  open:** members that are not top-level defs — object-literal / `exports.Name =
+  …` / assigned-property exports (`app.init = …`) — aren't extracted as symbols,
+  so there's nothing to bind to (needs explicit export-member modeling); and
+  aliased imports (`import os.path as osp`) don't capture the alias yet.
 - `import x = require(...)` CommonJS-in-TS, and ESM `export { x }` / re-export
   chains (explicit export modeling would unify these).
 
