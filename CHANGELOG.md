@@ -23,6 +23,12 @@ residuals._
   (`obj.f()`) is left unresolved instead of being guessed onto a same-named
   module-level function (ADR-0004). Go (named-variable receiver), C++ (methods
   not yet modeled), and inherited-method calls remain follow-ups.
+- **Module-member call resolution (BUG-006 residual).** `m.f()` where `m` is an
+  imported module — a whole-module import (`import m`) or a default require
+  (`const m = require("./m")`) — now binds to module `m`'s top-level export `f`,
+  via a receiver→module alias map in the resolver. A non-module receiver is still
+  never guessed (ADR-0004). Members that aren't top-level defs (object-literal /
+  assigned-property exports) still need export-member modeling.
 - **Cross-encoder reranker (ENH-009).** `retrieve.rerank: cross_encoder` adds a
   real semantic re-score of the top-k candidates via a `sentence-transformers`
   cross-encoder (the `rerank` extra; `rerank_model` to override), blended with
