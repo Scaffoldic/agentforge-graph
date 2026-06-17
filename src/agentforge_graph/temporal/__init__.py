@@ -10,7 +10,7 @@ deterministic engine core never imports this. Default off (opt-in). See
 
 from .backfill import BackfillReport, parse_history, run_backfill
 from .events import Author, Change, Entity, Event, EventKind, SymbolHistory
-from .index import TemporalIndex
+from .index import TemporalError, TemporalIndex
 from .mining import ChurnMiner, SymbolAggregate
 from .recorder import SqliteTemporalRecorder, build_recorder, seed_symbols
 from .store import TemporalStore
@@ -26,6 +26,7 @@ __all__ = [
     "SqliteTemporalRecorder",
     "SymbolAggregate",
     "SymbolHistory",
+    "TemporalError",
     "TemporalIndex",
     "TemporalStore",
     "build_recorder",

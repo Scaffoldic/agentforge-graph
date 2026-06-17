@@ -348,13 +348,23 @@ async def _map(args: argparse.Namespace) -> int:
 
 
 async def _query(args: argparse.Namespace) -> int:
+    from agentforge_graph.temporal import TemporalError
+
     cg = await CodeGraph.open(repo_path=args.path, config=args.config)
     try:
         pack = await cg.retrieve(
-            query=args.query, symbol=args.symbol, mode=args.mode, k=args.k, depth=args.depth
+            query=args.query,
+            symbol=args.symbol,
+            mode=args.mode,
+            k=args.k,
+            depth=args.depth,
+            as_of=args.as_of,
         )
         rendered = pack.render(args.budget)
         print(rendered if rendered else "(no results)")
+    except TemporalError as exc:
+        print(f"as_of unavailable: {exc}")
+        return 1
     finally:
         await cg.close()
     return 0
@@ -428,6 +438,13 @@ def build_parser() -> argparse.ArgumentParser:
     qry.add_argument("--k", type=int, default=8, help="vector hits (default: 8)")
     qry.add_argument("--depth", type=int, default=1, help="graph expansion hops (default: 1)")
     qry.add_argument("--budget", type=int, default=4000, help="render token budget (default: 4000)")
+    qry.add_argument(
+        "--as-of",
+        dest="as_of",
+        default=None,
+        metavar="COMMIT",
+        help="reconstruct results as of a git commit (feat-009; needs temporal + backfill)",
+    )
     qry.add_argument("--config", default=None, help="path to ckg.yaml")
     qry.set_defaults(func=_query)
 

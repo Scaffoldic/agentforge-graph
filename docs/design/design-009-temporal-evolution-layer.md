@@ -2,8 +2,9 @@
 
 > Per-feature design doc (design stage). Mirrors
 > `docs/features/feat-009-temporal-evolution-layer.md`. The spec says *what &
-> why*; this doc says *how*. **Status: accepted (2026-06-16) — sidecar log +
-> default-off approved; implementation may begin (chunk plan §10).**
+> why*; this doc says *how*. **Status: implemented (2026-06-17) — all five
+> chunks landed (§10): sidecar+lifecycle (#56), churn/authorship (#57), read
+> APIs (#58), backfill (#59), as_of+retention. Still opt-in / default-off.**
 
 ---
 
@@ -412,7 +413,19 @@ reviewable PRs (each green on its own):
    test lands with chunk 5 (which adds `as_of`).
 5. **`as_of` reconstruction + retention pruning** — `TemporalIndex.as_of`,
    `retrieve(as_of=)`, `prune(horizon)`. Tests: reconstruction equivalence;
-   beyond-horizon raises; prune respects retention.
+   beyond-horizon raises; prune respects retention. **DONE — completes feat-009.**
+   `TemporalIndex.alive_at(C)` replays the log over the current node set: a
+   symbol is alive iff its *last* lifecycle event at/before `C` is `OPENED`
+   (this tolerates the spurious `OPENED` the full-index seed stamps at HEAD,
+   since that event is after any historical `C`). `CodeGraph.retrieve(as_of=)`
+   /`ckg query --as-of` feed the live set to the Retriever as an `allow_ids`
+   filter (drops code symbols added after `C`); deleted-but-alive-at-`C` symbols
+   are in the set but not materialisable from the current graph (documented
+   approximation). Beyond `retention_commits` → `TemporalError` (never silently
+   wrong). Retention pruning of old `CLOSED` events runs at end of index/refresh
+   (`_prune_temporal`). The per-commit equivalence `alive_at(C) == full index at
+   C` is asserted against a git-blob full-index oracle for every backfilled
+   commit. (`as_of` over MCP stays deferred per Q5 — CLI + API only.)
 6. *(follow-on, optional)* intra-file rename heuristic; `as_of`/`changed_since`
    over MCP.
 
