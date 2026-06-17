@@ -107,8 +107,12 @@ bind to).
 
 **Residual (still open — file as ENH when prioritised):**
 - **Go receiver-variable calls** and **C++ method modeling** (above).
-- **Inherited-method `self.f()`** — only methods *defined on* the enclosing class
-  resolve; a call to a superclass method (via `INHERITS`) is still unresolved.
+- **Inherited-method `self.f()`** ✅ closed for Python (2026-06-17,
+  `feat/inherited-method-calls`): once `INHERITS` edges exist (#65), a `self.f()`
+  not found on the enclosing class walks the transitive superclass map and binds
+  to the base method **when exactly one base defines it** (an own-class override
+  wins; multiple distinct definers stay unresolved — no MRO guessing, ADR-0004).
+  Follow-up: the other language packs (gated on INHERITS for those packs).
 - **Module-member access** `m.f()` ✅ partially closed (2026-06-17,
   `bug/006-module-member-access`): the resolver now tracks receiver→module
   aliases for whole-module imports (`import m`) and default requires (`const m =

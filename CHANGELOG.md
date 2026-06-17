@@ -14,6 +14,11 @@ residuals._
 
 ### Added (unreleased, toward 0.2.0)
 
+- **Inherited-method call resolution (Python).** A `self.f()` whose method is
+  defined on a base class now resolves by walking the `INHERITS` superclass map —
+  binding to the base method when exactly one base defines it (an own-class
+  override wins; ambiguous multi-base definers stay unresolved, no MRO guessing).
+  Recovers inherited-call edges for the template-method / base-helper patterns.
 - **`INHERITS` edges (Python).** Class inheritance is now extracted and resolved:
   a class's base classes are captured and bound to in-repo class nodes, emitting
   `INHERITS` edges (subclass → base) for same-file and imported bases. The edge
