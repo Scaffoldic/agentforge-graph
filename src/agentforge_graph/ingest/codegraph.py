@@ -443,6 +443,48 @@ class CodeGraph:
         routes.sort(key=lambda r: (r.path, r.method))
         return routes
 
+    def _temporal_index(self) -> Any:
+        """A ``TemporalIndex`` over the sidecar, or ``None`` when the evolution
+        log is absent (temporal never enabled / no git). Lazy-imports the
+        higher temporal layer (ADR-0001)."""
+        from agentforge_graph.config import StoreConfig
+
+        root = Path(self._repo_path) / StoreConfig.load(self._config).path
+        if not (root / "temporal.db").exists():
+            return None
+        from agentforge_graph.temporal import TemporalIndex, TemporalStore
+
+        return TemporalIndex(
+            TemporalStore.open(root), self._store.graph, repo_root=str(self._repo_path)
+        )
+
+    async def history(self, symbol_id: str) -> Any:
+        """A symbol's evolution (feat-009): introduced / last-changed / churn /
+        authors / lifecycle events. ``None`` if the temporal layer has no data."""
+        ti = self._temporal_index()
+        return await ti.history(symbol_id) if ti is not None else None
+
+    async def changed_since(self, ref: str, scope: str | None = None) -> list[Any]:
+        """Symbols changed since ``ref`` (feat-009), newest first, optionally
+        filtered to a path glob/prefix ``scope``. Empty if no temporal data."""
+        ti = self._temporal_index()
+        return await ti.changed_since(ref, scope) if ti is not None else []
+
+    async def temporal_status(self) -> dict[str, Any]:
+        """Temporal sidecar summary for ``ckg status``: whether the feature is
+        enabled, and how many events the log holds."""
+        from agentforge_graph.config import StoreConfig, TemporalConfig
+
+        enabled = TemporalConfig.load(self._config).enabled
+        root = Path(self._repo_path) / StoreConfig.load(self._config).path
+        db = root / "temporal.db"
+        if not db.exists():
+            return {"enabled": enabled, "events": 0, "has_sidecar": False}
+        from agentforge_graph.temporal import TemporalStore
+
+        events = await TemporalStore.open(root).count_events()
+        return {"enabled": enabled, "events": events, "has_sidecar": True}
+
     async def decisions(
         self, scope: str | None = None, status: str | None = None
     ) -> list[DecisionInfo]:

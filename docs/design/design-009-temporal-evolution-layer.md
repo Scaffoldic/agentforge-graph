@@ -385,7 +385,16 @@ reviewable PRs (each green on its own):
    used (batched multi-path mine), so a pre-rename history is not traced.
 3. **`TemporalIndex` + history/changed_since + CLI + `ckg_history` tool** —
    read APIs, `ckg history` / `ckg changed-since`, `status` temporal block.
-   Tests: history matches the scripted script; changed_since scoping.
+   Tests: history matches the scripted script; changed_since scoping. **DONE.**
+   `TemporalIndex(store, graph, repo_root)` reads the sidecar; `history` prefers
+   the chunk-1 `OPENED` event for `introduced` (exact) and falls back to the
+   mined aggregate (window-bounded) otherwise. `changed_since(ref, scope)`
+   resolves the ref via git (or accepts a raw epoch for testing), unions
+   lifecycle events + mined modifications after it, newest first, glob/prefix
+   scoped. `CodeGraph.history/changed_since/temporal_status` wrap it; the engine
+   adds `ckg_history` (+ a `temporal` block on `ckg_status`). `SymbolHistory` /
+   `Change` / `Author` value types in `temporal/events.py`. The locked v1 tool
+   set grew by one (`ckg_history`) — the drift guards were updated deliberately.
 4. **Backfill (`--history N`)** — `backfill.py`, resumable cursor. Tests:
    backfill N commits then `as_of` each == full index of that commit (reuse
    feat-004 equivalence per commit).

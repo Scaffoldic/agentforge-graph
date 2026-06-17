@@ -36,3 +36,47 @@ class Event(BaseModel):
     ts: int = 0  # commit author time (epoch seconds); 0 if unknown / non-git
     entity: Entity = Entity.NODE
     ref: str | None = None  # SUCCEEDS: the prior symbol id this one supersedes
+
+
+# --- read-side value types (chunk 3 read APIs) ----------------------------
+
+
+class Author(BaseModel):
+    """An author and how many commits they made to a symbol's span (within the
+    mined window)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    commits: int
+
+
+class Change(BaseModel):
+    """One symbol that changed since a reference commit — the unit returned by
+    ``changed_since``."""
+
+    model_config = ConfigDict(frozen=True)
+
+    symbol_id: str
+    path: str
+    kind: str  # "opened" | "closed" | "modified"
+    commit: str
+    ts: int
+
+
+class SymbolHistory(BaseModel):
+    """A symbol's evolution at a glance: when it was introduced / last changed,
+    its churn windows, its authors, and the raw lifecycle events. Read from the
+    sidecar (+ the current graph for the live span)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    symbol_id: str
+    introduced: str = ""  # commit sha (prefer the OPENED event; else mined)
+    introduced_ts: int = 0
+    last_changed: str = ""
+    last_changed_ts: int = 0
+    churn_30d: int = 0
+    churn_90d: int = 0
+    authors: list[Author] = []
+    events: list[Event] = []
