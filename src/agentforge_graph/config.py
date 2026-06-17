@@ -126,13 +126,13 @@ class RetrieveConfig(_Block):
     depth: int = 1
     decay: float = 0.6
     fanout_cap: int = 25  # max neighbors expanded per hop (overflow noted, not silent)
-    # ENH-009: off (default) | lexical. The lexical reranker (deterministic
-    # subtoken blend) is OPT-IN — measured a mixed effect on NL questions vs the
-    # already-strong cosine baseline (helps keyword/symbol-naming queries, can
-    # regress when test/comment chunks share query tokens). A default-on precision
-    # win needs a cross-encoder (out-of-tree adapter) — see ENH-009.
+    # ENH-009: off (default) | lexical | cross_encoder. `lexical` is a
+    # deterministic subtoken blend (helps keyword/symbol-naming queries, mixed on
+    # prose). `cross_encoder` is a real semantic re-score via sentence-transformers
+    # (the `rerank` extra; lazy-loaded). Both opt-in (measure, don't blind-flip).
     rerank: str = "off"
-    rerank_weight: float = 0.5  # lexical: final = (1-w)*cosine + w*subtoken-overlap
+    rerank_weight: float = 0.5  # final = (1-w)*base + w*signal (overlap | σ(cross))
+    rerank_model: str = ""  # cross_encoder model id (empty = a small ms-marco default)
     edge_weights: dict[str, float] = Field(default_factory=_default_edge_weights)
 
     @field_validator("rerank", mode="before")

@@ -420,7 +420,10 @@ class CodeGraph:
         )
         rcfg = RetrieveConfig.load(self._config)
         retriever = Retriever(
-            self._store, emb, rcfg, reranker=reranker_from_config(rcfg.rerank, rcfg.rerank_weight)
+            self._store,
+            emb,
+            rcfg,
+            reranker=reranker_from_config(rcfg.rerank, rcfg.rerank_weight, rcfg.rerank_model),
         )
         return await retriever.retrieve(
             query=query,

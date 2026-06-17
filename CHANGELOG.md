@@ -14,6 +14,15 @@ residuals._
 
 ### Added (unreleased, toward 0.2.0)
 
+- **Cross-encoder reranker (ENH-009).** `retrieve.rerank: cross_encoder` adds a
+  real semantic re-score of the top-k candidates via a `sentence-transformers`
+  cross-encoder (the `rerank` extra; `rerank_model` to override), blended with
+  the base score. The model is lazy-loaded behind a `CrossScorer` seam so the
+  base install and CI stay torch-free. Also **fixes** the MCP engine, which
+  built its retriever without a reranker — so `retrieve.rerank` (lexical or
+  cross-encoder) was silently ignored over MCP and now applies on both the CLI
+  and agent-tool paths. Opt-in; default stays `off` pending a measurement
+  campaign.
 - **Temporal layer — `as_of` + retention (feat-009, chunk 5, completes feat-009).**
   `CodeGraph.retrieve(as_of=<commit>)` and `ckg query --as-of <commit>`
   reconstruct results as they were at a commit: `TemporalIndex.alive_at(C)`

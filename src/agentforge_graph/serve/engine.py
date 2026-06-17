@@ -58,9 +58,18 @@ class _Engine:
 
     async def retriever(self) -> Retriever:
         if self._retriever is None:
+            from agentforge_graph.retrieve.rerank import reranker_from_config
+
             cg = await self.code_graph()
             embedder = embedder_from_config(EmbedConfig.load(self.config))
-            self._retriever = Retriever(cg.store, embedder, RetrieveConfig.load(self.config))
+            rcfg = RetrieveConfig.load(self.config)
+            # ENH-009: honor retrieve.rerank over MCP too (previously ignored here).
+            self._retriever = Retriever(
+                cg.store,
+                embedder,
+                rcfg,
+                reranker=reranker_from_config(rcfg.rerank, rcfg.rerank_weight, rcfg.rerank_model),
+            )
         return self._retriever
 
     async def repomap(self) -> RepoMap:
