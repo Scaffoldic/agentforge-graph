@@ -470,20 +470,35 @@ class CodeGraph:
         ti = self._temporal_index()
         return await ti.changed_since(ref, scope) if ti is not None else []
 
+    async def backfill(self, history: int) -> Any:
+        """Seed the evolution log from git history (feat-009 chunk 4):
+        ``history`` commits replayed into the temporal sidecar. Returns a
+        ``BackfillReport``; a no-op (``ran=False``) when temporal is off, the
+        range is already covered, or it isn't a git repo."""
+        from agentforge_graph.temporal.backfill import run_backfill
+
+        return await run_backfill(self._repo_path, self._config, history, languages=self._languages)
+
     async def temporal_status(self) -> dict[str, Any]:
         """Temporal sidecar summary for ``ckg status``: whether the feature is
-        enabled, and how many events the log holds."""
+        enabled, how many events the log holds, and how far back history has
+        been backfilled."""
         from agentforge_graph.config import StoreConfig, TemporalConfig
 
         enabled = TemporalConfig.load(self._config).enabled
         root = Path(self._repo_path) / StoreConfig.load(self._config).path
         db = root / "temporal.db"
         if not db.exists():
-            return {"enabled": enabled, "events": 0, "has_sidecar": False}
+            return {"enabled": enabled, "events": 0, "has_sidecar": False, "backfilled_through": ""}
         from agentforge_graph.temporal import TemporalStore
 
-        events = await TemporalStore.open(root).count_events()
-        return {"enabled": enabled, "events": events, "has_sidecar": True}
+        store = TemporalStore.open(root)
+        return {
+            "enabled": enabled,
+            "events": await store.count_events(),
+            "has_sidecar": True,
+            "backfilled_through": await store.get_meta("backfilled_through") or "",
+        }
 
     async def decisions(
         self, scope: str | None = None, status: str | None = None

@@ -10,10 +10,12 @@ import argparse
 import asyncio
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 from agentforge_graph.embed import EmbedReport
 from agentforge_graph.ingest import CodeGraph
 from agentforge_graph.ingest.report import IndexReport
+from agentforge_graph.temporal import parse_history
 
 
 def _add_repo_arg(parser: argparse.ArgumentParser, *, positional: bool = True) -> None:
@@ -82,6 +84,16 @@ def _format_embed(report: EmbedReport) -> str:
     )
 
 
+def _format_backfill(rep: Any) -> str:
+    if not rep.ran:
+        return f"backfill: skipped ({rep.reason})"
+    back = rep.backfilled_through[:10] if rep.backfilled_through else "?"
+    return (
+        f"backfill: replayed {rep.commits} commits, +{rep.events_added} events "
+        f"(history back to {back})"
+    )
+
+
 async def _index(args: argparse.Namespace) -> int:
     cg = await CodeGraph.index(
         repo_path=args.path,
@@ -96,6 +108,9 @@ async def _index(args: argparse.Namespace) -> int:
         print(_format_report(cg.stats()))
         if args.embed:
             print(_format_embed(cg.embed_stats()))
+        history = parse_history(args.history)
+        if history != 0:
+            print(_format_backfill(await cg.backfill(history)))
     finally:
         await cg.close()
     return 0
@@ -122,9 +137,12 @@ async def _status(args: argparse.Namespace) -> int:
         by_kind[n.kind.value] = by_kind.get(n.kind.value, 0) + 1
     if not temporal["enabled"]:
         temporal_line = "off"
+    elif not temporal["has_sidecar"]:
+        temporal_line = "on — no sidecar yet (re-index)"
     else:
+        back = temporal.get("backfilled_through") or ""
         temporal_line = f"on — {temporal['events']} events" + (
-            "" if temporal["has_sidecar"] else " (no sidecar yet — re-index)"
+            f", history back to {back[:10]}" if back else ""
         )
     lines = [
         f"indexed commit: {meta.indexed_commit or '(none)'}",
@@ -361,6 +379,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--full",
         action="store_true",
         help="force a full rebuild instead of incremental (default: incremental)",
+    )
+    idx.add_argument(
+        "--history",
+        default=None,
+        metavar="N",
+        help="backfill the temporal log from the last N commits (or 'full'); "
+        "needs temporal enabled (feat-009)",
     )
     idx.set_defaults(func=_index)
 
