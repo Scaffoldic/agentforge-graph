@@ -371,7 +371,18 @@ reviewable PRs (each green on its own):
    refresh-overhead-off==today.
 2. **Churn / authorship mining + denormalisation** — `mining.py`, aggregates
    table, `attrs.{introduced,last_changed,churn_90d,top_authors}` on refresh.
-   Tests: numstat attribution math; `ckg_symbol` shows the fields.
+   Tests: numstat attribution math; `ckg_symbol` shows the fields. **DONE.**
+   Implemented as a single batched `git log -U0` per refresh (hunk new-line
+   ranges, not bare numstat totals, so churn lands on the *right* symbol via
+   span overlap); a new `GraphStore.set_attrs` (Kuzu + Neo4j) does the
+   denormalisation as a partial merge that preserves `origin_path` (a plain
+   `add()` would have detached the node from its file). `ContextItem` gained an
+   optional `temporal` dict the retriever fills from a whitelist of node attrs.
+   **Known limitation (chunk-2 scope):** `introduced` is bounded by the mine
+   window — for symbols older than the window it reports the window's earliest
+   touching commit, not the true first commit; the accurate anchor comes from
+   the sidecar `OPENED` event (chunk 1) / backfill (chunk 4). `--follow` is not
+   used (batched multi-path mine), so a pre-rename history is not traced.
 3. **`TemporalIndex` + history/changed_since + CLI + `ckg_history` tool** —
    read APIs, `ckg history` / `ckg changed-since`, `status` temporal block.
    Tests: history matches the scripted script; changed_since scoping.

@@ -38,10 +38,16 @@ from ._rowmap import (
     acceptable_sources as _acceptable_sources,
 )
 from ._rowmap import (
+    dump_attrs as _dump_attrs,
+)
+from ._rowmap import (
     edge_from_row as _edge_from_rel,
 )
 from ._rowmap import (
     edge_params as _edge_params,
+)
+from ._rowmap import (
+    load_attrs as _load_attrs,
 )
 from ._rowmap import (
     node_from_row as _node_from_row,
@@ -316,6 +322,23 @@ class KuzuGraphStore(GraphStore):
         result = self._conn.execute("MATCH (n:CkgNode {id: $id}) RETURN n", {"id": node_id})
         rows = _rows(result)
         return _node_from_row(rows[0][0]) if rows else None
+
+    async def set_attrs(self, node_id: str, attrs: dict[str, Any]) -> None:
+        async with self._lock:
+            await asyncio.to_thread(self._set_attrs_sync, node_id, attrs)
+
+    def _set_attrs_sync(self, node_id: str, attrs: dict[str, Any]) -> None:
+        rows = _rows(
+            self._conn.execute("MATCH (n:CkgNode {id: $id}) RETURN n.attrs", {"id": node_id})
+        )
+        if not rows:
+            return  # absent node: no-op (contract)
+        merged = {**_load_attrs(rows[0][0]), **attrs}
+        # SET only attrs — origin_path and every other column are left intact.
+        self._conn.execute(
+            "MATCH (n:CkgNode {id: $id}) SET n.attrs = $attrs",
+            {"id": node_id, "attrs": _dump_attrs(merged)},
+        )
 
     async def adjacent(
         self,

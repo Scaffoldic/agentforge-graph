@@ -9,14 +9,17 @@ deterministic engine core never imports this. Default off (opt-in). See
 """
 
 from .events import Entity, Event, EventKind
+from .mining import ChurnMiner, SymbolAggregate
 from .recorder import SqliteTemporalRecorder, build_recorder, seed_symbols
 from .store import TemporalStore
 
 __all__ = [
+    "ChurnMiner",
     "Entity",
     "Event",
     "EventKind",
     "SqliteTemporalRecorder",
+    "SymbolAggregate",
     "TemporalStore",
     "build_recorder",
     "seed_symbols",

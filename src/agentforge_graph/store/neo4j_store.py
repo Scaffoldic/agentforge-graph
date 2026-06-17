@@ -36,8 +36,10 @@ from agentforge_graph.core import (
 
 from ._rowmap import (
     acceptable_sources,
+    dump_attrs,
     edge_from_row,
     edge_params,
+    load_attrs,
     node_from_row,
     node_params,
 )
@@ -227,6 +229,30 @@ class Neo4jGraphStore(GraphStore):
     async def get(self, node_id: str) -> Node | None:
         rows = await self._read("MATCH (n:CkgNode {id: $id}) RETURN n", {"id": node_id})
         return node_from_row(dict(rows[0]["n"])) if rows else None
+
+    async def set_attrs(self, node_id: str, attrs: dict[str, Any]) -> None:
+        async with self._driver.session(database=self._database) as session:
+            await session.execute_write(self._set_attrs_tx, node_id, attrs)
+
+    @staticmethod
+    async def _set_attrs_tx(
+        tx: AsyncManagedTransaction, node_id: str, attrs: dict[str, Any]
+    ) -> None:
+        rows = [
+            r
+            async for r in await tx.run(
+                "MATCH (n:CkgNode {id: $id}) RETURN n.attrs AS a", id=node_id
+            )
+        ]
+        if not rows:
+            return  # absent node: no-op (contract)
+        merged = {**load_attrs(rows[0]["a"]), **attrs}
+        # SET only attrs — origin_path and every other property are left intact.
+        await tx.run(
+            "MATCH (n:CkgNode {id: $id}) SET n.attrs = $attrs",
+            id=node_id,
+            attrs=dump_attrs(merged),
+        )
 
     async def adjacent(
         self,

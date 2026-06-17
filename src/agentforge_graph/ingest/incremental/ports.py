@@ -9,7 +9,10 @@ higher ``temporal`` layer (ADR-0001 spirit). So it depends on this structural
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from agentforge_graph.core import GraphStore
 
 
 @runtime_checkable
@@ -20,5 +23,17 @@ class TemporalRecorder(Protocol):
     def open(self, symbol_ids: Iterable[str], at: str, ts: int) -> None: ...
 
     def close(self, symbol_ids: Iterable[str], at: str, ts: int) -> None: ...
+
+    async def record_churn(
+        self,
+        graph: GraphStore,
+        repo_root: str,
+        paths: Iterable[str],
+        commit: str,
+        commit_ts: int,
+    ) -> None:
+        """Mine churn/authorship for ``paths`` over a window, store the bounded
+        aggregates, and denormalise ``introduced/last_changed/churn_*/top_authors``
+        onto the matching node ``attrs`` (feat-009 §4.5). No-op off the git path."""
 
     async def flush(self) -> None: ...

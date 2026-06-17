@@ -133,7 +133,9 @@ class CkgSymbol(_CkgTool):
     name: ClassVar[str] = "ckg_symbol"
     description: ClassVar[str] = (
         "Look up a specific symbol's definition: the symbol, its chunks and members. "
-        "Provide `symbol_id` (exact) or `name` + `path`."
+        "Provide `symbol_id` (exact) or `name` + `path`. When the temporal layer is "
+        "enabled, items carry `temporal` (churn_90d, top_authors, introduced, "
+        "last_changed) — recency/ownership signals for triage."
     )
     input_schema: ClassVar[type[BaseModel]] = SymbolInput
 
