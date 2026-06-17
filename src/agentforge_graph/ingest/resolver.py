@@ -385,6 +385,17 @@ class ImportResolver:
                 frontier.extend(superclasses.get(b, []))
             return next(iter(found)) if len(found) == 1 else None
 
+        # Go: methods are package-scoped and attached to a receiver type, not
+        # AST-nested in it. Index them by (package, type) so a call on a method's
+        # own receiver (`s.f()`) resolves to a method of that type (BUG-006).
+        go_methods: dict[tuple[str, str], dict[str, str]] = {}
+        for n in sorted(all_nodes, key=lambda z: z.id):
+            rtype = n.attrs.get("recv_type")
+            if not rtype:
+                continue
+            owner = path_to_file.get(SymbolID.parse(n.id).path, "")
+            go_methods.setdefault((file_module.get(owner, ""), rtype), {})[n.name] = n.id
+
         for n in all_nodes:
             refs = n.attrs.get("refs")
             if not refs:
@@ -410,6 +421,11 @@ class ImportResolver:
                         target = (await _methods_of(cls)).get(nm)
                         if target is None:
                             target = await _inherited_method(cls, nm)
+                elif recv is not None and recv == n.attrs.get("recv_var"):
+                    # Go: a call on the method's own receiver (`s.f()`) → a method
+                    # of the receiver's type.
+                    key = (file_module.get(owner_file or "", ""), str(n.attrs.get("recv_type", "")))
+                    target = go_methods.get(key, {}).get(nm)
                 elif recv is not None:
                     # `m.f()` where `m` is an imported module → its export `f`;
                     # any other receiver is not a unique target (never guessed

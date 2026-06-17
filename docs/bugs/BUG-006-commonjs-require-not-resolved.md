@@ -105,8 +105,17 @@ the resolver to learn the method's receiver var) and **C++** (the pack doesn't
 yet model inline struct/class methods as symbols, so there's no method node to
 bind to).
 
+**Residual — Go receiver-variable calls ✅ closed (2026-06-17,
+`feat/go-receiver-calls`):** Go's receiver is a named variable (`func (s *T)`),
+not a keyword, so the extractor now records each method's receiver var + type,
+and the resolver indexes methods by (package, type). A call on the method's own
+receiver (`s.f()`) binds to a method of that type — more precise than the prior
+bare-name match (which could hit another type's same-named method). Verified two
+types with a same-named method don't cross-bind.
+
 **Residual (still open — file as ENH when prioritised):**
-- **Go receiver-variable calls** and **C++ method modeling** (above).
+- **C++ method modeling** — the cpp pack doesn't extract inline struct/class
+  methods as symbols, so `this->f()` has nothing to bind to.
 - **Inherited-method `self.f()`** ✅ closed for Python (#66) and extended to
   **TS / JS / Java / C# / Ruby / PHP** (2026-06-17, `feat/inherits-other-packs`):
   each pack now captures its `extends`/`<`/`:` superclass, so `INHERITS` edges +

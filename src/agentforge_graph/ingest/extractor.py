@@ -59,6 +59,8 @@ class _Def:
     enclosing: int | None = None  # ts id of the nearest enclosing def
     symbol_id: str = ""
     bases: list[str] = field(default_factory=list)  # superclass names (INHERITS)
+    recv_var: str = ""  # Go: a method's receiver variable name (`s` in `func (s *T)`)
+    recv_type: str = ""  # Go: a method's receiver type name (`T`)
 
 
 def _text(node: TSNode, src: bytes) -> str:
@@ -126,6 +128,9 @@ class TreeSitterExtractor(Extractor):
                 attrs["refs"] = refs[d.symbol_id]
             if d.bases:  # INHERITS: superclass names, resolved in pass 2
                 attrs["bases"] = d.bases
+            if d.recv_var:  # Go: receiver var/type, for receiver self-calls (pass 2)
+                attrs["recv_var"] = d.recv_var
+                attrs["recv_type"] = d.recv_type
             nodes.append(
                 GraphNode(
                     id=d.symbol_id,
@@ -157,6 +162,7 @@ class TreeSitterExtractor(Extractor):
         default_export = ""  # CommonJS `module.exports = <name>` (BUG-006)
         namespace = ""  # PHP/Java/C# package declaration (FQN import resolution)
         class_bases: dict[int, list[str]] = defaultdict(list)  # class node id -> base names
+        method_recv: dict[int, tuple[str, str]] = {}  # method node id -> (recv var, recv type)
         rules = self.pack.descriptor_rules
         for _pattern, caps in QueryCursor(self._structure_q).matches(root):
             def_cap = next((c for c in caps if c.startswith("def.")), None)
@@ -172,6 +178,11 @@ class TreeSitterExtractor(Extractor):
                 cls = caps.get("base.def")
                 if cls:
                     class_bases[cls[0].id].extend(_text(b, src) for b in caps["base.name"])
+            elif "recv.var" in caps:
+                # Go: a method's receiver `(s *T)` — bind the var name + type
+                meth, rvar, rtype = caps.get("recv.method"), caps["recv.var"], caps.get("recv.type")
+                if meth and rtype:
+                    method_recv[meth[0].id] = (_text(rvar[0], src), _text(rtype[0], src))
             elif "import" in caps:
                 mods = caps.get("import.module", [])
                 dflt = caps.get("import.default")
@@ -195,6 +206,8 @@ class TreeSitterExtractor(Extractor):
         for d in defs:
             if d.ts_id in class_bases:
                 d.bases = class_bases[d.ts_id]
+            if d.ts_id in method_recv:
+                d.recv_var, d.recv_type = method_recv[d.ts_id]
         self._link_scopes(defs)
         return defs, imports, default_export, namespace
 
