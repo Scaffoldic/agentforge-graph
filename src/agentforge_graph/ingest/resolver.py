@@ -30,6 +30,11 @@ from .report import ResolveStats
 
 _ALL = 10_000_000  # effectively unbounded query for v0.1 graph sizes
 _INIT_FILES = ("__init__.py", "__init__.pyi")
+# Receivers that unambiguously denote the enclosing instance/class across the
+# packs that capture a receiver: `self` (Py/Rust/Ruby), `this` (TS/JS/Java/C#/
+# C++), `$this` (PHP). A call on one of these binds to the enclosing class's
+# method (BUG-006); any other receiver is left unresolved (ADR-0004).
+_SELF_RECV = frozenset({"self", "this", "$this"})
 
 
 def _detect_source_roots(file_paths: list[str]) -> set[str]:
@@ -340,7 +345,7 @@ class ImportResolver:
                 target: str | None = None
                 if not nm:
                     target = None
-                elif recv in ("self", "this"):
+                elif recv in _SELF_RECV:
                     # an intra-class call: bind to a method *of the enclosing class*
                     cls = await _enclosing_class(n.id)
                     if cls is not None:

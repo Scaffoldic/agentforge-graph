@@ -93,9 +93,20 @@ left unresolved rather than guessed (ADR-0004). Verified on Python/TS/JS:
 `self.handle()`/`this.handle()` resolves to `Service#handle`, never the
 module-level `handle` decoy; `s.handle()` on a parameter stays unresolved.
 
+**Residual — receiver capture for the rest of the packs ✅ mostly closed
+(2026-06-17, `bug/006-member-calls-all-packs`):** Java / C# / Rust / Ruby / PHP
+now capture `@call.recv`, so `this.f()` / `self.f()` / `$this->f()` /
+`self::f()` resolve to the enclosing class's method (same resolver path; the
+self-receiver set is `{self, this, $this}`). The extractor dedupes by call node
+so the Java/Ruby grammars — one node type for `f()` and `recv.f()` — don't
+double-record. Verified per language. **Two packs deferred:** **Go** (the
+receiver is a *named* variable, e.g. `func (s *Server)`, not a keyword — needs
+the resolver to learn the method's receiver var) and **C++** (the pack doesn't
+yet model inline struct/class methods as symbols, so there's no method node to
+bind to).
+
 **Residual (still open — file as ENH when prioritised):**
-- **Receiver capture for the other packs** (Go/Rust/Java/C#/Ruby/PHP/C++) — the
-  same `@call.recv` change per grammar, so their `this`/`self` calls resolve too.
+- **Go receiver-variable calls** and **C++ method modeling** (above).
 - **Inherited-method `self.f()`** — only methods *defined on* the enclosing class
   resolve; a call to a superclass method (via `INHERITS`) is still unresolved.
 - **Module-member access** `pkg.Name()` / `app.init()` where `pkg`/`app` is a
