@@ -117,6 +117,15 @@ class IncrementalIndexer:
         if self.recorder is not None:
             self.recorder.open(sorted(after_symbols - before_symbols), self.commit, self.commit_ts)
             self.recorder.close(sorted(before_symbols - after_symbols), self.commit, self.commit_ts)
+            # churn/authorship for the touched files → aggregates + denormalised
+            # onto node attrs (feat-009 chunk 2).
+            await self.recorder.record_churn(
+                self.store.graph,
+                str(self.source.root),
+                sorted(touched),
+                self.commit,
+                self.commit_ts,
+            )
             await self.recorder.flush()
         return report
 

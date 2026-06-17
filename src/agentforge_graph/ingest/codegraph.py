@@ -236,7 +236,13 @@ class CodeGraph:
             if recorder is not None:  # full index: open intervals for all symbols
                 from agentforge_graph.temporal import seed_symbols
 
-                await seed_symbols(store.graph, recorder, commit, _commit_time(repo_path, commit))
+                await seed_symbols(
+                    store.graph,
+                    recorder,
+                    commit,
+                    _commit_time(repo_path, commit),
+                    repo_root=str(repo_path),
+                )
         cg._report = report
         await _ingest_knowledge(store, repo_path, config, repo, commit, registry, report)
         _save_meta(root, commit, registry, result.file_hashes)

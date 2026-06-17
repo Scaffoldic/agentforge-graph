@@ -81,6 +81,24 @@ class GraphStoreConformance:
         await store.upsert(make_sample_subgraph(commit="c1"))
         assert await store.get(summary_id) is not None
 
+    async def test_set_attrs_merges_and_keeps_file_ownership(self, store: GraphStore) -> None:
+        sg = make_sample_subgraph()
+        await store.upsert(sg)
+        target = sg.nodes[1].id  # the class
+        await store.set_attrs(target, {"churn_90d": 7})
+        await store.set_attrs(target, {"introduced": "abc123"})  # second merge
+        got = await store.get(target)
+        assert got is not None
+        assert got.attrs.get("churn_90d") == 7  # first patch survives the second
+        assert got.attrs.get("introduced") == "abc123"
+        # the patched node is still file-owned: delete_file removes it (the
+        # merge must not have clobbered origin_path, feat-009).
+        await store.delete_file(sg.path)
+        assert await store.get(target) is None
+        # patching an absent node is a no-op, not an error
+        await store.set_attrs(target, {"churn_90d": 1})
+        assert await store.get(target) is None
+
     async def test_reserved_kind_preserved(self, store: GraphStore) -> None:
         route_id = SymbolID.for_symbol(_LANG, _REPO, "src/app/api.py", "route(GET_x).")
         await store.add(

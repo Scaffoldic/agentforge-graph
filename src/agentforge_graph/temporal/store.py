@@ -14,11 +14,13 @@ table (churn/authorship, chunk 2) is created here but populated later.
 from __future__ import annotations
 
 import asyncio
+import json
 import sqlite3
 from pathlib import Path
 from typing import Any
 
 from .events import Entity, Event, EventKind
+from .mining import SymbolAggregate
 
 _DB = "temporal.db"
 
@@ -131,6 +133,54 @@ class TemporalStore:
             conn.close()
         return [_row_to_event(r) for r in rows]
 
+    # --- aggregates (churn / authorship, chunk 2) -------------------------
+
+    async def upsert_aggregates(self, aggs: list[SymbolAggregate]) -> int:
+        """Insert/replace churn/authorship rollups; return rows written."""
+        if not aggs:
+            return 0
+        return await asyncio.to_thread(self._upsert_aggregates_sync, aggs)
+
+    def _upsert_aggregates_sync(self, aggs: list[SymbolAggregate]) -> int:
+        conn = sqlite3.connect(str(self._path))
+        try:
+            cur = conn.executemany(
+                "INSERT OR REPLACE INTO aggregates"
+                "(symbol_id, churn_30d, churn_90d, top_authors,"
+                " introduced_sha, introduced_ts, last_changed_sha, last_changed_ts)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                [
+                    (
+                        a.symbol_id, a.churn_30d, a.churn_90d,
+                        json.dumps([{"name": n, "commits": c} for n, c in a.top_authors]),
+                        a.introduced_sha, a.introduced_ts,
+                        a.last_changed_sha, a.last_changed_ts,
+                    )
+                    for a in aggs
+                ],
+            )
+            conn.commit()
+            return cur.rowcount if cur.rowcount is not None else 0
+        finally:
+            conn.close()
+
+    async def aggregate_for(self, symbol_id: str) -> SymbolAggregate | None:
+        """The stored rollup for one symbol, or ``None``."""
+        return await asyncio.to_thread(self._aggregate_for_sync, symbol_id)
+
+    def _aggregate_for_sync(self, symbol_id: str) -> SymbolAggregate | None:
+        conn = sqlite3.connect(str(self._path))
+        try:
+            row = conn.execute(
+                "SELECT symbol_id, churn_30d, churn_90d, top_authors,"
+                " introduced_sha, introduced_ts, last_changed_sha, last_changed_ts"
+                " FROM aggregates WHERE symbol_id = ?",
+                (symbol_id,),
+            ).fetchone()
+        finally:
+            conn.close()
+        return _row_to_aggregate(row) if row else None
+
     async def prune(self, before_ts: int) -> int:
         """Delete CLOSED events older than ``before_ts`` (retention horizon).
         OPENED events are kept (they anchor 'introduced'); full retention math
@@ -158,4 +208,18 @@ def _row_to_event(r: tuple[Any, ...]) -> Event:
         commit=r[3],
         ts=r[4],
         ref=r[5],
+    )
+
+
+def _row_to_aggregate(r: tuple[Any, ...]) -> SymbolAggregate:
+    authors = [(a["name"], a["commits"]) for a in json.loads(r[3] or "[]")]
+    return SymbolAggregate(
+        symbol_id=r[0],
+        churn_30d=r[1],
+        churn_90d=r[2],
+        top_authors=authors,
+        introduced_sha=r[4] or "",
+        introduced_ts=r[5] or 0,
+        last_changed_sha=r[6] or "",
+        last_changed_ts=r[7] or 0,
     )

@@ -24,6 +24,18 @@ Mode = Literal["context", "impact", "definition", "similar"]
 _RANK: dict[Source, int] = {Source.LLM: 0, Source.PARSED: 1, Source.RESOLVED: 2, Source.MANUAL: 3}
 _FLOOR: dict[str, int] = {"parsed": 1, "resolved": 2}
 
+# feat-009 churn/authorship fields denormalised onto a symbol's node.attrs; the
+# Retriever surfaces them on the item without joining the temporal sidecar (it
+# stays in the deterministic core, ADR-0001). Empty → item.temporal stays None.
+_TEMPORAL_KEYS = ("introduced", "introduced_ts", "last_changed", "last_changed_ts",
+                  "churn_30d", "churn_90d", "top_authors")
+
+
+def _temporal_attrs(node: Node) -> dict[str, object] | None:
+    out = {k: node.attrs[k] for k in _TEMPORAL_KEYS if k in node.attrs}
+    return out or None
+
+
 _MODE_EDGES: dict[Mode, tuple[list[EdgeKind], Direction]] = {
     # GOVERNS/DESCRIBES (feat-010) surface the decision/doc governing a retrieved
     # symbol; TAGGED + SUMMARIZES (feat-012) surface its design-pattern role and
@@ -166,6 +178,7 @@ class Retriever:
             code=self._render_code(node),
             provenance=node.provenance.source,
             why=list(why),
+            temporal=_temporal_attrs(node),
         )
 
     @staticmethod

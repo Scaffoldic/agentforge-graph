@@ -25,6 +25,9 @@ class ContextItem(BaseModel):
     code: str | None = None  # chunk text, rendered verbatim
     provenance: Source
     why: list[str] = Field(default_factory=list)  # trace of how it was included
+    # feat-009: denormalised churn/authorship, present only when the temporal
+    # layer has mined this symbol (introduced/last_changed/churn_*/top_authors).
+    temporal: dict[str, Any] | None = None
 
     def signature(self) -> str:
         loc = f":{self.span[0]}-{self.span[1]}" if self.span else ""

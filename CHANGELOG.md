@@ -12,6 +12,18 @@ _Work toward 0.2.0 (`0.2.0.dev0`). Planned: temporal / git-evolution layer
 (feat-009), a cross-encoder reranker for ENH-009, and BUG-006 member-access
 residuals._
 
+### Added (unreleased, toward 0.2.0)
+
+- **Temporal layer — churn / authorship (feat-009, chunk 2).** When `temporal`
+  is enabled, a refresh now mines `git log` over a bounded window and attributes
+  each diff hunk to the symbol whose span it overlaps, storing bounded
+  per-symbol aggregates (`churn_30d/90d`, `top_authors`, `introduced`,
+  `last_changed`) in the `.ckg/temporal.db` sidecar and **denormalising** them
+  onto each symbol's node `attrs`. `ckg_symbol` / retrieval surface these on the
+  item (`temporal: {…}`) for free. New `GraphStore.set_attrs` — a partial-attrs
+  merge that preserves file ownership (Kuzu + Neo4j). Still opt-in and off by
+  default; chunk 1 (sidecar + lifecycle) shipped earlier in this cycle.
+
 ## [0.1.0] — 2026-06-16
 
 First production-grade release: a deterministic **Code Knowledge Graph** engine

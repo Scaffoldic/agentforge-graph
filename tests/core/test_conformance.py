@@ -127,6 +127,13 @@ class InMemoryGraphStore(GraphStore):
     async def get(self, node_id: str) -> Node | None:
         return self._nodes.get(node_id)
 
+    async def set_attrs(self, node_id: str, attrs: dict) -> None:
+        node = self._nodes.get(node_id)
+        if node is None:  # absent node: no-op (contract)
+            return
+        # merge attrs only; file ownership (_path_nodes) is left intact
+        self._nodes[node_id] = node.model_copy(update={"attrs": {**node.attrs, **attrs}})
+
     async def adjacent(
         self,
         node_id: str,

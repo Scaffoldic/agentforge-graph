@@ -97,6 +97,14 @@ class GraphStore(ABC):
         """Fetch a node by id, or ``None``."""
 
     @abstractmethod
+    async def set_attrs(self, node_id: str, attrs: dict[str, Any]) -> None:
+        """Merge ``attrs`` into an existing node's ``attrs`` (a partial update —
+        other fields, including the file-ownership ``origin_path`` that drives
+        ``delete_file``, are untouched). No-op if the node is absent. The
+        denormalisation channel for derived facts (feat-009 churn/authorship)
+        that must not detach a file-owned node from its file."""
+
+    @abstractmethod
     async def adjacent(
         self,
         node_id: str,
