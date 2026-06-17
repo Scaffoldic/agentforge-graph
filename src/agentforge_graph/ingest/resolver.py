@@ -294,6 +294,36 @@ class ImportResolver:
 
         # --- calls -> CALLS edges (unique match only) ---
         path_to_file = {SymbolID.parse(f.id).path: f.id for f in files}
+        node_by_id = {n.id: n for n in all_nodes}
+        # BUG-006: lazily resolve `self.f()`/`this.f()` to the *enclosing class's*
+        # method — a unique, safe match (ADR-0004). Caches keep it cheap and
+        # deterministic (methods sorted by id, like the export map above).
+        method_cache: dict[str, dict[str, str]] = {}
+        enclosing_cache: dict[str, str | None] = {}
+
+        async def _methods_of(class_id: str) -> dict[str, str]:
+            cached = method_cache.get(class_id)
+            if cached is None:
+                members = sorted(
+                    await store.neighbors(class_id, [EdgeKind.CONTAINS], depth=1),
+                    key=lambda m: m.id,
+                )
+                cached = {m.name: m.id for m in members}
+                method_cache[class_id] = cached
+            return cached
+
+        async def _enclosing_class(node_id: str) -> str | None:
+            if node_id in enclosing_cache:
+                return enclosing_cache[node_id]
+            cls: str | None = None
+            for e in await store.adjacent(node_id, [EdgeKind.CONTAINS], "in"):
+                parent = node_by_id.get(e.src)
+                if parent is not None and parent.kind is NodeKind.CLASS:
+                    cls = e.src
+                    break
+            enclosing_cache[node_id] = cls
+            return cls
+
         for n in all_nodes:
             refs = n.attrs.get("refs")
             if not refs:
@@ -306,7 +336,21 @@ class ImportResolver:
             binding = bindings.get(owner_file, {}) if owner_file else {}
             for ref in refs:
                 nm = ref.get("name")
-                target = local.get(nm) or binding.get(nm) if nm else None
+                recv = ref.get("recv")
+                target: str | None = None
+                if not nm:
+                    target = None
+                elif recv in ("self", "this"):
+                    # an intra-class call: bind to a method *of the enclosing class*
+                    cls = await _enclosing_class(n.id)
+                    if cls is not None:
+                        target = (await _methods_of(cls)).get(nm)
+                elif recv is not None:
+                    # a member call on some other object — not a unique target;
+                    # never guess it onto a same-named module-level def (ADR-0004).
+                    target = None
+                else:
+                    target = local.get(nm) or binding.get(nm)
                 if target and target not in packages:  # external pkg isn't a callable target
                     if _add_edge(n.id, target, EdgeKind.CALLS):
                         stats.refs_resolved += 1
