@@ -73,6 +73,23 @@ def _build_recorder(repo_path: str | Path, config: str | Path | None, root: Path
     return build_recorder(str(root))
 
 
+async def _prune_temporal(repo_path: str | Path, config: str | Path | None, root: Path) -> None:
+    """Retention pruning (feat-009 §4.10): drop CLOSED events older than the
+    ``retention_commits`` horizon at the end of an index/refresh. No-op when
+    temporal is off, no sidecar exists, or history is shorter than the horizon."""
+    from agentforge_graph.config import TemporalConfig
+
+    cfg = TemporalConfig.load(config)
+    if not cfg.enabled or not (root / "temporal.db").exists():
+        return
+    horizon = _commit_time(repo_path, f"HEAD~{cfg.retention_commits}")
+    if horizon <= 0:  # fewer than retention_commits commits → nothing to prune
+        return
+    from agentforge_graph.temporal import TemporalStore
+
+    await TemporalStore.open(root).prune(horizon)
+
+
 def _framework_extractor(
     repo_path: str | Path, config: str | Path | None, registry: PackRegistry
 ) -> Any:
@@ -246,6 +263,7 @@ class CodeGraph:
         cg._report = report
         await _ingest_knowledge(store, repo_path, config, repo, commit, registry, report)
         _save_meta(root, commit, registry, result.file_hashes)
+        await _prune_temporal(repo_path, config, root)
         if embed:
             await cg.embed()
         return cg
@@ -283,6 +301,7 @@ class CodeGraph:
             self._store, self._repo_path, self._config, repo, commit, registry, report
         )
         _save_meta(root, commit, registry, result.file_hashes)
+        await _prune_temporal(self._repo_path, self._config, root)
         return report
 
     async def _apply_changes(
@@ -372,14 +391,27 @@ class CodeGraph:
         depth: int | None = None,
         embedder: object | None = None,
         include_llm_facts: bool = True,
+        as_of: str | None = None,
     ) -> ContextPack:
         """Hybrid retrieval (feat-006): vector entry + graph expansion.
         ``include_llm_facts=False`` excludes llm-derived items (decisions tags
-        etc.) wholesale (feat-010/012)."""
+        etc.) wholesale (feat-010/012). ``as_of=<commit>`` (feat-009) restricts
+        results to the symbols valid at that commit — code symbols added after it
+        are dropped; raises ``TemporalError`` with no temporal data or beyond the
+        retention horizon."""
         from agentforge_graph.config import EmbedConfig, RetrieveConfig
         from agentforge_graph.embed import Embedder, embedder_from_config
         from agentforge_graph.retrieve import Retriever
         from agentforge_graph.retrieve.rerank import reranker_from_config
+
+        allow_ids: set[str] | None = None
+        if as_of is not None:
+            from agentforge_graph.temporal import TemporalError
+
+            ti = self._temporal_index()
+            if ti is None:
+                raise TemporalError("as_of requested but no temporal log exists")
+            allow_ids = await ti.alive_at(as_of)
 
         emb = (
             embedder
@@ -397,6 +429,7 @@ class CodeGraph:
             k=k,
             depth=depth,
             include_llm_facts=include_llm_facts,
+            allow_ids=allow_ids,
         )
 
     async def repo_map(
@@ -447,7 +480,7 @@ class CodeGraph:
         """A ``TemporalIndex`` over the sidecar, or ``None`` when the evolution
         log is absent (temporal never enabled / no git). Lazy-imports the
         higher temporal layer (ADR-0001)."""
-        from agentforge_graph.config import StoreConfig
+        from agentforge_graph.config import StoreConfig, TemporalConfig
 
         root = Path(self._repo_path) / StoreConfig.load(self._config).path
         if not (root / "temporal.db").exists():
@@ -455,7 +488,10 @@ class CodeGraph:
         from agentforge_graph.temporal import TemporalIndex, TemporalStore
 
         return TemporalIndex(
-            TemporalStore.open(root), self._store.graph, repo_root=str(self._repo_path)
+            TemporalStore.open(root),
+            self._store.graph,
+            repo_root=str(self._repo_path),
+            retention_commits=TemporalConfig.load(self._config).retention_commits,
         )
 
     async def history(self, symbol_id: str) -> Any:

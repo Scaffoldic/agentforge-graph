@@ -18,6 +18,9 @@ from .scoring import dedupe_max, edge_weight, step_score
 
 Mode = Literal["context", "impact", "definition", "similar"]
 
+# code-symbol kinds an as_of allow-filter constrains (feat-009)
+_SYMBOL_KINDS = frozenset({NodeKind.CLASS, NodeKind.FUNCTION, NodeKind.METHOD})
+
 # Trust order for the min_provenance filter: llm < parsed < resolved <= manual
 # (human-asserted facts are trusted; ADR-0004 / spec §2). Distinct from
 # GraphQuery.min_source and from the scoring edge_weights.
@@ -89,6 +92,7 @@ class Retriever:
         edge_kinds: list[EdgeKind] | None = None,
         min_provenance: Literal["parsed", "resolved"] | None = None,
         include_llm_facts: bool = True,
+        allow_ids: set[str] | None = None,
     ) -> ContextPack:
         cfg = self.config
         k = cfg.k if k is None else k
@@ -131,6 +135,8 @@ class Retriever:
 
         # --- merge ---
         items = self._filter(items, min_provenance, include_llm_facts)
+        if allow_ids is not None:  # feat-009 as_of: drop symbols not alive at the commit
+            items = [it for it in items if it.kind not in _SYMBOL_KINDS or it.id in allow_ids]
         items = dedupe_max(items)
         items = await self.reranker.rerank(query or "", items)
         return ContextPack(query=query, symbol=symbol, mode=mode, items=items, notes=notes)

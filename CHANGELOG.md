@@ -14,6 +14,16 @@ residuals._
 
 ### Added (unreleased, toward 0.2.0)
 
+- **Temporal layer — `as_of` + retention (feat-009, chunk 5, completes feat-009).**
+  `CodeGraph.retrieve(as_of=<commit>)` and `ckg query --as-of <commit>`
+  reconstruct results as they were at a commit: `TemporalIndex.alive_at(C)`
+  replays the log over the current node set (a symbol is alive iff its last
+  lifecycle event at/before `C` is `OPENED`), and the Retriever drops code
+  symbols added after `C`. A commit older than the `retention_commits` horizon
+  raises `TemporalError` rather than answering wrong. Retention pruning of old
+  `CLOSED` events runs at the end of each index/refresh. Verified by a
+  per-commit equivalence property: `alive_at(C)` equals the symbol set a full
+  index at `C` produces, for every backfilled commit.
 - **Temporal layer — history backfill (feat-009, chunk 4).** `ckg index
   --history N` (or `--history full`) seeds the evolution log for code that
   predates temporal adoption: it replays the last N commits oldest→newest

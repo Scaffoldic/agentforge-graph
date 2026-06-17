@@ -1,32 +1,50 @@
-"""``TemporalIndex`` — the read side of the evolution log (feat-009 chunk 3).
+"""``TemporalIndex`` — the read side of the evolution log (feat-009 chunks 3+5).
 
 Answers the questions an agent asks after a regression — *when was this
-introduced, who owns it, how much does it churn, what changed since <ref>* —
-from the sidecar (``TemporalStore``) plus the current graph (for the live
-span/path). Pure reads; no mutation, no embedding. ``as_of`` reconstruction
-lands in chunk 5.
+introduced, who owns it, how much does it churn, what changed since <ref>, what
+did this look like as_of <commit>* — from the sidecar (``TemporalStore``) plus
+the current graph. Pure reads; no mutation, no embedding.
 
 `introduced` prefers the chunk-1 ``OPENED`` event (the exact birth commit when
 the symbol was added during the temporal era) and falls back to the mined
 aggregate's window-bounded estimate otherwise (design §4.5 known limitation).
+
+``alive_at(C)`` reconstructs the set of symbols valid at commit ``C`` by
+replaying the log: a symbol is alive iff the *last* lifecycle event at or before
+``C`` is ``OPENED`` (design §4.7). This tolerates the spurious ``OPENED`` the
+full-index seed stamps at HEAD — that event is *after* any historical ``C``, so
+it never leaks into an as_of reconstruction.
 """
 
 from __future__ import annotations
 
 import subprocess
+from collections import defaultdict
 from fnmatch import fnmatch
 
 from agentforge_graph.core import GraphStore, SymbolID
 
-from .events import Author, Change, EventKind, SymbolHistory
+from .events import Author, Change, Event, EventKind, SymbolHistory
 from .store import TemporalStore
 
 
+class TemporalError(Exception):
+    """A temporal query that cannot be answered honestly (e.g. an ``as_of``
+    commit older than the retention horizon) — never a silent wrong answer."""
+
+
 class TemporalIndex:
-    def __init__(self, store: TemporalStore, graph: GraphStore, repo_root: str = "") -> None:
+    def __init__(
+        self,
+        store: TemporalStore,
+        graph: GraphStore,
+        repo_root: str = "",
+        retention_commits: int = 0,
+    ) -> None:
         self._store = store
         self._graph = graph
         self._root = repo_root
+        self._retention = retention_commits
 
     async def history(self, symbol_id: str) -> SymbolHistory:
         events = await self._store.events_for(symbol_id)
@@ -103,7 +121,51 @@ class TemporalIndex:
         out.sort(key=lambda c: (-c.ts, c.symbol_id))
         return out
 
+    async def alive_at(self, commit: str) -> set[str]:
+        """The set of symbol ids valid at ``commit`` — reconstructed by replaying
+        the log over the current node set (design §4.7). Raises ``TemporalError``
+        when ``commit`` is older than the retention horizon (its closed events
+        may have been pruned, so the answer would be silently wrong)."""
+        ts = self._resolve_ts(commit)
+        horizon = self._horizon_ts()
+        if horizon and ts < horizon:
+            raise TemporalError(
+                f"{commit} is beyond the retention horizon ({self._retention} commits)"
+            )
+        by_sym: dict[str, list[Event]] = defaultdict(list)
+        for e in await self._store.all_events():  # ordered by (ts, rowid)
+            if e.ts <= ts:
+                by_sym[e.symbol_id].append(e)
+        # alive iff the last lifecycle event at/before C opened (not closed) it
+        return {sid for sid, evs in by_sym.items() if evs[-1].event is EventKind.OPENED}
+
     # --- internals --------------------------------------------------------
+
+    def _horizon_ts(self) -> int:
+        """Author time of ``HEAD~retention_commits`` (the oldest commit still in
+        retention), or 0 when retention is unbounded / history is shorter."""
+        if self._retention <= 0:
+            return 0
+        sha = self._git("rev-parse", f"HEAD~{self._retention}")
+        return self._commit_ts(sha.strip()) if sha else 0
+
+    def _commit_ts(self, ref: str) -> int:
+        out = self._git("show", "-s", "--format=%ct", ref)
+        try:
+            return int(out.strip()) if out else 0
+        except ValueError:
+            return 0
+
+    def _git(self, *args: str) -> str | None:
+        try:
+            return subprocess.run(
+                ["git", "-C", self._root, *args],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout
+        except (subprocess.SubprocessError, OSError):
+            return None
 
     def _resolve_ts(self, ref: str) -> int:
         """Author time (epoch s) of ``ref``. Accepts a raw epoch int too, so the
