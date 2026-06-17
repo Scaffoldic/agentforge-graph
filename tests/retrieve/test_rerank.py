@@ -1,14 +1,19 @@
-"""ENH-009: the deterministic lexical reranker — subtoken overlap blend."""
+"""ENH-009: the lexical (subtoken) + cross-encoder rerankers."""
 
 from __future__ import annotations
+
+import sys
+import types
 
 import pytest
 
 from agentforge_graph.core import NodeKind, Source
 from agentforge_graph.retrieve.pack import ContextItem
 from agentforge_graph.retrieve.rerank import (
+    CrossEncoderReranker,
     LexicalReranker,
     NoopReranker,
+    SentenceTransformerScorer,
     _tokens,
     reranker_from_config,
 )
@@ -33,6 +38,63 @@ def test_resolve_off_and_lexical() -> None:
     assert isinstance(reranker_from_config("lexical"), LexicalReranker)
     with pytest.raises(ValueError, match="unknown reranker"):
         reranker_from_config("magic")
+
+
+def test_resolve_cross_encoder_is_lazy() -> None:
+    # resolving cross_encoder must NOT import torch / load a model (CI-safe)
+    rr = reranker_from_config("cross_encoder", weight=0.5, model="custom/model")
+    assert isinstance(rr, CrossEncoderReranker)
+
+
+class _KeywordScorer:
+    """A fake CrossScorer: high logit when the candidate mentions 'parse'."""
+
+    def score(self, query: str, texts: list[str]) -> list[float]:
+        return [5.0 if "parse" in t else -5.0 for t in texts]
+
+
+async def test_cross_encoder_promotes_the_relevant_candidate() -> None:
+    a = _item("a", "chunk1", 0.50, code="formatting helpers and stream shims")
+    b = _item("b", "chunk2", 0.45, code="class ZodObject { _parse(input) {} }")
+    out = await CrossEncoderReranker(_KeywordScorer(), weight=0.5).rerank("parse an object", [a, b])
+    assert out[0].id == "b"  # σ(5) blended in beats the 0.05 base gap
+    assert any("cross-encoder" in w for w in out[0].why)
+
+
+async def test_cross_encoder_noop_without_query_or_items() -> None:
+    rr = CrossEncoderReranker(_KeywordScorer())
+    assert await rr.rerank("", [_item("a", "x", 0.5)]) == [_item("a", "x", 0.5)]
+    assert await rr.rerank("q", []) == []
+
+
+def test_sentence_transformer_scorer_calls_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: dict[str, object] = {}
+
+    class _FakeCrossEncoder:
+        def __init__(self, name: str) -> None:
+            calls["model"] = name
+
+        def predict(self, pairs: list[tuple[str, str]]) -> list[float]:
+            calls["pairs"] = pairs
+            return [float(len(t)) for _q, t in pairs]
+
+    fake = types.ModuleType("sentence_transformers")
+    fake.CrossEncoder = _FakeCrossEncoder  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "sentence_transformers", fake)
+
+    scorer = SentenceTransformerScorer("m/x")
+    out = scorer.score("q", ["ab", "abcd"])
+    assert out == [2.0, 4.0]
+    assert calls["model"] == "m/x"
+    assert calls["pairs"] == [("q", "ab"), ("q", "abcd")]
+    assert scorer.score("q", []) == []  # empty → no model call needed
+
+
+def test_sentence_transformer_scorer_missing_dep(monkeypatch: pytest.MonkeyPatch) -> None:
+    # simulate the `rerank` extra not installed → a clear, actionable error
+    monkeypatch.setitem(sys.modules, "sentence_transformers", None)
+    with pytest.raises(ImportError, match="rerank"):
+        SentenceTransformerScorer().score("q", ["t"])
 
 
 async def test_lexical_promotes_the_token_match() -> None:

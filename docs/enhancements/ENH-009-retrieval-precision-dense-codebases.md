@@ -5,7 +5,7 @@
 | **ID** | ENH-009 |
 | **Value/Impact** | High (retrieval is the core agent-facing surface) |
 | **Effort** | M |
-| **Status** | **partial** (2026-06-15) — reranker seam landed + opt-in lexical; default-on precision win still open (cross-encoder) |
+| **Status** | **partial** (2026-06-17) — seam + lexical + **cross-encoder adapter** all landed (opt-in); the default-on flip still gated on a measurement campaign (needs the `rerank` extra / torch, not runnable in CI) |
 | **Area** | `retrieve` (rerank / chunking / embedding inputs) |
 | **Relates to** | feat-006 (retrieval), feat-005 (chunking/embeddings), feat-012 (summaries) |
 
@@ -92,11 +92,32 @@ for **keyword / symbol-naming** queries (`res.send`, `validate_token`,
 `ZodObject`), not a safe default for prose questions. **Per the ENH's own
 "measure, don't blind-flip" guidance, the default is unchanged.**
 
-**Still open (the default-on precision win):**
-- **Cross-encoder rerank** (lever #1) — a semantic re-score is the real lever for
-  NL→symbol precision; it needs the `rerank` extra (torch model, can't run in CI)
-  + a tuning campaign. The seam now resolves any `rerank` ref, so an out-of-tree
-  cross-encoder adapter drops in.
+## Progress (2026-06-17) — lever #1 (cross-encoder) adapter landed opt-in
+
+Shipped the **cross-encoder reranker** (`retrieve.rerank: cross_encoder`,
+`rerank_model`): a real semantic re-score via `sentence-transformers`'
+`CrossEncoder` (the `rerank` extra), blended with the base score as
+`final = (1-w)·base + w·σ(cross_logit)`. Design highlights:
+
+- **Lazy-loaded model** behind a `CrossScorer` injection seam, so importing the
+  module / running CI never pulls torch; the blend logic is tested with a fake
+  scorer and the adapter with a stubbed `sentence_transformers`. Third-party
+  only — no `agentforge` import (ADR-0001). Missing extra → a clear
+  "install `--extra rerank`" error.
+- **Fixed a latent bug:** the MCP `_Engine` built its `Retriever` *without* a
+  reranker, so `retrieve.rerank` was silently ignored over MCP (only the
+  `CodeGraph.retrieve`/CLI path honored it). Both paths now wire
+  `reranker_from_config`, so `lexical`/`cross_encoder` work over the agent tool
+  surface too.
+
+Still **opt-in** (`rerank` default `off`): per the ENH's "measure, don't
+blind-flip" rule, the default-on flip is gated on a precision campaign (off vs
+cross_encoder on the seeded zod/express/click questions), which needs the
+`rerank` extra + creds and can't run in CI — deferred to a validation run,
+exactly as the lexical measurement was.
+
+**Still open:**
+- **Cross-encoder *measurement* + default-on decision** (the campaign above).
 - **Summary-augmented embedding inputs** (lever #2) — prepend signature/summary to
   chunk text before embedding (re-embed cost); not yet attempted.
 

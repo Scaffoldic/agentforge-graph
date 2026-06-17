@@ -50,8 +50,9 @@ retrieve:                       # feat-006 / ADR-0008 — hybrid (vector -> grap
   depth: 1
   decay: 0.6
   fanout_cap: 25                # max neighbors expanded per hop (overflow noted)
-  rerank: off                   # ENH-009: off | lexical (opt-in subtoken blend; helps keyword/symbol queries)
-  rerank_weight: 0.5            # lexical: final = (1-w)*cosine + w*subtoken-overlap
+  rerank: off                   # ENH-009: off | lexical | cross_encoder (both opt-in)
+  rerank_weight: 0.5            # final = (1-w)*base + w*signal (subtoken overlap | σ(cross))
+  rerank_model: ""             # cross_encoder model id (empty = small ms-marco default; needs `--extra rerank`)
   edge_weights:                 # provenance-weighted scoring (ADR-0004)
     resolved: 1.0
     manual: 0.8

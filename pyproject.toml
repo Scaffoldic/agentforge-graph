@@ -28,8 +28,9 @@ engine = [
     "fastembed>=0.4",                      # local embeddings, default (feat-005)
     "networkx>=3.3",                       # PageRank for the repo map (feat-007)
 ]
-# Optional reranker (feat-006, OFF by default — pulls torch). `--extra rerank`.
-rerank = ["agentforge-reranker-sentence-transformers"]
+# Optional cross-encoder reranker (ENH-009, OFF by default — pulls torch).
+# `uv sync --extra rerank`; lazy-loaded, so the base install / CI stay torch-free.
+rerank = ["sentence-transformers>=2.2"]
 # Opt-in server graph backend: Neo4j (ENH-004 / ADR-0006). `--extra neo4j`.
 neo4j = ["neo4j>=5"]
 # Opt-in server vector backend: Postgres + pgvector (ENH-004). `--extra pgvector`.
@@ -95,6 +96,7 @@ module = [
     "neo4j.*",        # ENH-004 Neo4j graph backend; in the `neo4j` extra
     "asyncpg.*",      # ENH-004 pgvector backend; in the `pgvector` extra
     "pgvector.*",     # ENH-004 pgvector backend; in the `pgvector` extra
+    "sentence_transformers.*",  # ENH-009 cross-encoder rerank; in the `rerank` extra
     "agentforge.*",
     "agentforge_core.*",
     "agentforge_mcp.*",
