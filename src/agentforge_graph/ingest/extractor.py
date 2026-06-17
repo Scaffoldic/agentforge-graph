@@ -236,7 +236,13 @@ class TreeSitterExtractor(Extractor):
         self, root: TSNode, src: bytes, by_tsid: dict[int, _Def], file_id: str
     ) -> dict[str, list[dict[str, Any]]]:
         idset = set(by_tsid)
-        refs: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        # Keyed by the call node so a bare + receiver-capturing pattern that both
+        # match the same call (Java/Ruby, where one node type serves `f()` and
+        # `recv.f()`) yield ONE ref — the receiver merged in. Distinct-node-type
+        # grammars (Py/TS/JS/C#/Rust/PHP/C++) never collide, so this is a no-op
+        # for them; insertion order preserves source order.
+        owner_of: dict[int, str] = {}
+        ref_of: dict[int, dict[str, Any]] = {}
         for _pattern, caps in QueryCursor(self._reference_q).matches(root):
             if "call" not in caps:
                 continue
@@ -244,19 +250,21 @@ class TreeSitterExtractor(Extractor):
             if not callees:
                 continue
             call_node = caps["call"][0]
-            anc = call_node.parent
-            while anc is not None and anc.id not in idset:
-                anc = anc.parent
-            owner = by_tsid[anc.id].symbol_id if anc is not None else file_id
-            ref: dict[str, Any] = {
-                "name": _text(callees[0], src),
-                "line": call_node.start_point[0] + 1,
-            }
+            ref = ref_of.get(call_node.id)
+            if ref is None:
+                anc = call_node.parent
+                while anc is not None and anc.id not in idset:
+                    anc = anc.parent
+                owner_of[call_node.id] = by_tsid[anc.id].symbol_id if anc is not None else file_id
+                ref = {"name": _text(callees[0], src), "line": call_node.start_point[0] + 1}
+                ref_of[call_node.id] = ref
             # BUG-006: the receiver of an attribute call (`recv.f()`), when the pack
             # captures it — lets the resolver bind `self.f()`/`this.f()` to the
             # enclosing class's method and refuse to guess for other receivers.
             recv = caps.get("call.recv")
-            if recv:
+            if recv and "recv" not in ref:
                 ref["recv"] = _text(recv[0], src)
-            refs[owner].append(ref)
+        refs: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for cid, ref in ref_of.items():
+            refs[owner_of[cid]].append(ref)
         return dict(refs)
