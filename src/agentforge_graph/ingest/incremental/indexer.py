@@ -102,7 +102,11 @@ class IncrementalIndexer:
         imports = stats.imports_resolved + stats.imports_external
         report.by_edge_kind["IMPORTS"] = report.by_edge_kind.get("IMPORTS", 0) + imports
         report.by_edge_kind["CALLS"] = report.by_edge_kind.get("CALLS", 0) + stats.refs_resolved
-        report.edges += imports + stats.refs_resolved
+        if stats.inherits_resolved:
+            report.by_edge_kind["INHERITS"] = (
+                report.by_edge_kind.get("INHERITS", 0) + stats.inherits_resolved
+            )
+        report.edges += imports + stats.refs_resolved + stats.inherits_resolved
 
         # (5) dirty propagation: touched symbols + 1-hop neighbours of all dirty
         after_symbols = await self._symbols_in(sorted(touched))

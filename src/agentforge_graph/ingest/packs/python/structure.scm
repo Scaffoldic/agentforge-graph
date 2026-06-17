@@ -10,6 +10,12 @@
 (function_definition
   name: (identifier) @name) @def.function
 
+; --- inheritance (INHERITS) ---
+; a base class named by a bare identifier: `class B(A)` -> base `A`. Qualified
+; bases (`class B(mod.Base)`) are a residual (need module-member resolution).
+(class_definition
+  superclasses: (argument_list (identifier) @base.name)) @base.def
+
 ; --- imports ---
 ; `import a.b.c`  (optionally aliased) -> module only
 (import_statement

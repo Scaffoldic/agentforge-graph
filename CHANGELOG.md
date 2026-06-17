@@ -14,6 +14,15 @@ residuals._
 
 ### Added (unreleased, toward 0.2.0)
 
+- **`INHERITS` edges (Python).** Class inheritance is now extracted and resolved:
+  a class's base classes are captured and bound to in-repo class nodes, emitting
+  `INHERITS` edges (subclass → base) for same-file and imported bases. The edge
+  kind was in the locked vocab but never produced — repo-map centrality ranking
+  and retrieval expansion already reference it, so this fills a real gap.
+  External / by-name-only bases stay unresolved (never guessed, ADR-0004);
+  qualified bases (`class B(mod.Base)`) and the other language packs are
+  follow-ups.
+
 - **Intra-class call resolution (BUG-006 residual).** The reference queries now
   capture the call *receiver*, so the resolver binds `self.f()` / `this.f()` /
   `$this->f()` to a method **of the enclosing class** — recovering the
