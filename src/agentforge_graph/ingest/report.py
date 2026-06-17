@@ -12,6 +12,7 @@ class ResolveStats(BaseModel):
     imports_external: int = 0  # IMPORTS edges to external (stdlib/third-party) packages
     refs_resolved: int = 0  # CALLS edges created (unique match)
     refs_unresolved: int = 0  # call sites with zero/ambiguous targets (recorded, not guessed)
+    inherits_resolved: int = 0  # INHERITS edges created (base class -> in-repo class)
 
 
 class RouteInfo(BaseModel):

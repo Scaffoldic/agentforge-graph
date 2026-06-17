@@ -377,6 +377,29 @@ class ImportResolver:
                 else:
                     stats.refs_unresolved += 1
 
+        # --- inheritance -> INHERITS edges (subclass -> base; unique match) ---
+        for n in all_nodes:
+            bases = n.attrs.get("bases")
+            if not bases or n.kind is not NodeKind.CLASS:
+                continue
+            ps = SymbolID.parse(n.id)
+            if not _is_target(ps.path):
+                continue
+            owner_file = path_to_file.get(ps.path)
+            local = exports.get(file_module.get(owner_file, ""), {}) if owner_file else {}
+            binding = bindings.get(owner_file, {}) if owner_file else {}
+            for base in bases:
+                target = local.get(base) or binding.get(base)
+                # only an in-repo class is a valid base (external/by-name-only stays
+                # unresolved — never guessed, ADR-0004)
+                tnode = node_by_id.get(target) if target else None
+                if (
+                    tnode is not None
+                    and tnode.kind is NodeKind.CLASS
+                    and _add_edge(n.id, target, EdgeKind.INHERITS)  # type: ignore[arg-type]
+                ):
+                    stats.inherits_resolved += 1
+
         if new_nodes or edges:
             await store.add([*new_nodes, *edges])  # nodes first: edge endpoints must exist
         return stats

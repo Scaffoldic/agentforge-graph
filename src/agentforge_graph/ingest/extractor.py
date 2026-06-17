@@ -14,7 +14,7 @@ Parsing uses the standalone ``tree_sitter`` package driven by a grammar from
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cache
 from typing import Any
 
@@ -58,6 +58,7 @@ class _Def:
     name: str
     enclosing: int | None = None  # ts id of the nearest enclosing def
     symbol_id: str = ""
+    bases: list[str] = field(default_factory=list)  # superclass names (INHERITS)
 
 
 def _text(node: TSNode, src: bytes) -> str:
@@ -123,6 +124,8 @@ class TreeSitterExtractor(Extractor):
             attrs: dict[str, Any] = {"signature": _signature(d.node, src)}
             if d.symbol_id in refs:
                 attrs["refs"] = refs[d.symbol_id]
+            if d.bases:  # INHERITS: superclass names, resolved in pass 2
+                attrs["bases"] = d.bases
             nodes.append(
                 GraphNode(
                     id=d.symbol_id,
@@ -153,6 +156,7 @@ class TreeSitterExtractor(Extractor):
         imports: list[dict[str, Any]] = []
         default_export = ""  # CommonJS `module.exports = <name>` (BUG-006)
         namespace = ""  # PHP/Java/C# package declaration (FQN import resolution)
+        class_bases: dict[int, list[str]] = defaultdict(list)  # class node id -> base names
         rules = self.pack.descriptor_rules
         for _pattern, caps in QueryCursor(self._structure_q).matches(root):
             def_cap = next((c for c in caps if c.startswith("def.")), None)
@@ -163,6 +167,11 @@ class TreeSitterExtractor(Extractor):
                     continue
                 node = caps[def_cap][0]
                 defs.append(_Def(ts_id=node.id, node=node, kind=kind, name=_text(names[0], src)))
+            elif "base.name" in caps:
+                # a base class of a class definition (INHERITS); one match per base
+                cls = caps.get("base.def")
+                if cls:
+                    class_bases[cls[0].id].extend(_text(b, src) for b in caps["base.name"])
             elif "import" in caps:
                 mods = caps.get("import.module", [])
                 dflt = caps.get("import.default")
@@ -183,6 +192,9 @@ class TreeSitterExtractor(Extractor):
                 ed = caps.get("export.default")
                 if ed:
                     default_export = _text(ed[0], src)
+        for d in defs:
+            if d.ts_id in class_bases:
+                d.bases = class_bases[d.ts_id]
         self._link_scopes(defs)
         return defs, imports, default_export, namespace
 
