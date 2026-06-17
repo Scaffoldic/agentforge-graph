@@ -14,6 +14,17 @@ residuals._
 
 ### Added (unreleased, toward 0.2.0)
 
+- **Temporal layer — history backfill (feat-009, chunk 4).** `ckg index
+  --history N` (or `--history full`) seeds the evolution log for code that
+  predates temporal adoption: it replays the last N commits oldest→newest
+  through the incremental pipeline against a **throwaway** store (file content
+  read from git via `git ls-tree`/`git show` — no checkout, the HEAD index and
+  embeddings are untouched), recording each symbol's `OPENED`/`CLOSED`. A
+  symbol's earliest `OPENED` then becomes its **true introduction commit**, so
+  `history().introduced` is no longer window-bounded for pre-existing code, and
+  symbols deleted before HEAD get their lifecycle recorded (for `as_of`).
+  Resumable via a `backfilled_through` cursor (surfaced in `ckg status`); churn
+  mining is skipped during replay (a HEAD-time signal).
 - **Temporal layer — read APIs (feat-009, chunk 3).** A `TemporalIndex`
   (`history` / `changed_since` / `authors` / `churn`) reads the sidecar to answer
   the questions an agent asks after a regression. New CLI: `ckg history <symbol>`

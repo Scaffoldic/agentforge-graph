@@ -397,7 +397,19 @@ reviewable PRs (each green on its own):
    set grew by one (`ckg_history`) — the drift guards were updated deliberately.
 4. **Backfill (`--history N`)** — `backfill.py`, resumable cursor. Tests:
    backfill N commits then `as_of` each == full index of that commit (reuse
-   feat-004 equivalence per commit).
+   feat-004 equivalence per commit). **DONE.** Replays commits oldest→newest
+   through the incremental pipeline against a **throwaway** kuzu+lance store; a
+   `GitBlobSource` (subclasses `RepoSource`) reads file content from a commit via
+   `git ls-tree`/`git show` — no checkout, working tree untouched. Per-step diff
+   is `git diff --name-status -M <parent> <commit>`; a `_LifecycleOnly` recorder
+   wrapper records `OPENED`/`CLOSED` but **skips churn** (replaying it would
+   clobber HEAD aggregates). The earliest `OPENED` becomes the true introduction
+   commit; symbols deleted before HEAD get `OPENED`+`CLOSED` (for chunk-5
+   `as_of`). Resume: oldest covered commit stored as `backfilled_through` (sidecar
+   `meta` table) — a re-run whose range is already covered is a no-op; events are
+   idempotent so a partial run re-runs safely. `ckg index --history N|full`,
+   surfaced in `ckg status`. The per-commit `as_of == full index` equivalence
+   test lands with chunk 5 (which adds `as_of`).
 5. **`as_of` reconstruction + retention pruning** — `TemporalIndex.as_of`,
    `retrieve(as_of=)`, `prune(horizon)`. Tests: reconstruction equivalence;
    beyond-horizon raises; prune respects retention.

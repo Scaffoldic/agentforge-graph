@@ -50,6 +50,8 @@ _SCHEMA = [
         last_changed_sha TEXT,
         last_changed_ts  INTEGER
     )""",
+    # meta: small key/value side-table (chunk 4 backfill cursor, etc.).
+    "CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)",
 ]
 
 
@@ -132,6 +134,30 @@ class TemporalStore:
         finally:
             conn.close()
         return [_row_to_event(r) for r in rows]
+
+    # --- meta key/value (chunk 4 resume cursor) ---------------------------
+
+    async def get_meta(self, key: str) -> str | None:
+        return await asyncio.to_thread(self._get_meta_sync, key)
+
+    def _get_meta_sync(self, key: str) -> str | None:
+        conn = sqlite3.connect(str(self._path))
+        try:
+            row = conn.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()
+        finally:
+            conn.close()
+        return row[0] if row else None
+
+    async def set_meta(self, key: str, value: str) -> None:
+        await asyncio.to_thread(self._set_meta_sync, key, value)
+
+    def _set_meta_sync(self, key: str, value: str) -> None:
+        conn = sqlite3.connect(str(self._path))
+        try:
+            conn.execute("INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)", (key, value))
+            conn.commit()
+        finally:
+            conn.close()
 
     async def count_events(self) -> int:
         """Total events in the log (for ``ckg status``)."""

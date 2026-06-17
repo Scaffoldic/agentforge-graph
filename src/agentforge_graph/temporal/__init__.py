@@ -8,6 +8,7 @@ deterministic engine core never imports this. Default off (opt-in). See
 ``docs/design/design-009-temporal-evolution-layer.md``.
 """
 
+from .backfill import BackfillReport, parse_history, run_backfill
 from .events import Author, Change, Entity, Event, EventKind, SymbolHistory
 from .index import TemporalIndex
 from .mining import ChurnMiner, SymbolAggregate
@@ -16,6 +17,7 @@ from .store import TemporalStore
 
 __all__ = [
     "Author",
+    "BackfillReport",
     "Change",
     "ChurnMiner",
     "Entity",
@@ -27,5 +29,7 @@ __all__ = [
     "TemporalIndex",
     "TemporalStore",
     "build_recorder",
+    "parse_history",
+    "run_backfill",
     "seed_symbols",
 ]
