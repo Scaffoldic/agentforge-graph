@@ -14,6 +14,14 @@ residuals._
 
 ### Added (unreleased, toward 0.2.0)
 
+- **Temporal layer — read APIs (feat-009, chunk 3).** A `TemporalIndex`
+  (`history` / `changed_since` / `authors` / `churn`) reads the sidecar to answer
+  the questions an agent asks after a regression. New CLI: `ckg history <symbol>`
+  (introduced / last-changed / churn / authors / lifecycle events) and
+  `ckg changed-since <ref> [--scope GLOB]` (symbols changed since a ref, newest
+  first); `ckg status` gains a `temporal:` line. New MCP tool **`ckg_history`**.
+  `introduced` prefers the exact chunk-1 `OPENED` event over the window-bounded
+  mined estimate. Read-only; still opt-in.
 - **Temporal layer — churn / authorship (feat-009, chunk 2).** When `temporal`
   is enabled, a refresh now mines `git log` over a bounded window and attributes
   each diff hunk to the symbol whose span it overlaps, storing bounded

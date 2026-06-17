@@ -133,6 +133,17 @@ class TemporalStore:
             conn.close()
         return [_row_to_event(r) for r in rows]
 
+    async def count_events(self) -> int:
+        """Total events in the log (for ``ckg status``)."""
+        return await asyncio.to_thread(self._count_events_sync)
+
+    def _count_events_sync(self) -> int:
+        conn = sqlite3.connect(str(self._path))
+        try:
+            return int(conn.execute("SELECT COUNT(*) FROM events").fetchone()[0])
+        finally:
+            conn.close()
+
     # --- aggregates (churn / authorship, chunk 2) -------------------------
 
     async def upsert_aggregates(self, aggs: list[SymbolAggregate]) -> int:
@@ -167,6 +178,22 @@ class TemporalStore:
             return cur.rowcount if cur.rowcount is not None else 0
         finally:
             conn.close()
+
+    async def all_aggregates(self) -> list[SymbolAggregate]:
+        """Every stored rollup (for ``changed_since`` scans)."""
+        return await asyncio.to_thread(self._all_aggregates_sync)
+
+    def _all_aggregates_sync(self) -> list[SymbolAggregate]:
+        conn = sqlite3.connect(str(self._path))
+        try:
+            rows = conn.execute(
+                "SELECT symbol_id, churn_30d, churn_90d, top_authors,"
+                " introduced_sha, introduced_ts, last_changed_sha, last_changed_ts"
+                " FROM aggregates"
+            ).fetchall()
+        finally:
+            conn.close()
+        return [_row_to_aggregate(r) for r in rows]
 
     async def aggregate_for(self, symbol_id: str) -> SymbolAggregate | None:
         """The stored rollup for one symbol, or ``None``."""

@@ -8,18 +8,23 @@ deterministic engine core never imports this. Default off (opt-in). See
 ``docs/design/design-009-temporal-evolution-layer.md``.
 """
 
-from .events import Entity, Event, EventKind
+from .events import Author, Change, Entity, Event, EventKind, SymbolHistory
+from .index import TemporalIndex
 from .mining import ChurnMiner, SymbolAggregate
 from .recorder import SqliteTemporalRecorder, build_recorder, seed_symbols
 from .store import TemporalStore
 
 __all__ = [
+    "Author",
+    "Change",
     "ChurnMiner",
     "Entity",
     "Event",
     "EventKind",
     "SqliteTemporalRecorder",
     "SymbolAggregate",
+    "SymbolHistory",
+    "TemporalIndex",
     "TemporalStore",
     "build_recorder",
     "seed_symbols",

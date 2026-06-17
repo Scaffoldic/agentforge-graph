@@ -1,4 +1,4 @@
-"""The six read-only CKG tools (feat-008), thin over feat-006/007.
+"""The read-only CKG tools (feat-008), thin over feat-006/007/009.
 
 Each is an AgentForge ``Tool`` holding the shared ``_Engine``; ``run`` clamps
 params to ``ServeConfig`` and returns a JSON string (structured) or text (the
@@ -65,6 +65,10 @@ class DecisionsInput(BaseModel):
 
 class ExplainInput(BaseModel):
     symbol_id: str = Field(description="exact symbol id to explain")
+
+
+class HistoryInput(BaseModel):
+    symbol_id: str = Field(description="exact symbol id whose git history to report")
 
 
 class EmptyInput(BaseModel):
@@ -275,6 +279,20 @@ class CkgExplain(_CkgTool):
         return json.dumps(await self._engine.explain(kwargs["symbol_id"]), indent=2)
 
 
+class CkgHistory(_CkgTool):
+    name: ClassVar[str] = "ckg_history"
+    description: ClassVar[str] = (
+        "Report a symbol's git evolution (feat-009 temporal): when it was introduced and "
+        "last changed, churn over the last 30/90 days, its top authors, and its lifecycle "
+        "events. Use to gauge recency/ownership before changing a symbol or to triage a "
+        "regression. Returns `available: false` if the temporal layer is off or unindexed."
+    )
+    input_schema: ClassVar[type[BaseModel]] = HistoryInput
+
+    async def run(self, **kwargs: Any) -> str:
+        return json.dumps(await self._engine.history(kwargs["symbol_id"]), indent=2)
+
+
 ALL_TOOLS = [
     CkgRepoMap,
     CkgSearch,
@@ -285,4 +303,5 @@ ALL_TOOLS = [
     CkgRoutes,
     CkgDecisions,
     CkgExplain,
+    CkgHistory,
 ]

@@ -22,6 +22,7 @@ _EXPECTED = {
     "ckg_routes",
     "ckg_decisions",
     "ckg_explain",
+    "ckg_history",
 }
 
 

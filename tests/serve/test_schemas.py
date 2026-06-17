@@ -15,6 +15,7 @@ _EXPECTED: dict[str, tuple[set[str], set[str]]] = {
     "ckg_routes": ({"method", "path"}, set()),
     "ckg_decisions": ({"scope", "status"}, set()),
     "ckg_explain": ({"symbol_id"}, {"symbol_id"}),
+    "ckg_history": ({"symbol_id"}, {"symbol_id"}),  # feat-009 chunk 3
 }
 
 

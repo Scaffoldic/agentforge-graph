@@ -114,11 +114,18 @@ async def _status(args: argparse.Namespace) -> int:
     cg = await CodeGraph.open(repo_path=args.path, config=args.config)
     try:
         nodes = (await cg.store.graph.query(GraphQuery(limit=10_000_000))).nodes
+        temporal = await cg.temporal_status()
     finally:
         await cg.close()
     by_kind: dict[str, int] = {}
     for n in nodes:
         by_kind[n.kind.value] = by_kind.get(n.kind.value, 0) + 1
+    if not temporal["enabled"]:
+        temporal_line = "off"
+    else:
+        temporal_line = f"on — {temporal['events']} events" + (
+            "" if temporal["has_sidecar"] else " (no sidecar yet — re-index)"
+        )
     lines = [
         f"indexed commit: {meta.indexed_commit or '(none)'}",
         f"head commit:    {head or '(not a git repo)'}",
@@ -126,9 +133,60 @@ async def _status(args: argparse.Namespace) -> int:
         f"files indexed:  {len(meta.files)}",
         f"nodes:          {len(nodes)}"
         + (" (" + ", ".join(f"{k}={v}" for k, v in sorted(by_kind.items())) + ")" if nodes else ""),
+        f"temporal:       {temporal_line}",
         f"store:          {root}",
     ]
     print("\n".join(lines))
+    return 0
+
+
+def _fmt_ts(ts: int) -> str:
+    """Epoch seconds → UTC date, or '—' if unknown."""
+    if not ts:
+        return "—"
+    from datetime import UTC, datetime
+
+    return datetime.fromtimestamp(ts, tz=UTC).strftime("%Y-%m-%d")
+
+
+def _short(sha: str) -> str:
+    return sha[:10] if sha else "—"
+
+
+async def _history(args: argparse.Namespace) -> int:
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        hist = await cg.history(args.symbol)
+    finally:
+        await cg.close()
+    if hist is None:
+        print("(no temporal data — enable `temporal:` in ckg.yaml and re-index)")
+        return 0
+    authors = ", ".join(f"{a.name} ({a.commits})" for a in hist.authors) or "—"
+    print(f"symbol:       {hist.symbol_id}")
+    print(f"introduced:   {_fmt_ts(hist.introduced_ts)}  ({_short(hist.introduced)})")
+    print(f"last changed: {_fmt_ts(hist.last_changed_ts)}  ({_short(hist.last_changed)})")
+    print(f"churn:        {hist.churn_30d} (30d) / {hist.churn_90d} (90d)")
+    print(f"authors:      {authors}")
+    print(f"events:       {len(hist.events)}")
+    for e in hist.events:
+        print(f"  {_fmt_ts(e.ts)}  {e.event.value:<8} {_short(e.commit)}")
+    return 0
+
+
+async def _changed_since(args: argparse.Namespace) -> int:
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        changes = await cg.changed_since(args.ref, scope=args.scope)
+    finally:
+        await cg.close()
+    if not changes:
+        print("(nothing changed since that ref, or no temporal data)")
+        return 0
+    width = max(len(c.kind) for c in changes)
+    for c in changes:
+        sym = c.symbol_id.rsplit(" ", 1)[-1]
+        print(f"{_fmt_ts(c.ts)}  {c.kind:<{width}}  {sym}")
     return 0
 
 
@@ -310,6 +368,21 @@ def build_parser() -> argparse.ArgumentParser:
     _add_repo_arg(st)
     st.add_argument("--config", default=None, help="path to ckg.yaml")
     st.set_defaults(func=_status)
+
+    hist = sub.add_parser("history", help="show a symbol's git evolution (feat-009 temporal)")
+    hist.add_argument("symbol", help="exact symbol id")
+    _add_repo_arg(hist, positional=False)
+    hist.add_argument("--config", default=None, help="path to ckg.yaml")
+    hist.set_defaults(func=_history)
+
+    cs = sub.add_parser(
+        "changed-since", help="list symbols changed since a git ref (feat-009 temporal)"
+    )
+    cs.add_argument("ref", help="git ref/commit (e.g. HEAD~20, a tag, a sha)")
+    _add_repo_arg(cs, positional=False)
+    cs.add_argument("--scope", default=None, help="restrict to a path glob/prefix")
+    cs.add_argument("--config", default=None, help="path to ckg.yaml")
+    cs.set_defaults(func=_changed_since)
 
     emb = sub.add_parser("embed", help="chunk + embed an already-indexed repository")
     _add_repo_arg(emb)

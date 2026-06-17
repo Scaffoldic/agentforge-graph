@@ -158,6 +158,16 @@ class _Engine:
             "tool_api_version": TOOL_API_VERSION,
         }
 
+    async def history(self, symbol_id: str) -> dict[str, Any]:
+        """A symbol's git evolution (feat-009): introduced / last-changed /
+        churn / authors / lifecycle events, wrapped in the staleness envelope."""
+        cg = await self.code_graph()
+        hist = await cg.history(symbol_id)
+        body: dict[str, Any] = (
+            hist.model_dump() if hist is not None else {"symbol_id": symbol_id, "available": False}
+        )
+        return {**body, **(await self.staleness()), "tool_api_version": TOOL_API_VERSION}
+
     async def status(self) -> dict[str, Any]:
         meta = self._meta()
         cg = await self.code_graph()
@@ -175,6 +185,7 @@ class _Engine:
             "files_indexed": len(meta.files),
             "nodes": len(nodes),
             "by_kind": by_kind,
+            "temporal": await cg.temporal_status(),
             "store_path": str(store_root),
             "tool_api_version": TOOL_API_VERSION,
         }
