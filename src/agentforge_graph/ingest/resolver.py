@@ -340,6 +340,51 @@ class ImportResolver:
             enclosing_cache[node_id] = cls
             return cls
 
+        # --- inheritance -> INHERITS edges (subclass -> base; unique match) ---
+        # Resolve bases first and keep a superclass map, so the call loop below can
+        # walk it for inherited `self.f()` (the method is defined on a base class).
+        superclasses: dict[str, list[str]] = {}
+        for n in all_nodes:
+            bases = n.attrs.get("bases")
+            if not bases or n.kind is not NodeKind.CLASS:
+                continue
+            owner_file = path_to_file.get(SymbolID.parse(n.id).path)
+            local = exports.get(file_module.get(owner_file, ""), {}) if owner_file else {}
+            binding = bindings.get(owner_file, {}) if owner_file else {}
+            resolved: list[str] = []
+            for base in bases:
+                bt = local.get(base) or binding.get(base)
+                # only an in-repo class is a valid base (external/by-name-only stays
+                # unresolved — never guessed, ADR-0004)
+                tnode = node_by_id.get(bt) if bt else None
+                if tnode is not None and tnode.kind is NodeKind.CLASS and bt is not None:
+                    resolved.append(bt)
+            if not resolved:
+                continue
+            superclasses[n.id] = resolved
+            if _is_target(SymbolID.parse(n.id).path):
+                for b in resolved:
+                    if _add_edge(n.id, b, EdgeKind.INHERITS):
+                        stats.inherits_resolved += 1
+
+        async def _inherited_method(class_id: str, name: str) -> str | None:
+            """A method ``name`` defined on a *base* of ``class_id`` — resolved only
+            when exactly one base in the transitive closure defines it (no MRO
+            guessing across multiple definers, ADR-0004)."""
+            seen: set[str] = set()
+            found: set[str] = set()
+            frontier = list(superclasses.get(class_id, []))
+            while frontier:
+                b = frontier.pop()
+                if b in seen:
+                    continue
+                seen.add(b)
+                m = (await _methods_of(b)).get(name)
+                if m:
+                    found.add(m)
+                frontier.extend(superclasses.get(b, []))
+            return next(iter(found)) if len(found) == 1 else None
+
         for n in all_nodes:
             refs = n.attrs.get("refs")
             if not refs:
@@ -358,10 +403,13 @@ class ImportResolver:
                 if not nm:
                     target = None
                 elif recv in _SELF_RECV:
-                    # an intra-class call: bind to a method *of the enclosing class*
+                    # an intra-class call: bind to a method of the enclosing class,
+                    # or — failing that — a method inherited from a unique base.
                     cls = await _enclosing_class(n.id)
                     if cls is not None:
                         target = (await _methods_of(cls)).get(nm)
+                        if target is None:
+                            target = await _inherited_method(cls, nm)
                 elif recv is not None:
                     # `m.f()` where `m` is an imported module → its export `f`;
                     # any other receiver is not a unique target (never guessed
@@ -376,29 +424,6 @@ class ImportResolver:
                         stats.refs_resolved += 1
                 else:
                     stats.refs_unresolved += 1
-
-        # --- inheritance -> INHERITS edges (subclass -> base; unique match) ---
-        for n in all_nodes:
-            bases = n.attrs.get("bases")
-            if not bases or n.kind is not NodeKind.CLASS:
-                continue
-            ps = SymbolID.parse(n.id)
-            if not _is_target(ps.path):
-                continue
-            owner_file = path_to_file.get(ps.path)
-            local = exports.get(file_module.get(owner_file, ""), {}) if owner_file else {}
-            binding = bindings.get(owner_file, {}) if owner_file else {}
-            for base in bases:
-                target = local.get(base) or binding.get(base)
-                # only an in-repo class is a valid base (external/by-name-only stays
-                # unresolved — never guessed, ADR-0004)
-                tnode = node_by_id.get(target) if target else None
-                if (
-                    tnode is not None
-                    and tnode.kind is NodeKind.CLASS
-                    and _add_edge(n.id, target, EdgeKind.INHERITS)  # type: ignore[arg-type]
-                ):
-                    stats.inherits_resolved += 1
 
         if new_nodes or edges:
             await store.add([*new_nodes, *edges])  # nodes first: edge endpoints must exist
