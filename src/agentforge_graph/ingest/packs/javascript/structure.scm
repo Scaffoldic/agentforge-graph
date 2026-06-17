@@ -7,6 +7,11 @@
 (class_declaration
   name: (identifier) @name) @def.class
 
+; --- inheritance (INHERITS): `class B extends A` (JS heritage holds the
+; superclass expression directly, no extends_clause wrapper). ---
+(class_declaration
+  (class_heritage (identifier) @base.name)) @base.def
+
 (function_declaration
   name: (identifier) @name) @def.function
 

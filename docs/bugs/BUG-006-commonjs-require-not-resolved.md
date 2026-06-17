@@ -107,12 +107,15 @@ bind to).
 
 **Residual (still open — file as ENH when prioritised):**
 - **Go receiver-variable calls** and **C++ method modeling** (above).
-- **Inherited-method `self.f()`** ✅ closed for Python (2026-06-17,
-  `feat/inherited-method-calls`): once `INHERITS` edges exist (#65), a `self.f()`
-  not found on the enclosing class walks the transitive superclass map and binds
-  to the base method **when exactly one base defines it** (an own-class override
-  wins; multiple distinct definers stay unresolved — no MRO guessing, ADR-0004).
-  Follow-up: the other language packs (gated on INHERITS for those packs).
+- **Inherited-method `self.f()`** ✅ closed for Python (#66) and extended to
+  **TS / JS / Java / C# / Ruby / PHP** (2026-06-17, `feat/inherits-other-packs`):
+  each pack now captures its `extends`/`<`/`:` superclass, so `INHERITS` edges +
+  inherited-method calls work across all eight OO packs. A `self.f()` not on the
+  enclosing class binds to the base method when exactly one base defines it (own
+  override wins; multi-definer ambiguous → unresolved, no MRO guessing). Rust
+  (trait impls), Go (embedding) and C++ (method modeling) use different models —
+  follow-ups; implemented interfaces (`implements`) are a separate (IMPLEMENTS)
+  relation, not captured.
 - **Module-member access** `m.f()` ✅ partially closed (2026-06-17,
   `bug/006-module-member-access`): the resolver now tracks receiver→module
   aliases for whole-module imports (`import m`) and default requires (`const m =

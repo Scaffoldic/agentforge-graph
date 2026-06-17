@@ -9,6 +9,10 @@
 (class
   name: (constant) @name) @def.class
 
+; --- inheritance (INHERITS): `class B < A` ---
+(class
+  superclass: (superclass (constant) @base.name)) @base.def
+
 ; `def foo` -> Function (promoted to Method when nested in a class/module body).
 (method
   name: (identifier) @name) @def.function
