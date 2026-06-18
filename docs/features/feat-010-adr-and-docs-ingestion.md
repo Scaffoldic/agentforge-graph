@@ -249,4 +249,11 @@ Design: `docs/design/design-010-adr-and-docs-ingestion.md`.
   doc-volume dilution risk (spec §8). When the query smells architectural
   (`why`/`decision`/`design`/`convention`/…), docs keep their full score. Applies
   to both the item score and its graph-expansion seed.
-- Commit-message ingestion.
+- **Commit-message ingestion ✅ done** (2026-06-18, `feat/010-commit-messages`):
+  with `knowledge.commit_messages: on`, the last `commit_messages_limit` (50) git
+  commit subjects that are *conventional commits* (`feat:`/`fix:`/…) or carry an
+  *issue ref* (`#123`/`PROJ-45`) become `DocChunk`s that `DESCRIBES` the in-repo
+  files they touched — so "why did the retry logic change?" reaches the commit and
+  its code. Keyed by sha, added idempotently (re-index skips known shas); immutable,
+  so no GC. `git log` via subprocess (no `agentforge` import, ADR-0001). Off by
+  default. Residual: full-body ingestion + span-overlap symbol-level DESCRIBES.

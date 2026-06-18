@@ -13,6 +13,7 @@ class KnowledgeStats(BaseModel):
     mentions_unresolved: int = 0  # mentions seen but not linked (unknown/ambiguous)
     docs_indexed: int = 0  # general doc files ingested (doc_globs, feat-010)
     describes_resolved: int = 0  # DESCRIBES edges created from doc mentions
+    commits_indexed: int = 0  # commit messages ingested as DocChunks (feat-010)
 
 
 class DecisionInfo(BaseModel):

@@ -88,8 +88,8 @@ knowledge:                      # feat-010 — ADR & docs ingestion
   infer_budget_usd: 1.0         # USD cap for the `ckg enrich --decisions` LLM pass
   doc_globs: []                 # general docs (e.g. ["**/*.md"]) → DocChunks + DESCRIBES
                                 # (empty = off; ADR files are excluded automatically)
-  # follow-ups (declared, inert at MVP):
-  commit_messages: off          # ingest commit messages as DocChunks
+  commit_messages: off          # ingest conventional/issue-ref commit messages → DocChunks
+  commit_messages_limit: 50     # how many recent commits to scan when on
   infer_governs: off            # default for the LLM matcher; `ckg enrich --decisions`
                                 # runs it on demand regardless (uses enrich.provider)
 

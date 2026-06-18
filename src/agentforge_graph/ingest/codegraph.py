@@ -119,7 +119,7 @@ async def _ingest_knowledge(
     """Run the ADR/knowledge pass (feat-010) after code indexing, so mention
     linking sees current code. No-op when ``knowledge.enabled`` is false."""
     from agentforge_graph.config import KnowledgeConfig
-    from agentforge_graph.knowledge import KnowledgeIngestor
+    from agentforge_graph.knowledge import CommitIngestor, KnowledgeIngestor
 
     cfg = KnowledgeConfig.load(config)
     if not cfg.enabled:
@@ -133,6 +133,10 @@ async def _ingest_knowledge(
     report.mentions_unresolved = stats.mentions_unresolved
     report.docs_indexed = stats.docs_indexed
     report.describes_resolved = stats.describes_resolved
+    if cfg.commit_messages:
+        report.commits_indexed = await CommitIngestor(
+            repo, repo_path, commit, limit=cfg.commit_messages_limit
+        ).ingest(store.graph)
     if stats.decisions_indexed:
         report.by_node_kind["Decision"] = (
             report.by_node_kind.get("Decision", 0) + stats.decisions_indexed
