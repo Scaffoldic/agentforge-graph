@@ -369,16 +369,16 @@ class CodeGraph:
             emb,
             commit=_git_commit(self._repo_path),
         )
+        root = Path(self._repo_path) / StoreConfig.load(self._config).path
         dirty: DirtySet | None = None
         only_paths: set[str] | None = None
         ids: list[str] = []
         if only_dirty:
-            root = Path(self._repo_path) / StoreConfig.load(self._config).path
             dirty = DirtySet(root)
             ids = await dirty.dirty_for("embeddings")
             only_paths = {SymbolID.parse(i).path for i in ids}
         self._embed_report = await pipeline.run(
-            self._store, source, registry, only_paths=only_paths
+            self._store, source, registry, only_paths=only_paths, doc_root=root
         )
         if dirty is not None:
             await dirty.mark_clean("embeddings", ids)

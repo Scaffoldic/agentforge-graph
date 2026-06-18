@@ -35,14 +35,49 @@ async def _doc_chunks(cg: CodeGraph) -> list[object]:
     return (await cg.store.graph.query(GraphQuery(kinds=[NodeKind.DOC_CHUNK], limit=999))).nodes
 
 
-async def test_doc_chunks_embedded(embedded: tuple[CodeGraph, FakeEmbedder]) -> None:
+async def test_doc_chunks_embedded(tmp_path: Path) -> None:
+    # a FRESH index+embed counts the doc chunks (no prior manifest to skip against)
+    repo = tmp_path / "proj"
+    shutil.copytree(FIXTURES, repo)
+    cg = await CodeGraph.index(repo_path=repo)
+    try:
+        docs = await _doc_chunks(cg)
+        assert docs  # the fixture ADRs produced doc chunks
+        report = await cg.embed(embedder=FakeEmbedder(dim=32))
+        assert report.doc_chunks == len(docs)
+    finally:
+        await cg.close()
+
+
+async def test_reembed_skips_unchanged_docs(embedded: tuple[CodeGraph, FakeEmbedder]) -> None:
+    # the fixture already embedded once → a second unchanged embed skips the doc pass
     cg, _ = embedded
     docs = await _doc_chunks(cg)
-    assert docs  # the fixture ADRs produced doc chunks
-    assert cg.stats() is not None
-    # the embed report counted them
     report = await cg.embed(embedder=FakeEmbedder(dim=32))
-    assert report.doc_chunks == len(docs)
+    assert report.doc_chunks == 0  # incremental: nothing re-embedded
+    # but the doc vectors are still present (skip ≠ delete)
+    target = next(d for d in docs if d.attrs.get("text"))
+    [qvec] = await FakeEmbedder(dim=32).embed(
+        [f"{target.attrs.get('heading', '')}\n{target.attrs.get('text', '')}".strip()], "query"
+    )
+    hits = await cg.store.vectors.search(qvec, k=5)
+    assert target.id in {h.ref for h in hits}
+
+
+async def test_changed_doc_reembeds(tmp_path: Path) -> None:
+    # editing an ADR changes the fingerprint → the doc pass runs again
+    repo = tmp_path / "proj"
+    shutil.copytree(FIXTURES, repo)
+    cg = await CodeGraph.index(repo_path=repo)
+    try:
+        await cg.embed(embedder=FakeEmbedder(dim=32))  # first → writes manifest
+        adr = next(repo.glob("docs/adr/*.md"))
+        adr.write_text(adr.read_text() + "\n\n## New section\n\nMore prose.\n")
+        await cg.refresh()
+        report = await cg.embed(embedder=FakeEmbedder(dim=32))
+        assert report.doc_chunks > 0  # not skipped — a doc changed
+    finally:
+        await cg.close()
 
 
 async def test_doc_chunk_vector_is_searchable(embedded: tuple[CodeGraph, FakeEmbedder]) -> None:

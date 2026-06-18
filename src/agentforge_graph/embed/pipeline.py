@@ -9,6 +9,9 @@ feat-004 will scope this to a DirtySet.
 
 from __future__ import annotations
 
+import hashlib
+from pathlib import Path
+
 from agentforge_graph.chunking import Chunker
 from agentforge_graph.core import (
     Edge,
@@ -42,6 +45,7 @@ class EmbedPipeline:
         source: RepoSource,
         registry: PackRegistry,
         only_paths: set[str] | None = None,
+        doc_root: Path | None = None,
     ) -> EmbedReport:
         """Embed the indexed code. When ``only_paths`` is given (feat-004: the
         files a refresh dirtied), only those files are re-chunked/embedded;
@@ -123,21 +127,39 @@ class EmbedPipeline:
             )
             report.embedded += len(chunks)
 
-        report.doc_chunks = await self._embed_docs(store)
+        report.doc_chunks = await self._embed_docs(store, doc_root)
         return report
 
-    async def _embed_docs(self, store: Store) -> int:
+    async def _embed_docs(self, store: Store, doc_root: Path | None = None) -> int:
         """Embed ADR/doc ``DocChunk`` prose so an architectural query surfaces the
-        governing decision (feat-010). Doc volume is small, so this clean-replaces
-        all doc vectors each run (which also GCs vectors for removed ADRs) — a
-        ``source_type: doc`` filter keeps them distinct from code chunks.
-        Doc-incremental-by-hash (via the chunk ``content_hash``) is a follow-up."""
+        governing decision / documented symbol (feat-010). A ``source_type: doc``
+        tag keeps these distinct from code chunks. Incremental: a fingerprint of all
+        doc chunks (ids + content hashes + embedder) is recorded under ``doc_root``;
+        when it is unchanged the whole pass is skipped (no API calls). On any change
+        it clean-replaces every doc vector (the simple, orphan-safe path for the
+        small doc set)."""
         docs = (await store.graph.query(GraphQuery(kinds=[NodeKind.DOC_CHUNK], limit=_ALL))).nodes
-        # clean-replace via the DocChunk kind (a filterable vector column) — this
-        # also GCs vectors for ADRs that were removed since the last embed.
-        await store.vectors.delete_where({"kind": NodeKind.DOC_CHUNK.value})
+        manifest = (doc_root / "doc_embed.hash") if doc_root is not None else None
         if not docs:
+            await store.vectors.delete_where({"kind": NodeKind.DOC_CHUNK.value})
+            if manifest is not None and manifest.exists():
+                manifest.unlink()
             return 0
+        fp_body = "".join(
+            f"{n.id}|{n.attrs.get('content_hash', '')};" for n in sorted(docs, key=lambda z: z.id)
+        )
+        fingerprint = hashlib.sha256(
+            f"{self.embedder.name}:{self.embedder.dim}:{fp_body}".encode()
+        ).hexdigest()
+        if (
+            manifest is not None
+            and manifest.exists()
+            and manifest.read_text().strip() == fingerprint
+        ):
+            return 0  # docs unchanged since the last embed → skip the re-embed
+        # clean-replace via the DocChunk kind (a filterable vector column) — this
+        # also GCs vectors for docs/ADRs that were removed since the last embed.
+        await store.vectors.delete_where({"kind": NodeKind.DOC_CHUNK.value})
         texts = [f"{n.attrs.get('heading', '')}\n{n.attrs.get('text', '')}".strip() for n in docs]
         vectors = await self.embedder.embed(texts, input_type="document")
         await store.vectors.upsert(
@@ -156,4 +178,7 @@ class EmbedPipeline:
                 for n, vec in zip(docs, vectors, strict=True)
             ]
         )
+        if manifest is not None:
+            manifest.parent.mkdir(parents=True, exist_ok=True)
+            manifest.write_text(fingerprint)
         return len(docs)
