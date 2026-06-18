@@ -232,7 +232,7 @@ class KnowledgeConfig(_Block):
     KEY: ClassVar[str] = "knowledge"
     enabled: bool = True
     adr_globs: list[str] = Field(default_factory=_default_adr_globs)
-    doc_globs: list[str] = Field(default_factory=list)  # follow-up: general docs
+    doc_globs: list[str] = Field(default_factory=list)  # general docs → DocChunks+DESCRIBES
     commit_messages: bool = False  # follow-up
     infer_governs: bool = False  # default for the LLM matcher (CLI flag overrides)
     infer_budget_usd: float = 1.0  # USD cap for the infer_governs pass
