@@ -8,6 +8,18 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+### Added (unreleased, toward 0.3.0)
+
+- **Embed ADR/doc prose for semantic search (feat-010).** The embed pass now embeds
+  `DocChunk` prose (ADR sections) into the vector store, tagged `source_type: doc`
+  (code chunks tagged `source_type: code`). A doc-chunk vector hit surfaces the
+  chunk **and** seeds its containing `Decision`, which expands through `GOVERNS` to
+  the code it governs — so an architectural query ("why is auth built this way?")
+  reaches the decision and the governed code, not just prose. Clean-replaced by the
+  `DocChunk` kind each embed run (GCs vectors for removed ADRs); `EmbedReport.
+  doc_chunks` counts them. (Doc-incremental-by-hash and `source_type`-aware
+  code-vs-doc retrieval weighting are follow-ups.)
+
 _Work toward 0.3.0 (`0.3.0.dev0`). Open backlog: small BUG-006 resolver residuals
 (ESM named-import aliases `import { a as b }` bind the original name; ESM
 `export { x }` / re-export chains; C++ implicit-`this` bare calls) and the ENH-009

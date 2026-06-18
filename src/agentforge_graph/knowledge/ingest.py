@@ -170,6 +170,11 @@ class KnowledgeIngestor:
                         "heading": section.heading,
                         "text": section.text,
                         "seq": i,
+                        # hash of the embeddable text (heading + body) — lets the
+                        # embed pass detect changed doc chunks (feat-010 follow-up).
+                        "content_hash": hashlib.sha256(
+                            f"{section.heading}\n{section.text}".encode()
+                        ).hexdigest(),
                     },
                     provenance=prov,
                 )

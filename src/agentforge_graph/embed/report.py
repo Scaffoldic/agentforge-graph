@@ -10,5 +10,6 @@ class EmbedReport(BaseModel):
     chunks: int = 0
     embedded: int = 0
     skipped_unchanged: int = 0  # files whose chunk set was unchanged (hash-skip)
+    doc_chunks: int = 0  # ADR/doc DocChunks embedded for semantic search (feat-010)
     model: str = ""
     dim: int = 0
