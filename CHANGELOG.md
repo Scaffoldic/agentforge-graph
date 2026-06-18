@@ -10,6 +10,14 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **JS/TS JSDoc as `DESCRIBES` doc nodes (feat-010).** A `/** … */` block comment
+  immediately before a function/class/method becomes a `DocChunk` that `DESCRIBES`
+  the symbol — extending docstring ingestion (Python) to JavaScript/TypeScript. The
+  cleaner strips `/** */` markers + per-line `*`; only `/**` blocks count (plain
+  `//` / `/* */` comments are ignored). Embedded + retrievable like any DocChunk.
+  (Java/C# doc comments, Go/Rust/Ruby/PHP conventions, and module-level docstrings
+  remain follow-ups.)
+
 - **Commit-message ingestion (feat-010).** With `knowledge.commit_messages: on`, the
   last `commit_messages_limit` (50) git commit subjects that are conventional commits
   (`feat:`/`fix:`/…) or carry an issue ref (`#123`/`PROJ-45`) become `DocChunk`s that
