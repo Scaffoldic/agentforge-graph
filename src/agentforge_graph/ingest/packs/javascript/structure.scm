@@ -101,3 +101,44 @@
     name: (identifier) @export.default)
   (#eq? @_mod "module")
   (#eq? @_exp "exports")) @export
+
+; --- export-member modeling (BUG-006 residual) ---
+; Assigned-property exports whose value is an *anonymous* function — these never
+; become symbols any other way, so `m.foo()` / `const { foo } = require(...)` /
+; direct calls have nothing to bind to. The property name is the export name (an
+; anonymous function has no name of its own). Named function-expression values are
+; covered by the `const f = function name(){}` value-binding pattern's sibling
+; forms; here we deliberately name from the property, which is the export name.
+
+; `exports.foo = function () {}` / `exports.foo = () => {}` -> Function `foo`
+(assignment_expression
+  left: (member_expression
+    object: (identifier) @_obj
+    property: (property_identifier) @name)
+  right: [(function_expression) (arrow_function)] @def.function
+  (#eq? @_obj "exports"))
+
+; `module.exports.foo = function () {}` / `= () => {}` -> Function `foo`
+(assignment_expression
+  left: (member_expression
+    object: (member_expression
+      object: (identifier) @_mod
+      property: (property_identifier) @_exp)
+    property: (property_identifier) @name)
+  right: [(function_expression) (arrow_function)] @def.function
+  (#eq? @_mod "module")
+  (#eq? @_exp "exports"))
+
+; `module.exports = { foo: function(){}, bar: () => {} }` -> Function per inline
+; function-valued pair. Shorthand props (`{ a, b }`) that name top-level defs
+; already resolve via the export map, so only inline functions need extracting.
+(assignment_expression
+  left: (member_expression
+    object: (identifier) @_mod
+    property: (property_identifier) @_exp)
+  right: (object
+    (pair
+      key: (property_identifier) @name
+      value: [(function_expression) (arrow_function)] @def.function))
+  (#eq? @_mod "module")
+  (#eq? @_exp "exports"))
