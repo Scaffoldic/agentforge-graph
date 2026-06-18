@@ -71,8 +71,11 @@ def _format_report(report: IndexReport) -> str:
             f"  decisions: {report.decisions_indexed} ADRs, "
             f"{report.governs_resolved} governs ({report.mentions_unresolved} unresolved)"
         )
-    if report.docs_indexed:
-        lines.append(f"  docs: {report.docs_indexed} files, {report.describes_resolved} describes")
+    if report.docs_indexed or report.commits_indexed:
+        extra = f", {report.commits_indexed} commits" if report.commits_indexed else ""
+        lines.append(
+            f"  docs: {report.docs_indexed} files, {report.describes_resolved} describes{extra}"
+        )
     if report.skipped:
         shown = ", ".join(report.skipped[:5]) + (" …" if len(report.skipped) > 5 else "")
         lines.append(f"  skipped {len(report.skipped)}: {shown}")

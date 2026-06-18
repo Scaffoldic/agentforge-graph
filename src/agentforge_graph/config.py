@@ -237,7 +237,8 @@ class KnowledgeConfig(_Block):
     enabled: bool = True
     adr_globs: list[str] = Field(default_factory=_default_adr_globs)
     doc_globs: list[str] = Field(default_factory=list)  # general docs → DocChunks+DESCRIBES
-    commit_messages: bool = False  # follow-up
+    commit_messages: bool = False  # ingest conventional/issue-ref commit messages
+    commit_messages_limit: int = 50  # how many recent commits to scan
     infer_governs: bool = False  # default for the LLM matcher (CLI flag overrides)
     infer_budget_usd: float = 1.0  # USD cap for the infer_governs pass
 

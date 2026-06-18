@@ -10,6 +10,13 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **Commit-message ingestion (feat-010).** With `knowledge.commit_messages: on`, the
+  last `commit_messages_limit` (50) git commit subjects that are conventional commits
+  (`feat:`/`fix:`/…) or carry an issue ref (`#123`/`PROJ-45`) become `DocChunk`s that
+  `DESCRIBES` the in-repo files they touched — so "why did the retry logic change?"
+  reaches the commit and its code. Keyed by sha, added idempotently (re-index skips
+  known shas). Read via `git log` (no framework import); off by default.
+
 - **Code-vs-doc retrieval weighting (feat-010).** ADR/doc (`source_type: doc`)
   vector hits are scaled by `retrieve.doc_weight` (default 0.7) so code outranks
   equally-similar prose by default — mitigating doc-volume dilution. When the query

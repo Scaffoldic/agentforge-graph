@@ -10,6 +10,7 @@ when its governed code is retrieved. Zero ``agentforge`` imports (ADR-0001).
 from __future__ import annotations
 
 from .adr import ADRParser, ParsedADR
+from .commits import CommitIngestor
 from .ingest import KnowledgeIngestor
 from .mentions import Mentions, extract_mentions, resolve_mentions
 from .report import DecisionInfo, KnowledgeStats
@@ -17,6 +18,7 @@ from .report import DecisionInfo, KnowledgeStats
 __all__ = [
     "ADRParser",
     "ParsedADR",
+    "CommitIngestor",
     "KnowledgeIngestor",
     "Mentions",
     "extract_mentions",
