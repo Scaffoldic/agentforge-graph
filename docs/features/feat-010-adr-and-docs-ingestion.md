@@ -222,5 +222,13 @@ Design: `docs/design/design-010-adr-and-docs-ingestion.md`.
   link (only zero-parsed decisions are considered); re-run is idempotent. Off by
   default — `ckg enrich --decisions` / `CodeGraph.infer_governs`. Residual:
   repo-map-ranked candidate selection (currently id-sorted, capped at 60).
-- General `doc_globs`/docstrings + `DESCRIBES`; commit-message ingestion;
-  doc-incremental-by-hash.
+- **Docstrings → `DESCRIBES` ✅ done (Python)** (2026-06-18, `feat/010-docstrings`):
+  a Python symbol's leading docstring (the first body string of a class/function/
+  method) becomes a `DocChunk` that `DESCRIBES` the symbol — embedded with the
+  doc-chunk pass (`source_type: doc`) and, on a vector hit, seeding the symbol it
+  describes so a docstring-prose query reaches the code. Carried in the file's
+  subgraph (origin_path = code file) so it rides feat-004 incrementality; symbols
+  without a leading docstring get nothing. Residual: JS/TS JSDoc, Java/C# doc
+  comments, module-level docstrings → File.
+- General `doc_globs` (README/`**/*.md` → DocChunks + DESCRIBES); commit-message
+  ingestion; doc-incremental-by-hash.

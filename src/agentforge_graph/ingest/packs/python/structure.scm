@@ -10,6 +10,15 @@
 (function_definition
   name: (identifier) @name) @def.function
 
+; --- docstrings (DESCRIBES) ---
+; the first string in a def/class body is its docstring; the extractor turns it
+; into a DocChunk that DESCRIBES the symbol (feat-010). The `.` anchor restricts
+; the match to the *first* body statement, so a non-leading string is not one.
+(function_definition
+  body: (block . (string) @docstring)) @doc.owner
+(class_definition
+  body: (block . (string) @docstring)) @doc.owner
+
 ; --- inheritance (INHERITS) ---
 ; a base class named by a bare identifier: `class B(A)` -> base `A`.
 (class_definition

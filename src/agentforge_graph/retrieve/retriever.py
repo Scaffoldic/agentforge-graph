@@ -116,14 +116,19 @@ class Retriever:
                         hit.ref, [EdgeKind.CHUNK_OF, EdgeKind.SUMMARIZES], "out"
                     ):
                         seeds[edge.dst] = max(seeds.get(edge.dst, 0.0), hit.score)
-                    # a doc-chunk hit (feat-010) seeds its containing Decision, which
-                    # then expands via GOVERNS to the code it governs — so an
-                    # architectural query surfaces the decision *and* the governed code.
+                    # a doc-chunk hit (feat-010) seeds the code it attaches to: an
+                    # ADR section seeds its containing Decision (CONTAINS in → then
+                    # GOVERNS to governed code); a docstring seeds the symbol it
+                    # DESCRIBES (out). Either way a prose query reaches the code.
                     if node.kind is NodeKind.DOC_CHUNK:
                         for edge in await self.store.graph.adjacent(
                             hit.ref, [EdgeKind.CONTAINS], "in"
                         ):
                             seeds[edge.src] = max(seeds.get(edge.src, 0.0), hit.score)
+                        for edge in await self.store.graph.adjacent(
+                            hit.ref, [EdgeKind.DESCRIBES], "out"
+                        ):
+                            seeds[edge.dst] = max(seeds.get(edge.dst, 0.0), hit.score)
         if symbol is not None:
             seeds[symbol] = max(seeds.get(symbol, 0.0), 1.0)
 
