@@ -252,8 +252,10 @@ async def _decisions(args: argparse.Namespace) -> int:
 
 async def _enrich(args: argparse.Namespace) -> int:
     cg = await CodeGraph.open(repo_path=args.path, config=args.config)
-    do_patterns = args.patterns or args.all or not args.summaries
     do_summaries = args.summaries or args.all
+    do_decisions = args.decisions or args.all
+    # patterns is the default only when no other role was explicitly requested
+    do_patterns = args.patterns or args.all or not (args.summaries or args.decisions)
     try:
         if do_patterns:
             r = await cg.enrich(budget_usd=args.budget_usd)
@@ -271,6 +273,13 @@ async def _enrich(args: argparse.Namespace) -> int:
                 + (" + repo" if s.repo_summarized else "")
                 + f" — ${s.cost_usd:.4f}"
                 + (" [budget tripped]" if s.budget_tripped else "")
+            )
+        if do_decisions:
+            g = await cg.infer_governs(budget_usd=args.budget_usd)
+            print(
+                f"decisions: {g.decisions_considered}/{g.decisions_total} considered, "
+                f"{g.governs_inferred} GOVERNS inferred — ${g.cost_usd:.4f}"
+                + (" [budget tripped]" if g.budget_tripped else "")
             )
     finally:
         await cg.close()
@@ -477,7 +486,10 @@ def build_parser() -> argparse.ArgumentParser:
     _add_repo_arg(enr)
     enr.add_argument("--patterns", action="store_true", help="run pattern tagging (default)")
     enr.add_argument("--summaries", action="store_true", help="run module summaries")
-    enr.add_argument("--all", action="store_true", help="run both patterns and summaries")
+    enr.add_argument(
+        "--decisions", action="store_true", help="infer GOVERNS links for ADRs (feat-010)"
+    )
+    enr.add_argument("--all", action="store_true", help="run patterns, summaries, and decisions")
     enr.add_argument("--budget-usd", type=float, default=None, help="override the per-run USD cap")
     enr.add_argument("--config", default=None, help="path to ckg.yaml")
     enr.set_defaults(func=_enrich)

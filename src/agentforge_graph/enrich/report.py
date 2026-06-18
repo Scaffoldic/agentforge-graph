@@ -37,6 +37,17 @@ class SummaryReport(BaseModel):
     budget_tripped: bool = False
 
 
+class GovernsReport(BaseModel):
+    """Outcome of one ``DecisionGovernsInferencer.enrich`` run (feat-010)."""
+
+    decisions_total: int = 0  # Decision nodes in the graph
+    decisions_considered: int = 0  # those with zero *parsed* GOVERNS (the LLM gap)
+    candidates: int = 0  # symbols offered to the matcher
+    governs_inferred: int = 0  # llm GOVERNS edges written (above the floor)
+    cost_usd: float = 0.0
+    budget_tripped: bool = False
+
+
 class SummaryInfo(BaseModel):
     """One summary, for ``CodeGraph.summaries`` / ``ckg_explain``."""
 

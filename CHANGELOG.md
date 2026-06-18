@@ -10,6 +10,16 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **`infer_governs` LLM pass for ADRs (feat-010).** An optional, budgeted matcher
+  proposes `GOVERNS` edges for decisions whose prose names no code — matching the
+  decision text against the repo's candidate symbols and writing edges with honest
+  `llm` provenance + confidence + rationale. It only considers decisions with
+  **zero parsed** GOVERNS (never overrides a deterministic link) and is idempotent
+  on re-run. The matcher is injectable (`ScriptedMatcher` for tests,
+  `ClaudeGovernsMatcher` over Bedrock/Anthropic via `enrich.provider`). Off by
+  default — `ckg enrich --decisions` (or `CodeGraph.infer_governs`); USD-capped by
+  `knowledge.infer_budget_usd`.
+
 - **Embed ADR/doc prose for semantic search (feat-010).** The embed pass now embeds
   `DocChunk` prose (ADR sections) into the vector store, tagged `source_type: doc`
   (code chunks tagged `source_type: code`). A doc-chunk vector hit surfaces the

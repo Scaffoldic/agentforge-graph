@@ -224,16 +224,18 @@ def _default_adr_globs() -> list[str]:
 class KnowledgeConfig(_Block):
     """The ``knowledge:`` block of ckg.yaml (feat-010 — ADR & docs ingestion).
 
-    MVP reads ``enabled`` + ``adr_globs``; ``doc_globs``/``commit_messages``/
-    ``infer_governs``/``infer_budget_usd`` are declared for follow-ups."""
+    Reads ``enabled`` + ``adr_globs`` (deterministic pass) and ``infer_budget_usd``
+    (the ``ckg enrich --decisions`` LLM matcher's USD cap). ``doc_globs``/
+    ``commit_messages`` are declared for follow-ups; ``infer_governs`` is the
+    default for the LLM pass (the CLI flag runs it on demand regardless)."""
 
     KEY: ClassVar[str] = "knowledge"
     enabled: bool = True
     adr_globs: list[str] = Field(default_factory=_default_adr_globs)
     doc_globs: list[str] = Field(default_factory=list)  # follow-up: general docs
     commit_messages: bool = False  # follow-up
-    infer_governs: bool = False  # follow-up: LLM matcher (off by default)
-    infer_budget_usd: float = 1.0
+    infer_governs: bool = False  # default for the LLM matcher (CLI flag overrides)
+    infer_budget_usd: float = 1.0  # USD cap for the infer_governs pass
 
 
 class TemporalConfig(_Block):
