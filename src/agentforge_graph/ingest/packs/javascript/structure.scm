@@ -24,6 +24,17 @@
 (method_definition
   name: (property_identifier) @name) @def.function
 
+; --- JSDoc docstrings (DESCRIBES) ---
+; a `/** … */` block comment immediately before a function/class/method becomes a
+; DocChunk that DESCRIBES the symbol (feat-010). `#match?` keeps only JSDoc (`/**`).
+((comment) @docstring . (function_declaration) @doc.owner
+  (#match? @docstring "^/[*][*]"))
+((comment) @docstring . (class_declaration) @doc.owner
+  (#match? @docstring "^/[*][*]"))
+(class_body
+  (comment) @docstring . (method_definition) @doc.owner
+  (#match? @docstring "^/[*][*]"))
+
 ; --- value bindings (ENH-008, shared with TS) ---
 ; `const f = (…) => …` / `const f = function () {}` -> Function (named from the
 ; binding). Captured at any depth — these are genuine functions. (JS has no

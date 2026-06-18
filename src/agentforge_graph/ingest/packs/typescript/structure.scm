@@ -33,6 +33,19 @@
 (method_definition
   name: (property_identifier) @name) @def.function
 
+; --- JSDoc/TSDoc docstrings (DESCRIBES) ---
+; a `/** … */` block comment immediately before a function/class/method becomes a
+; DocChunk that DESCRIBES the symbol (feat-010); `#match?` keeps only `/**` blocks.
+((comment) @docstring . (function_declaration) @doc.owner
+  (#match? @docstring "^/[*][*]"))
+((comment) @docstring . (class_declaration) @doc.owner
+  (#match? @docstring "^/[*][*]"))
+((comment) @docstring . (abstract_class_declaration) @doc.owner
+  (#match? @docstring "^/[*][*]"))
+(class_body
+  (comment) @docstring . (method_definition) @doc.owner
+  (#match? @docstring "^/[*][*]"))
+
 ; --- TS type surface (ENH-008) ---
 ; `interface Foo {}` -> Interface (the dominant way TS describes contracts).
 (interface_declaration

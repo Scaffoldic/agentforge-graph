@@ -82,11 +82,21 @@ def _signature(node: TSNode, src: bytes) -> str:
 
 
 _STR_PREFIX = re.compile(r"^[rbfuRBFU]{0,2}")
+_JSDOC_LINE = re.compile(r"^\s*\*?\s?")  # a JSDoc/Javadoc line's leading ` * `
 
 
 def _clean_docstring(raw: str) -> str:
-    """Strip a string literal's prefix + quotes and dedent — the docstring body."""
-    s = _STR_PREFIX.sub("", raw.strip(), count=1)
+    """The docstring body: strip a Python string literal's prefix + quotes, OR a
+    ``/** … */`` JSDoc/Javadoc comment's markers + per-line ``*``; then dedent."""
+    s = raw.strip()
+    if s.startswith("/*"):  # JSDoc / Javadoc block comment
+        s = s[2:]
+        if s.startswith("*"):  # the second `*` of `/**`
+            s = s[1:]
+        if s.endswith("*/"):
+            s = s[:-2]
+        return "\n".join(_JSDOC_LINE.sub("", ln) for ln in s.splitlines()).strip()
+    s = _STR_PREFIX.sub("", s, count=1)
     for q in ('"""', "'''", '"', "'"):
         if s.startswith(q) and s.endswith(q) and len(s) >= 2 * len(q):
             s = s[len(q) : -len(q)]
@@ -225,7 +235,7 @@ class TreeSitterExtractor(Extractor):
                 if meth and rtype:
                     method_recv[meth[0].id] = (_text(rvar[0], src), _text(rtype[0], src))
             elif "docstring" in caps:
-                # the first body string of a def/class — its docstring (DESCRIBES)
+                # a def/class docstring or JSDoc comment — DESCRIBES the symbol
                 owner = caps.get("doc.owner")
                 if owner:
                     docstrings[owner[0].id] = _clean_docstring(_text(caps["docstring"][0], src))

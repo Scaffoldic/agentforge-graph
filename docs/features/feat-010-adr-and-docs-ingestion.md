@@ -228,8 +228,13 @@ Design: `docs/design/design-010-adr-and-docs-ingestion.md`.
   doc-chunk pass (`source_type: doc`) and, on a vector hit, seeding the symbol it
   describes so a docstring-prose query reaches the code. Carried in the file's
   subgraph (origin_path = code file) so it rides feat-004 incrementality; symbols
-  without a leading docstring get nothing. Residual: JS/TS JSDoc, Java/C# doc
-  comments, module-level docstrings → File.
+  without a leading docstring get nothing. **JS/TS JSDoc ✅ done** (2026-06-18,
+  `feat/010-jsdoc`): a `/** … */` comment immediately before a function/class/method
+  becomes a `DocChunk` that `DESCRIBES` the symbol (the cleaner strips `/** */` +
+  per-line `*`; `#match?` keeps only `/**`, so plain `//` / `/* */` comments are
+  ignored). Residual: Java/C# doc comments (same `/**` shape — quick add); Go/Rust/
+  Ruby/PHP line-comment conventions; module-level docstrings → File (deferred —
+  they crowd code in low-k search until the doc-weighting is tuned for it).
 - **General `doc_globs` ✅ done** (2026-06-18, `feat/010-doc-globs`): Markdown docs
   under `knowledge.doc_globs` (e.g. `["**/*.md"]`) are sectioned into `DocChunk`s
   that `DESCRIBES` the code each section unambiguously mentions (path or unique
