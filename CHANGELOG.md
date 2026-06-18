@@ -10,6 +10,15 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **Docstrings as `DESCRIBES` doc nodes (Python, feat-010).** A Python symbol's
+  leading docstring (the first body string of a class/function/method) is now
+  extracted as a `DocChunk` that `DESCRIBES` the symbol. The docstring prose
+  becomes its own searchable node (embedded by the doc-chunk pass, `source_type:
+  doc`); a vector hit on it seeds the symbol it describes, so a docstring-prose
+  query reaches the code. Carried in the code file's subgraph, so it rides
+  incremental indexing; symbols without a leading docstring get nothing. (JSDoc /
+  Java-C# doc comments / module docstrings are follow-ups.)
+
 - **`infer_governs` LLM pass for ADRs (feat-010).** An optional, budgeted matcher
   proposes `GOVERNS` edges for decisions whose prose names no code — matching the
   decision text against the repo's candidate symbols and writing edges with honest

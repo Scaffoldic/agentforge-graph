@@ -13,6 +13,9 @@ Parsing uses the standalone ``tree_sitter`` package driven by a grammar from
 
 from __future__ import annotations
 
+import hashlib
+import re
+import textwrap
 from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import cache
@@ -61,6 +64,7 @@ class _Def:
     bases: list[str] = field(default_factory=list)  # superclass names (INHERITS)
     recv_var: str = ""  # Go: a method's receiver variable name (`s` in `func (s *T)`)
     recv_type: str = ""  # Go: a method's receiver type name (`T`)
+    docstring: str = ""  # the symbol's docstring, cleaned (DESCRIBES, feat-010)
 
 
 def _text(node: TSNode, src: bytes) -> str:
@@ -75,6 +79,19 @@ def _signature(node: TSNode, src: bytes) -> str:
     """The symbol's first source line (the def/class header), trimmed."""
     text = _text(node, src)
     return text.splitlines()[0].strip() if text else ""
+
+
+_STR_PREFIX = re.compile(r"^[rbfuRBFU]{0,2}")
+
+
+def _clean_docstring(raw: str) -> str:
+    """Strip a string literal's prefix + quotes and dedent — the docstring body."""
+    s = _STR_PREFIX.sub("", raw.strip(), count=1)
+    for q in ('"""', "'''", '"', "'"):
+        if s.startswith(q) and s.endswith(q) and len(s) >= 2 * len(q):
+            s = s[len(q) : -len(q)]
+            break
+    return textwrap.dedent(s).strip()
 
 
 class TreeSitterExtractor(Extractor):
@@ -145,6 +162,29 @@ class TreeSitterExtractor(Extractor):
             edges.append(
                 Edge(src=parent_id, dst=d.symbol_id, kind=EdgeKind.CONTAINS, provenance=prov)
             )
+            # docstring -> a DocChunk that DESCRIBES the symbol (feat-010), so the
+            # docstring prose is embeddable + searchable, attached to its symbol.
+            if d.docstring:
+                desc = SymbolID.parse(d.symbol_id).descriptor + "docstring."
+                doc_id = SymbolID.for_symbol(self.pack.lang_slug, self.repo, file.path, desc)
+                nodes.append(
+                    GraphNode(
+                        id=doc_id,
+                        kind=NodeKind.DOC_CHUNK,
+                        name=d.name,
+                        provenance=prov,
+                        attrs={
+                            "path": file.path,
+                            "heading": d.name,
+                            "text": d.docstring,
+                            "describes": d.symbol_id,
+                            "content_hash": hashlib.sha256(d.docstring.encode()).hexdigest(),
+                        },
+                    )
+                )
+                edges.append(
+                    Edge(src=doc_id, dst=d.symbol_id, kind=EdgeKind.DESCRIBES, provenance=prov)
+                )
 
         nodes.sort(key=lambda n: (n.span or (0, 0), n.id))
         edges.sort(key=lambda e: (e.src, e.dst, e.kind.value))
@@ -163,6 +203,7 @@ class TreeSitterExtractor(Extractor):
         namespace = ""  # PHP/Java/C# package declaration (FQN import resolution)
         class_bases: dict[int, list[str]] = defaultdict(list)  # class node id -> base names
         method_recv: dict[int, tuple[str, str]] = {}  # method node id -> (recv var, recv type)
+        docstrings: dict[int, str] = {}  # def node id -> cleaned docstring (DESCRIBES)
         rules = self.pack.descriptor_rules
         for _pattern, caps in QueryCursor(self._structure_q).matches(root):
             def_cap = next((c for c in caps if c.startswith("def.")), None)
@@ -183,6 +224,11 @@ class TreeSitterExtractor(Extractor):
                 meth, rvar, rtype = caps.get("recv.method"), caps["recv.var"], caps.get("recv.type")
                 if meth and rtype:
                     method_recv[meth[0].id] = (_text(rvar[0], src), _text(rtype[0], src))
+            elif "docstring" in caps:
+                # the first body string of a def/class — its docstring (DESCRIBES)
+                owner = caps.get("doc.owner")
+                if owner:
+                    docstrings[owner[0].id] = _clean_docstring(_text(caps["docstring"][0], src))
             elif "import" in caps:
                 mods = caps.get("import.module", [])
                 dflt = caps.get("import.default")
@@ -208,6 +254,8 @@ class TreeSitterExtractor(Extractor):
                 d.bases = class_bases[d.ts_id]
             if d.ts_id in method_recv:
                 d.recv_var, d.recv_type = method_recv[d.ts_id]
+            if d.ts_id in docstrings:
+                d.docstring = docstrings[d.ts_id]
         self._link_scopes(defs)
         return defs, imports, default_export, namespace
 
