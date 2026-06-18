@@ -237,4 +237,10 @@ Design: `docs/design/design-010-adr-and-docs-ingestion.md`.
   (handled by the ADR pass); READMEs are kept. Per-file `FileSubgraph` (origin_path
   = doc path) so edits/deletes ride feat-004, with GC of vanished docs. `IndexReport.
   docs_indexed`/`describes_resolved` + the `ckg index` summary. Empty by default.
-- Commit-message ingestion; doc-incremental-by-hash.
+- **Doc-incremental-by-hash ✅ done** (2026-06-18, `feat/010-doc-incremental`): the
+  doc-embed pass now records a fingerprint of all DocChunks (ids + `content_hash` +
+  embedder) under `.ckg/doc_embed.hash`; when it is unchanged the whole pass is
+  skipped (no embedding API calls). On any change it clean-replaces every doc vector
+  (orphan-safe for the small doc set). So `ckg embed` after an incremental refresh
+  no longer re-embeds unchanged docs.
+- Commit-message ingestion.

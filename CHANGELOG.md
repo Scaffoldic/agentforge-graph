@@ -10,6 +10,12 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **Incremental doc embedding (feat-010).** The doc-embed pass now fingerprints all
+  DocChunks (ids + content hashes + embedder) under `.ckg/doc_embed.hash` and skips
+  the whole pass when nothing changed — so `ckg embed` after an incremental refresh
+  no longer re-embeds unchanged ADR/doc/docstring prose. Any doc change triggers a
+  clean re-embed (orphan-safe for the small doc set).
+
 - **General Markdown docs as `DESCRIBES` nodes (feat-010).** Docs matched by
   `knowledge.doc_globs` (e.g. `["**/*.md"]` — READMEs, guides) are sectioned into
   `DocChunk`s that `DESCRIBES` the code each section unambiguously mentions (a
