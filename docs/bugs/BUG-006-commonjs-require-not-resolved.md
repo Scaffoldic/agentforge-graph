@@ -128,11 +128,21 @@ types with a same-named method don't cross-bind.
 - **Module-member access** `m.f()` ✅ partially closed (2026-06-17,
   `bug/006-module-member-access`): the resolver now tracks receiver→module
   aliases for whole-module imports (`import m`) and default requires (`const m =
-  require("./m")`), so `m.f()` binds to module `m`'s top-level export `f`. **Still
-  open:** members that are not top-level defs — object-literal / `exports.Name =
-  …` / assigned-property exports (`app.init = …`) — aren't extracted as symbols,
-  so there's nothing to bind to (needs explicit export-member modeling); and
-  aliased imports (`import os.path as osp`) don't capture the alias yet.
+  require("./m")`), so `m.f()` binds to module `m`'s top-level export `f`.
+- **Export-member modeling (JS)** ✅ closed (2026-06-18,
+  `bug/006-export-member-modeling`): assigned-property exports whose value is an
+  *anonymous* function — `exports.foo = function(){}` / `= () => {}`,
+  `module.exports.foo = …`, and inline-function values in `module.exports = {
+  foo: () => {} }` — are now extracted as `Function` symbols named for the
+  property (the export name). Previously these had no symbol to bind to, so
+  `m.foo()`, `const { foo } = require(...)`, and direct calls were unresolved;
+  they now resolve through the existing export map. Non-function assignments
+  (`exports.x = someVar`, re-export of an existing binding) mint no symbol
+  (ADR-0004); shorthand `{ a, b }` object exports naming top-level defs already
+  resolved. JS-only — TS/Python use `import`/`export`. **Still open:** aliased
+  imports (`import os.path as osp`) don't capture the alias yet; and qualified
+  bases (`class B extends mod.Base`) need base-side module-alias resolution
+  (next residual).
 - `import x = require(...)` CommonJS-in-TS, and ESM `export { x }` / re-export
   chains (explicit export modeling would unify these).
 

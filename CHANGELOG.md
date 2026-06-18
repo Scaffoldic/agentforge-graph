@@ -14,6 +14,17 @@ residuals._
 
 ### Added (unreleased, toward 0.2.0)
 
+- **Export-member modeling (JavaScript, BUG-006 residual).** Assigned-property
+  CommonJS exports whose value is an *anonymous* function are now extracted as
+  `Function` symbols: `exports.foo = function(){}` / `= () => {}`,
+  `module.exports.foo = …`, and inline-function values in a `module.exports = {
+  foo: () => {} }` object literal. The property name is the export name. These
+  previously had no symbol to bind to, so `m.foo()`, `const { foo } =
+  require(...)`, and direct calls all went unresolved; they now resolve. Non-
+  function assignments (`exports.x = someVar`, a re-export of an existing binding)
+  do not mint a spurious symbol (ADR-0004). Shorthand object exports (`{ a, b }`
+  naming top-level defs) already resolved and are unchanged.
+
 - **Go receiver-method call resolution (BUG-006 residual).** Go's method receiver
   is a named variable (`func (s *Server) …`), not a `self`/`this` keyword, so the
   extractor now records each method's receiver var + type and the resolver indexes
