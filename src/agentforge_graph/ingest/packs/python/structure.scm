@@ -21,10 +21,17 @@
   superclasses: (argument_list (attribute) @base.name)) @base.def
 
 ; --- imports ---
-; `import a.b.c`  (optionally aliased) -> module only
+; `import a.b.c` -> module only (the receiver in code is the dotted path itself).
 (import_statement
-  name: [(dotted_name) @import.module
-         (aliased_import (dotted_name) @import.module)]) @import
+  name: (dotted_name) @import.module) @import
+
+; `import a.b.c as x` -> module + the alias `x` as the local binding name, so a
+; whole-module import bound to a short alias (`import numpy as np`) makes `np.f()`
+; / `extends np.Base` resolve to module `a.b.c`'s exports (BUG-006).
+(import_statement
+  name: (aliased_import
+    (dotted_name) @import.module
+    alias: (identifier) @import.default)) @import
 
 ; `from a.b import c, d`  -> module + one or more bound names
 (import_from_statement

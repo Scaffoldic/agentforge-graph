@@ -274,10 +274,23 @@ class ImportResolver:
                         f.id, module_to_file[key], EdgeKind.IMPORTS
                     ):
                         stats.imports_resolved += 1
+                    sep = "/" if pack is not None and pack.module_style != "dotted" else "."
                     for nm in names:
                         tgt = exports.get(key, {}).get(nm)
                         if tgt:
                             binding[nm] = tgt
+                            continue
+                        # `from pkg import sub` where `sub` is an in-repo *submodule*
+                        # (not a def of pkg): alias the local name to that module so
+                        # `sub.f()` / `extends sub.Base` resolve to its exports, and
+                        # point IMPORTS at the submodule file (BUG-006 aliased import).
+                        sub_key = f"{key}{sep}{nm}" if key else nm
+                        if sub_key in module_to_file:
+                            module_alias.setdefault(f.id, {})[nm] = sub_key
+                            if _is_target(ps.path) and _add_edge(
+                                f.id, module_to_file[sub_key], EdgeKind.IMPORTS
+                            ):
+                                stats.imports_resolved += 1
                     # CommonJS default require: bind the local name to the target
                     # module's `module.exports = <name>` symbol (BUG-006).
                     if default_name:

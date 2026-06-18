@@ -14,6 +14,15 @@ residuals._
 
 ### Added (unreleased, toward 0.2.0)
 
+- **Aliased / submodule import resolution (Python, BUG-006 residual).** An aliased
+  whole-module import (`import pkg.mathutils as mu`) now captures the alias as the
+  module's local binding name, and a submodule named-import (`from pkg import
+  mathutils`, where `mathutils` is a *module*, not a def of `pkg`) aliases the
+  local name to that submodule and points the `IMPORTS` edge at the submodule
+  file. Both feed the module-alias map, so `mu.f()` / `mathutils.f()` and
+  qualified bases through them resolve. An aliased import of an *external* module
+  stays unresolved (never guessed onto a same-named local, ADR-0004).
+
 - **Qualified base resolution (Python / JS / TS, BUG-006 residual).** A qualified
   superclass — `class B extends mod.Base` / `class B(mod.Base)` — now resolves to
   the base class by splitting the receiver and binding it via the importing

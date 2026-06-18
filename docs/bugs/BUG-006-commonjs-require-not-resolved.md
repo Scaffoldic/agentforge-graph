@@ -150,10 +150,17 @@ types with a same-named method don't cross-bind.
   work, ESM namespace imports (`import * as ns from "./m"`) are now captured too
   (previously they produced no IMPORTS edge or alias at all). A qualified base
   whose receiver is not an imported module stays unresolved (ADR-0004).
-- **Still open:** aliased imports (`import os.path as osp` / `from pkg import mod`
-  as a submodule alias) don't capture the alias yet; `import x = require(...)`
-  CommonJS-in-TS, and ESM `export { x }` / re-export chains (explicit export
-  modeling would unify these).
+- **Aliased / submodule imports** ✅ closed (2026-06-18, `bug/006-aliased-imports`):
+  an aliased whole-module import (`import pkg.mathutils as mu`) now captures the
+  alias as the module's local binding name, and a submodule named-import (`from pkg
+  import mathutils`, where `mathutils` is a *module*, not a def of `pkg`) aliases
+  the local name to that submodule and points IMPORTS at the submodule file. Both
+  feed the module-alias map, so `mu.f()` / `mathutils.f()` and qualified bases
+  through them resolve. An aliased import of an *external* module stays unresolved
+  (never guessed onto a same-named local, ADR-0004). **Still open:** `import x =
+  require(...)` CommonJS-in-TS; ESM named-import aliases (`import { a as b }`)
+  still bind the original name; and ESM `export { x }` / re-export chains (explicit
+  export modeling would unify these).
 
 ## Notes
 
