@@ -8,11 +8,18 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
-_Work toward 0.2.0 (`0.2.0.dev0`). Planned: temporal / git-evolution layer
-(feat-009), a cross-encoder reranker for ENH-009, and BUG-006 member-access
-residuals._
+## [0.2.0] - 2026-06-18
 
-### Added (unreleased, toward 0.2.0)
+A feature minor: the **temporal / git-evolution layer** (feat-009), a
+**cross-encoder reranker** seam (ENH-009), and a deep **resolver-completeness
+sweep** that brings intra-type method-call resolution to **all 10 language packs**
+(BUG-006 #62–#72). Validated with a full pre-release pass (test suite, real-repo
+resolver sweeps, temporal end-to-end, incremental==full, MCP-over-the-wire, a
+Neo4j + pgvector server-backend e2e, and an agent dogfood over the 10 tools) —
+no product bugs found. The on-disk index schema is unchanged from 0.1.0; the
+temporal sidecar (`.ckg/temporal.db`) is opt-in and additive.
+
+### Added (0.2.0)
 
 - **C++ inline method modeling + `this->f()` resolution (BUG-006 residual).** The
   cpp pack now extracts inline struct/class method *definitions* (`double area()
