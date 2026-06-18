@@ -243,4 +243,10 @@ Design: `docs/design/design-010-adr-and-docs-ingestion.md`.
   skipped (no embedding API calls). On any change it clean-replaces every doc vector
   (orphan-safe for the small doc set). So `ckg embed` after an incremental refresh
   no longer re-embeds unchanged docs.
+- **Code-vs-doc retrieval weighting ✅ done** (2026-06-18, `feat/010-doc-weight`):
+  ADR/doc (`source_type: doc`) vector hits are scaled by `retrieve.doc_weight`
+  (default 0.7) so code outranks equally-similar prose by default — mitigating the
+  doc-volume dilution risk (spec §8). When the query smells architectural
+  (`why`/`decision`/`design`/`convention`/…), docs keep their full score. Applies
+  to both the item score and its graph-expansion seed.
 - Commit-message ingestion.

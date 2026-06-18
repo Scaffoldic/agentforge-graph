@@ -5,6 +5,7 @@ the enrichers ride on.
 
 from __future__ import annotations
 
+import re
 from typing import Literal
 
 from agentforge_graph.config import RetrieveConfig
@@ -20,6 +21,41 @@ Mode = Literal["context", "impact", "definition", "similar"]
 
 # code-symbol kinds an as_of allow-filter constrains (feat-009)
 _SYMBOL_KINDS = frozenset({NodeKind.CLASS, NodeKind.FUNCTION, NodeKind.METHOD})
+
+# A query "smells architectural" when it asks about decisions/rationale/design — the
+# case where ADR/doc prose SHOULD rank with code. Else docs are down-weighted (feat-010).
+_ARCH_TERMS = frozenset(
+    {
+        "why",
+        "decision",
+        "decisions",
+        "rationale",
+        "architecture",
+        "architectural",
+        "design",
+        "convention",
+        "conventions",
+        "adr",
+        "govern",
+        "governs",
+        "principle",
+        "tradeoff",
+        "trade-off",
+        "policy",
+        "constraint",
+        "supposed",
+        "allowed",
+        "forbidden",
+        "deprecated",
+    }
+)
+
+_WORD_RE = re.compile(r"[a-z0-9-]+")
+
+
+def _is_architectural(query: str) -> bool:
+    return any(w in _ARCH_TERMS for w in _WORD_RE.findall(query.lower()))
+
 
 # Trust order for the min_provenance filter: llm < parsed < resolved <= manual
 # (human-asserted facts are trusted; ADR-0004 / spec §2). Distinct from
@@ -104,18 +140,22 @@ class Retriever:
         # --- entry ---
         if query is not None:
             qvec = (await self.embedder.embed([query], "query"))[0]
+            # down-weight ADR/doc prose so code outranks equally-similar docs, unless
+            # the query smells architectural (then docs keep their full score). feat-010.
+            doc_w = 1.0 if _is_architectural(query) else self.config.doc_weight
             for hit in await self.store.vectors.search(qvec, k):
                 node = await self.store.graph.get(hit.ref)
                 if node is None:
                     continue
-                items.append(self._item(node, hit.score, [f"vector hit {hit.score:.2f}"]))
+                score = hit.score * doc_w if node.kind is NodeKind.DOC_CHUNK else hit.score
+                items.append(self._item(node, score, [f"vector hit {score:.2f}"]))
                 if mode != "similar":
                     # a chunk hit seeds its symbols; a summary hit (feat-012)
                     # seeds the code it summarizes — concept query → code.
                     for edge in await self.store.graph.adjacent(
                         hit.ref, [EdgeKind.CHUNK_OF, EdgeKind.SUMMARIZES], "out"
                     ):
-                        seeds[edge.dst] = max(seeds.get(edge.dst, 0.0), hit.score)
+                        seeds[edge.dst] = max(seeds.get(edge.dst, 0.0), score)
                     # a doc-chunk hit (feat-010) seeds the code it attaches to: an
                     # ADR section seeds its containing Decision (CONTAINS in → then
                     # GOVERNS to governed code); a docstring seeds the symbol it
@@ -124,11 +164,11 @@ class Retriever:
                         for edge in await self.store.graph.adjacent(
                             hit.ref, [EdgeKind.CONTAINS], "in"
                         ):
-                            seeds[edge.src] = max(seeds.get(edge.src, 0.0), hit.score)
+                            seeds[edge.src] = max(seeds.get(edge.src, 0.0), score)
                         for edge in await self.store.graph.adjacent(
                             hit.ref, [EdgeKind.DESCRIBES], "out"
                         ):
-                            seeds[edge.dst] = max(seeds.get(edge.dst, 0.0), hit.score)
+                            seeds[edge.dst] = max(seeds.get(edge.dst, 0.0), score)
         if symbol is not None:
             seeds[symbol] = max(seeds.get(symbol, 0.0), 1.0)
 

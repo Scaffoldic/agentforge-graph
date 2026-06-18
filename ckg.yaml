@@ -53,6 +53,8 @@ retrieve:                       # feat-006 / ADR-0008 — hybrid (vector -> grap
   rerank: off                   # ENH-009: off | lexical | cross_encoder (both opt-in)
   rerank_weight: 0.5            # final = (1-w)*base + w*signal (subtoken overlap | σ(cross))
   rerank_model: ""             # cross_encoder model id (empty = small ms-marco default; needs `--extra rerank`)
+  doc_weight: 0.7               # feat-010: scale ADR/doc hits so code outranks equal-similarity
+                                # prose (→ 1.0 when the query smells architectural). 1.0 = no penalty
   edge_weights:                 # provenance-weighted scoring (ADR-0004)
     resolved: 1.0
     manual: 0.8

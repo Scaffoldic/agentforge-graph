@@ -134,6 +134,10 @@ class RetrieveConfig(_Block):
     rerank_weight: float = 0.5  # final = (1-w)*base + w*signal (overlap | σ(cross))
     rerank_model: str = ""  # cross_encoder model id (empty = a small ms-marco default)
     edge_weights: dict[str, float] = Field(default_factory=_default_edge_weights)
+    # feat-010: scale ADR/doc (`source_type: doc`) vector hits so code outranks
+    # equally-similar prose by default, mitigating doc-volume dilution. Neutralised
+    # (→ 1.0) when the query smells architectural (decision/why/design/…).
+    doc_weight: float = 0.7
 
     @field_validator("rerank", mode="before")
     @classmethod
