@@ -230,5 +230,11 @@ Design: `docs/design/design-010-adr-and-docs-ingestion.md`.
   subgraph (origin_path = code file) so it rides feat-004 incrementality; symbols
   without a leading docstring get nothing. Residual: JS/TS JSDoc, Java/C# doc
   comments, module-level docstrings → File.
-- General `doc_globs` (README/`**/*.md` → DocChunks + DESCRIBES); commit-message
-  ingestion; doc-incremental-by-hash.
+- **General `doc_globs` ✅ done** (2026-06-18, `feat/010-doc-globs`): Markdown docs
+  under `knowledge.doc_globs` (e.g. `["**/*.md"]`) are sectioned into `DocChunk`s
+  that `DESCRIBES` the code each section unambiguously mentions (path or unique
+  symbol name) — no `Decision` (docs describe; ADRs govern). ADR files are excluded
+  (handled by the ADR pass); READMEs are kept. Per-file `FileSubgraph` (origin_path
+  = doc path) so edits/deletes ride feat-004, with GC of vanished docs. `IndexReport.
+  docs_indexed`/`describes_resolved` + the `ckg index` summary. Empty by default.
+- Commit-message ingestion; doc-incremental-by-hash.

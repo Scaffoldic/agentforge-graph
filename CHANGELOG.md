@@ -10,6 +10,15 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **General Markdown docs as `DESCRIBES` nodes (feat-010).** Docs matched by
+  `knowledge.doc_globs` (e.g. `["**/*.md"]` — READMEs, guides) are sectioned into
+  `DocChunk`s that `DESCRIBES` the code each section unambiguously mentions (a
+  repo-relative path or a unique symbol name). No `Decision` node — docs *describe*,
+  ADRs *govern*; ADR files are excluded (handled by the ADR pass). Each doc is its
+  own per-file subgraph, so edits/deletes ride incremental indexing (with GC of
+  removed docs); `IndexReport` gains `docs_indexed`/`describes_resolved`. Empty
+  (off) by default.
+
 - **Docstrings as `DESCRIBES` doc nodes (Python, feat-010).** A Python symbol's
   leading docstring (the first body string of a class/function/method) is now
   extracted as a `DocChunk` that `DESCRIBES` the symbol. The docstring prose

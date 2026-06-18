@@ -126,11 +126,13 @@ async def _ingest_knowledge(
         return
     exts = {ext for p in registry.packs for ext in p.extensions}
     stats = await KnowledgeIngestor(repo, commit).ingest(
-        store.graph, repo_path, cfg.adr_globs, exts
+        store.graph, repo_path, cfg.adr_globs, exts, doc_globs=cfg.doc_globs
     )
     report.decisions_indexed = stats.decisions_indexed
     report.governs_resolved = stats.governs_resolved
     report.mentions_unresolved = stats.mentions_unresolved
+    report.docs_indexed = stats.docs_indexed
+    report.describes_resolved = stats.describes_resolved
     if stats.decisions_indexed:
         report.by_node_kind["Decision"] = (
             report.by_node_kind.get("Decision", 0) + stats.decisions_indexed

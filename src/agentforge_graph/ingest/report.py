@@ -45,3 +45,5 @@ class IndexReport(BaseModel):
     decisions_indexed: int = 0  # feat-010: ADR Decision nodes
     governs_resolved: int = 0  # GOVERNS edges from unambiguous ADR mentions
     mentions_unresolved: int = 0  # ADR mentions seen but not linked
+    docs_indexed: int = 0  # feat-010: general doc files (doc_globs) ingested
+    describes_resolved: int = 0  # DESCRIBES edges from unambiguous doc mentions
