@@ -10,6 +10,13 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **Code-vs-doc retrieval weighting (feat-010).** ADR/doc (`source_type: doc`)
+  vector hits are scaled by `retrieve.doc_weight` (default 0.7) so code outranks
+  equally-similar prose by default — mitigating doc-volume dilution. When the query
+  smells architectural (`why`/`decision`/`design`/`convention`/…) the penalty is
+  lifted and docs keep their full score. Applies to both the item score and its
+  graph-expansion seed.
+
 - **Incremental doc embedding (feat-010).** The doc-embed pass now fingerprints all
   DocChunks (ids + content hashes + embedder) under `.ckg/doc_embed.hash` and skips
   the whole pass when nothing changed — so `ckg embed` after an incremental refresh
