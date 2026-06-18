@@ -212,7 +212,15 @@ Design: `docs/design/design-010-adr-and-docs-ingestion.md`.
   reaches the decision and the code it governs. `EmbedReport.doc_chunks` counts
   them. Residual: doc-incremental-by-hash (the chunk `content_hash` is now stored
   for it) and `source_type`-aware code-over-doc retrieval weighting.
-- LLM `infer_governs` pass (decisions with zero parsed links → agent matcher,
-  budgeted, `llm` provenance) — an `Enricher`.
+- **LLM `infer_governs` pass ✅ done** (2026-06-18, `feat/010-infer-governs`): an
+  optional matcher (`DecisionGovernsInferencer` + injectable `GovernsMatcher` —
+  `ScriptedMatcher` for tests, `ClaudeGovernsMatcher` over Bedrock/Anthropic via
+  `enrich.provider`) proposes `GOVERNS` edges for decisions with **zero parsed**
+  links, matching the decision's prose against the repo's candidate symbols under
+  a `BudgetPolicy` cap. Matches above the confidence floor become `GOVERNS` edges
+  with honest `llm` provenance + confidence + rationale. Never overrides a parsed
+  link (only zero-parsed decisions are considered); re-run is idempotent. Off by
+  default — `ckg enrich --decisions` / `CodeGraph.infer_governs`. Residual:
+  repo-map-ranked candidate selection (currently id-sorted, capped at 60).
 - General `doc_globs`/docstrings + `DESCRIBES`; commit-message ingestion;
   doc-incremental-by-hash.

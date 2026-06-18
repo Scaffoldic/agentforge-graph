@@ -622,6 +622,37 @@ class CodeGraph:
         await dirty.mark_clean("patterns", enricher.last_judged_ids)
         return report
 
+    async def infer_governs(
+        self, matcher: object | None = None, budget_usd: float | None = None
+    ) -> Any:
+        """LLM ``infer_governs`` pass (feat-010): for ADRs whose prose names no
+        code, match the decision text against repo symbols and write ``GOVERNS``
+        edges with ``llm`` provenance. Only decisions with zero *parsed* GOVERNS
+        are touched. Builds the matcher from ``EnrichConfig`` (provider) unless one
+        is supplied; budget from ``knowledge.infer_budget_usd``. Explicit call only
+        (``ckg enrich --decisions``); returns a ``GovernsReport``."""
+        from agentforge_graph.config import EnrichConfig, KnowledgeConfig
+        from agentforge_graph.enrich import DecisionGovernsInferencer, GovernsMatcher
+
+        ecfg = EnrichConfig.load(self._config)
+        kcfg = KnowledgeConfig.load(self._config)
+        repo = Path(self._repo_path).resolve().name
+        if isinstance(matcher, GovernsMatcher):
+            the_matcher: GovernsMatcher = matcher
+        else:
+            from agentforge_graph.enrich.registry import governs_matcher_from_config
+
+            the_matcher = governs_matcher_from_config(ecfg)
+
+        inferencer = DecisionGovernsInferencer(
+            repo,
+            the_matcher,
+            confidence_floor=ecfg.confidence_floor,
+            budget_usd=budget_usd if budget_usd is not None else kcfg.infer_budget_usd,
+            commit=_git_commit(self._repo_path),
+        )
+        return await inferencer.enrich(self._store.graph)
+
     async def tagged(self, pattern: str, min_confidence: float = 0.7) -> list[TaggedInfo]:
         """Symbols carrying ``pattern`` above ``min_confidence`` (feat-012)."""
         from agentforge_graph.core import EdgeKind, SymbolID

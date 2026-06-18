@@ -83,11 +83,12 @@ knowledge:                      # feat-010 — ADR & docs ingestion
   adr_globs:                    # where decision records live
     - "docs/adr/**/*.md"
     - "docs/decisions/**/*.md"
+  infer_budget_usd: 1.0         # USD cap for the `ckg enrich --decisions` LLM pass
   # follow-ups (declared, inert at MVP):
   doc_globs: []                 # general docs → DocChunks + DESCRIBES
   commit_messages: off          # ingest commit messages as DocChunks
-  infer_governs: off            # LLM matcher for decisions with no parsed links
-  infer_budget_usd: 1.0
+  infer_governs: off            # default for the LLM matcher; `ckg enrich --decisions`
+                                # runs it on demand regardless (uses enrich.provider)
 
 enrich:                         # feat-012 — LLM enrichment (pattern tagging)
   enabled: on                   # never runs implicitly — `ckg enrich` only
