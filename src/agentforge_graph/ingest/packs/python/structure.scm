@@ -11,10 +11,14 @@
   name: (identifier) @name) @def.function
 
 ; --- inheritance (INHERITS) ---
-; a base class named by a bare identifier: `class B(A)` -> base `A`. Qualified
-; bases (`class B(mod.Base)`) are a residual (need module-member resolution).
+; a base class named by a bare identifier: `class B(A)` -> base `A`.
 (class_definition
   superclasses: (argument_list (identifier) @base.name)) @base.def
+
+; a qualified base `class B(mod.Base)` -> base `mod.Base`; the resolver splits the
+; receiver and binds it via the importing module alias (`import mod`).
+(class_definition
+  superclasses: (argument_list (attribute) @base.name)) @base.def
 
 ; --- imports ---
 ; `import a.b.c`  (optionally aliased) -> module only
