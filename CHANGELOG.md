@@ -14,6 +14,15 @@ residuals._
 
 ### Added (unreleased, toward 0.2.0)
 
+- **C++ inline method modeling + `this->f()` resolution (BUG-006 residual).** The
+  cpp pack now extracts inline struct/class method *definitions* (`double area()
+  const { … }`) as `Method` symbols, and the reference query captures member/arrow
+  call receivers (`this->f()` / `obj.f()` / `ptr->f()`). So `this->f()` binds to a
+  method of the enclosing class — **intra-type method calls now resolve across all
+  10 language packs** (C++ was the last with the gap). Any other receiver stays
+  unresolved (ADR-0004); a bare implicit-`this` call (`area()` with no receiver)
+  is left unresolved to avoid mis-binding to a same-named free function.
+
 - **Aliased / submodule import resolution (Python, BUG-006 residual).** An aliased
   whole-module import (`import pkg.mathutils as mu`) now captures the alias as the
   module's local binding name, and a submodule named-import (`from pkg import
