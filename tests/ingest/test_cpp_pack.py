@@ -58,6 +58,51 @@ def test_cpp_symbol_surface() -> None:
     assert {i["module"] for i in file_node.attrs["imports"]} == {"geo/shape.h"}
 
 
+def test_cpp_inline_methods_are_symbols() -> None:
+    # inline method *definitions* (with a body, in the class) become METHOD symbols
+    src = (
+        "struct Circle {\n"
+        "  double r;\n"
+        "  double area() const { return r * r; }\n"
+        "  double scaled() const { return this->area() * 2; }\n"
+        "};\n"
+    )
+    sg = _extractor().extract(_sf(src, "circle.cpp"))
+    by_desc = {SymbolID.parse(n.id).descriptor: n for n in sg.nodes}
+    assert by_desc["Circle#area()."].kind is NodeKind.METHOD
+    assert by_desc["Circle#scaled()."].kind is NodeKind.METHOD
+
+
+async def test_cpp_this_call_resolves_to_enclosing_method(tmp_path: Path) -> None:
+    # `this->area()` inside `scaled()` binds to the enclosing class's `area`;
+    # a call on any other receiver is left unresolved (ADR-0004).
+    from agentforge_graph.ingest import ImportResolver
+    from agentforge_graph.store import KuzuGraphStore
+
+    src = (
+        "struct Circle {\n"
+        "  double r;\n"
+        "  double area() const { return r * r; }\n"
+        "  double scaled() const { return this->area() * 2; }\n"
+        "  void grow(Circle& other) { other.area(); }\n"
+        "};\n"
+    )
+    store = await KuzuGraphStore.open(tmp_path / "g.kuzu")
+    try:
+        await store.upsert(_extractor().extract(_sf(src, "circle.cpp")))
+        await ImportResolver(PackRegistry([CPP_PACK])).resolve(store)
+        nodes = (await store.query(GraphQuery(limit=10000))).nodes
+        by_desc = {SymbolID.parse(n.id).descriptor: n.id for n in nodes}
+        # this->area() inside scaled() resolves to Circle#area
+        scaled_calls = await store.neighbors(by_desc["Circle#scaled()."], [EdgeKind.CALLS], depth=1)
+        assert "Circle#area()." in {SymbolID.parse(n.id).descriptor for n in scaled_calls}
+        # other.area() on a non-this receiver stays unresolved (no CALLS edge)
+        grow_calls = await store.neighbors(by_desc["Circle#grow()."], [EdgeKind.CALLS], depth=1)
+        assert grow_calls == []
+    finally:
+        await store.close()
+
+
 # --- end-to-end resolution --------------------------------------------------
 
 

@@ -114,8 +114,15 @@ bare-name match (which could hit another type's same-named method). Verified two
 types with a same-named method don't cross-bind.
 
 **Residual (still open — file as ENH when prioritised):**
-- **C++ method modeling** — the cpp pack doesn't extract inline struct/class
-  methods as symbols, so `this->f()` has nothing to bind to.
+- **C++ method modeling** ✅ closed (2026-06-18, `feat/cpp-method-modeling`): the
+  cpp pack now extracts inline struct/class method *definitions* (`double area()
+  const { … }`, whose name is a `field_identifier`) as `Method` symbols, and the
+  reference query captures member/arrow-call receivers (`this->f()` / `obj.f()` /
+  `ptr->f()`). So `this->f()` binds to a method of the enclosing class — intra-type
+  method calls now resolve across **all 10 packs**. Any other receiver stays
+  unresolved (ADR-0004). **Limit:** a bare implicit-`this` call (`area()` with no
+  receiver, common in C++) does not resolve to a sibling method — only explicit
+  `this->area()` does — to avoid mis-binding to a same-named free function.
 - **Inherited-method `self.f()`** ✅ closed for Python (#66) and extended to
   **TS / JS / Java / C# / Ruby / PHP** (2026-06-17, `feat/inherits-other-packs`):
   each pack now captures its `extends`/`<`/`:` superclass, so `INHERITS` edges +

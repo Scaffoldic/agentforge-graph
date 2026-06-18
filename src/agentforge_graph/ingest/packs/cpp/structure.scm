@@ -29,6 +29,15 @@
   declarator: (function_declarator
     declarator: (field_identifier) @name)) @def.function
 
+; in-class *inline* method definition: `double area() const { … }`. The name is a
+; field_identifier (unlike a free function's plain identifier), so this is a
+; distinct pattern; the extractor promotes it to METHOD because its enclosing
+; scope is the class body. Without this the inline method — and any `this->f()`
+; calls in its body — had no symbol to attach to (BUG-006 residual).
+(function_definition
+  declarator: (function_declarator
+    declarator: (field_identifier) @name)) @def.function
+
 ; constructor/destructor declaration: `Circle(double r);`
 (declaration
   declarator: (function_declarator
