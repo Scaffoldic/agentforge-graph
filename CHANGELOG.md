@@ -14,6 +14,17 @@ residuals._
 
 ### Added (unreleased, toward 0.2.0)
 
+- **Qualified base resolution (Python / JS / TS, BUG-006 residual).** A qualified
+  superclass — `class B extends mod.Base` / `class B(mod.Base)` — now resolves to
+  the base class by splitting the receiver and binding it via the importing
+  **module alias** (`import mod`, `const mod = require(...)`, `import * as mod from
+  …`). This emits the `INHERITS` edge and lets inherited `self.f()`/`this.f()`
+  calls resolve through it, where previously a member-expression base was not
+  captured at all. ESM namespace imports (`import * as ns from "./m"`) are now
+  captured for JS/TS as part of this (they previously produced no IMPORTS edge or
+  alias). A qualified base whose receiver is not an imported module stays
+  unresolved (never guessed, ADR-0004).
+
 - **Export-member modeling (JavaScript, BUG-006 residual).** Assigned-property
   CommonJS exports whose value is an *anonymous* function are now extracted as
   `Function` symbols: `exports.foo = function(){}` / `= () => {}`,

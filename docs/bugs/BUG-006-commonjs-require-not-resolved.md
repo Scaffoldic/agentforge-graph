@@ -139,12 +139,21 @@ types with a same-named method don't cross-bind.
   they now resolve through the existing export map. Non-function assignments
   (`exports.x = someVar`, re-export of an existing binding) mint no symbol
   (ADR-0004); shorthand `{ a, b }` object exports naming top-level defs already
-  resolved. JS-only — TS/Python use `import`/`export`. **Still open:** aliased
-  imports (`import os.path as osp`) don't capture the alias yet; and qualified
-  bases (`class B extends mod.Base`) need base-side module-alias resolution
-  (next residual).
-- `import x = require(...)` CommonJS-in-TS, and ESM `export { x }` / re-export
-  chains (explicit export modeling would unify these).
+  resolved. JS-only — TS/Python use `import`/`export`.
+- **Qualified bases** `class B extends mod.Base` / `class B(mod.Base)` ✅ closed
+  (2026-06-18, `bug/006-qualified-bases`): the structure packs (Python, JS, TS)
+  now capture a qualified/member base expression, and the resolver splits the
+  receiver and binds it via the importing **module alias** (`import mod` /
+  `const mod = require(...)` / `import * as mod from …`), reusing the same alias
+  map as module-member calls. This emits the `INHERITS` edge *and* lets inherited
+  `self.f()`/`this.f()` calls resolve through it. To make the TS namespace case
+  work, ESM namespace imports (`import * as ns from "./m"`) are now captured too
+  (previously they produced no IMPORTS edge or alias at all). A qualified base
+  whose receiver is not an imported module stays unresolved (ADR-0004).
+- **Still open:** aliased imports (`import os.path as osp` / `from pkg import mod`
+  as a submodule alias) don't capture the alias yet; `import x = require(...)`
+  CommonJS-in-TS, and ESM `export { x }` / re-export chains (explicit export
+  modeling would unify these).
 
 ## Notes
 

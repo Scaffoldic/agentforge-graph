@@ -19,6 +19,13 @@
 (abstract_class_declaration
   (class_heritage (extends_clause value: (identifier) @base.name))) @base.def
 
+; qualified base `class B extends mod.Base` -> base `mod.Base`; the resolver splits
+; the receiver and binds it via the importing module alias.
+(class_declaration
+  (class_heritage (extends_clause value: (member_expression) @base.name))) @base.def
+(abstract_class_declaration
+  (class_heritage (extends_clause value: (member_expression) @base.name))) @base.def
+
 (function_declaration
   name: (identifier) @name) @def.function
 
@@ -70,4 +77,10 @@
 ; `import { a, b } from "./mod"` -> module (relative path) + bound names
 (import_statement
   (import_clause (named_imports (import_specifier name: (identifier) @import.name)))
+  source: (string (string_fragment) @import.module)) @import
+
+; `import * as ns from "./mod"` -> the namespace alias binds the whole module, so
+; `ns.foo()` and a qualified base `extends ns.Base` resolve to its exports (BUG-006).
+(import_statement
+  (import_clause (namespace_import (identifier) @import.default))
   source: (string (string_fragment) @import.module)) @import

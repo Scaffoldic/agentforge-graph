@@ -351,9 +351,17 @@ class ImportResolver:
             owner_file = path_to_file.get(SymbolID.parse(n.id).path)
             local = exports.get(file_module.get(owner_file, ""), {}) if owner_file else {}
             binding = bindings.get(owner_file, {}) if owner_file else {}
+            aliases = module_alias.get(owner_file, {}) if owner_file else {}
             resolved: list[str] = []
             for base in bases:
                 bt = local.get(base) or binding.get(base)
+                # qualified base `mod.Base`: resolve `mod` as an imported module
+                # alias, then `Base` as that module's top-level export (BUG-006).
+                if bt is None and "." in base:
+                    recv, _, base_name = base.rpartition(".")
+                    mod_key = aliases.get(recv)
+                    if mod_key is not None:
+                        bt = exports.get(mod_key, {}).get(base_name)
                 # only an in-repo class is a valid base (external/by-name-only stays
                 # unresolved — never guessed, ADR-0004)
                 tnode = node_by_id.get(bt) if bt else None
