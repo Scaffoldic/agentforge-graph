@@ -12,7 +12,16 @@ pick, and milestones. Specs live alongside in
 > in `.claude/state/current.md` once the project is scaffolded — this
 > tracker is the planning/dependency view, not the live work log.
 
-_Last updated: 2026-06-15 · **MVP feature-complete; hardening 0.1 in progress.**
+_Last updated: 2026-06-18 · **v0.1.0 + v0.2.0 RELEASED; 0.3 feature-complete (unreleased,
+`0.3.0.dev0`).** **0.2.0** shipped the temporal/git-evolution layer (feat-009), a
+cross-encoder reranker seam (ENH-009), and a resolver-completeness sweep (BUG-006:
+intra-type calls resolve across all 10 packs). **0.3** completed **feat-010** (ADR & docs
+ingestion) end-to-end: ADR/doc prose embedded + searchable, `infer_governs` LLM pass,
+docstrings (Python + JS/TS JSDoc) + general `doc_globs` + commit messages → `DESCRIBES`,
+incremental doc embedding, code-vs-doc retrieval weighting. **Both 0.3 themes (feat-009 +
+feat-010) are DONE → 0.3.0 is ready to cut.** Older history below._
+
+_Older (2026-06-15): · **MVP feature-complete; hardening 0.1 in progress.**
 All 12 features ≥MVP. **OSS-prep done** (Apache-2.0 PR #17); **ENH-003 DONE** — registry
 + non-Bedrock adapters (PR #18/#20); **MCP dual transport** stdio+HTTP (PR #22). **0.1
 is a PRODUCTION-GRADE bar** — see [Road to 0.1](#road-to-01--production-hardening).
@@ -44,8 +53,8 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 | [006](feat-006-hybrid-retrieval.md) | Hybrid retrieval (vector+graph) | 1 serve | 0.1 | shipped | 005 | 008,010,012 | ✅ |
 | [008](feat-008-mcp-server-and-tool-api.md) | MCP server & tool API | 1 serve | 0.1 | shipped | 006,007 | — | ✅ |
 | [004](feat-004-incremental-indexing.md) | Incremental indexing | 2 incr | 0.2 | shipped | 002,003 | 009 | ✅ |
-| [009](feat-009-temporal-evolution-layer.md) | Temporal / git evolution | 2 incr | 0.3 | proposed | 004 | — | ⛔ |
-| [010](feat-010-adr-and-docs-ingestion.md) | ADR & docs ingestion | 3 diff | 0.3 | MVP shipped (ADR → GOVERNS) | 005,006 | — | 🟡 |
+| [009](feat-009-temporal-evolution-layer.md) | Temporal / git evolution | 2 incr | 0.2 | **shipped (0.2.0)** | 004 | — | ✅ |
+| [010](feat-010-adr-and-docs-ingestion.md) | ADR & docs ingestion | 3 diff | 0.3 | **shipped (0.3 — ADR/docs/docstrings/commits + GOVERNS/DESCRIBES)** | 005,006 | — | ✅ |
 | [011](feat-011-framework-extractors.md) | Framework-aware extractors | 3 diff | 0.4 | MVP shipped (FastAPI routes) | 002 | — | 🟡 |
 | [012](feat-012-llm-enrichment.md) | LLM enrichment (summaries, tags) | 3 diff | 0.4 | shipped (tags + summaries) | 006 | — | ✅ |
 
@@ -123,9 +132,9 @@ ride alongside, not on, this chain.
 
 | Version | Theme | Features | Exit criterion |
 |---|---|---|---|
-| **0.1** | **Production-grade** CKG: trustworthy on real repos, consumable by agents | 001, 002, 003, 005, 006, 007, 008 (+ hardening) | Graph knowledge validated on real OSS repos for **every shipped language pack**; a real agent answers real questions over MCP unattended; storage-backend decision resolved; no open correctness blockers — see [Road to 0.1](#road-to-01--production-hardening) |
-| **0.2** | Keep it fresh cheaply | 004 | Re-index cost proportional to the diff; embeddings recompute only for dirty symbols |
-| **0.3** | History + decisions | 009, 010 | Point-in-time queries; ADRs/docs govern code as graph edges |
+| **0.1** ✅ RELEASED | **Production-grade** CKG: trustworthy on real repos, consumable by agents | 001, 002, 003, 005, 006, 007, 008 (+ hardening) | Graph knowledge validated on real OSS repos for **every shipped language pack**; a real agent answers real questions over MCP unattended; storage-backend decision resolved; no open correctness blockers — see [Road to 0.1](#road-to-01--production-hardening) |
+| **0.2** ✅ RELEASED | Keep it fresh cheaply (+ temporal layer 009, reranker seam ENH-009, resolver completeness) | 004, 009 | Re-index cost proportional to the diff; point-in-time history/as-of queries; intra-type calls resolve across all 10 packs |
+| **0.3** ✅ feature-complete (unreleased) | History + decisions | 009 (in 0.2), 010 | Point-in-time queries **done (0.2)**; ADRs/docs/docstrings/commits govern+describe code as graph edges **done (010)** — ready to cut |
 | **0.4** | Framework & semantic knowledge | 011, 012 | Routes/ORM/DI edges; module summaries + design-pattern tags |
 
 ---
