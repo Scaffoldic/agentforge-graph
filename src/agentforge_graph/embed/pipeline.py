@@ -114,11 +114,46 @@ class EmbedPipeline:
                             "path": ch.path,
                             "span": list(ch.span),
                             "symbol_ids": ch.symbol_ids,
-                            "model": self.embedder.name,
+                            "source_type": "code",  # vs "doc" (feat-010) — lets
+                            "model": self.embedder.name,  # retrieval tell them apart
                         },
                     )
                     for ch, vec in zip(chunks, vectors, strict=True)
                 ]
             )
             report.embedded += len(chunks)
+
+        report.doc_chunks = await self._embed_docs(store)
         return report
+
+    async def _embed_docs(self, store: Store) -> int:
+        """Embed ADR/doc ``DocChunk`` prose so an architectural query surfaces the
+        governing decision (feat-010). Doc volume is small, so this clean-replaces
+        all doc vectors each run (which also GCs vectors for removed ADRs) — a
+        ``source_type: doc`` filter keeps them distinct from code chunks.
+        Doc-incremental-by-hash (via the chunk ``content_hash``) is a follow-up."""
+        docs = (await store.graph.query(GraphQuery(kinds=[NodeKind.DOC_CHUNK], limit=_ALL))).nodes
+        # clean-replace via the DocChunk kind (a filterable vector column) — this
+        # also GCs vectors for ADRs that were removed since the last embed.
+        await store.vectors.delete_where({"kind": NodeKind.DOC_CHUNK.value})
+        if not docs:
+            return 0
+        texts = [f"{n.attrs.get('heading', '')}\n{n.attrs.get('text', '')}".strip() for n in docs]
+        vectors = await self.embedder.embed(texts, input_type="document")
+        await store.vectors.upsert(
+            [
+                Embedded(
+                    ref=n.id,
+                    vector=vec,
+                    kind=NodeKind.DOC_CHUNK,
+                    attrs={
+                        "path": n.attrs.get("path", ""),
+                        "source_type": "doc",
+                        "heading": n.attrs.get("heading", ""),
+                        "model": self.embedder.name,
+                    },
+                )
+                for n, vec in zip(docs, vectors, strict=True)
+            ]
+        )
+        return len(docs)

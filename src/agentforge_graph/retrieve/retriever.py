@@ -116,6 +116,14 @@ class Retriever:
                         hit.ref, [EdgeKind.CHUNK_OF, EdgeKind.SUMMARIZES], "out"
                     ):
                         seeds[edge.dst] = max(seeds.get(edge.dst, 0.0), hit.score)
+                    # a doc-chunk hit (feat-010) seeds its containing Decision, which
+                    # then expands via GOVERNS to the code it governs — so an
+                    # architectural query surfaces the decision *and* the governed code.
+                    if node.kind is NodeKind.DOC_CHUNK:
+                        for edge in await self.store.graph.adjacent(
+                            hit.ref, [EdgeKind.CONTAINS], "in"
+                        ):
+                            seeds[edge.src] = max(seeds.get(edge.src, 0.0), hit.score)
         if symbol is not None:
             seeds[symbol] = max(seeds.get(symbol, 0.0), 1.0)
 
@@ -210,6 +218,10 @@ class Retriever:
             return f"[llm] design pattern: {node.name}"
         if node.kind is NodeKind.SUMMARY:
             return f"[summary] {node.attrs.get('text', '')}"
+        if node.kind is NodeKind.DOC_CHUNK:  # feat-010 — ADR/doc prose
+            heading = node.attrs.get("heading", "")
+            text = node.attrs.get("text", "")
+            return f"[doc] {heading}\n{text}".strip() if heading else f"[doc] {text}".strip()
         return node.attrs.get("code")
 
     def _filter(

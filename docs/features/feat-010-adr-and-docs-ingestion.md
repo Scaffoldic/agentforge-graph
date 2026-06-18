@@ -203,8 +203,15 @@ symbol surfaces its decision. Surfaces: `CodeGraph.decisions(scope, status)`,
 Design: `docs/design/design-010-adr-and-docs-ingestion.md`.
 
 ### Follow-ups
-- Embed `DocChunk`s (MarkdownChunker + embed path) for semantic search over
-  decision prose (`source_type: doc`).
+- **Embed `DocChunk`s ✅ done** (2026-06-18, `feat/010-embed-doc-chunks`): the embed
+  pass now embeds ADR `DocChunk` prose into the vector store with a `source_type:
+  doc` tag (code chunks tagged `source_type: code`), clean-replacing by the
+  `DocChunk` kind each run (also GCs vectors for removed ADRs). A doc-chunk vector
+  hit surfaces the chunk **and** seeds its containing `Decision` (via `CONTAINS`),
+  which expands through `GOVERNS` to the governed code — so an architectural query
+  reaches the decision and the code it governs. `EmbedReport.doc_chunks` counts
+  them. Residual: doc-incremental-by-hash (the chunk `content_hash` is now stored
+  for it) and `source_type`-aware code-over-doc retrieval weighting.
 - LLM `infer_governs` pass (decisions with zero parsed links → agent matcher,
   budgeted, `llm` provenance) — an `Enricher`.
 - General `doc_globs`/docstrings + `DESCRIBES`; commit-message ingestion;
