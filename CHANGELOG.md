@@ -8,6 +8,13 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+_Work toward 0.3.0 (`0.3.0.dev0`). Open backlog: small BUG-006 resolver residuals
+(ESM named-import aliases `import { a as b }` bind the original name; ESM
+`export { x }` / re-export chains; C++ implicit-`this` bare calls) and the ENH-009
+cross-encoder measurement campaign (on hold — needs the `rerank` extra + creds,
+not runnable in CI). A fix-only 0.2.1 can still be cut off a branch if a small
+fix lands first._
+
 ## [0.2.0] - 2026-06-18
 
 A feature minor: the **temporal / git-evolution layer** (feat-009), a
