@@ -10,6 +10,15 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **Express routes — JavaScript + TypeScript (feat-011).** A built-in Express
+  pack extracts `app.get('/x', handler)` / `router.post('/x', mw, handler)` into
+  `Route` nodes. A named handler (the call's last argument) gets a `HANDLED_BY`
+  edge to its symbol; an anonymous inline handler still yields the `Route` (with
+  `attrs.handler = ""`). `app.use`/`app.listen` and dynamic paths are
+  skipped/counted. The pack spans both languages via a new `FrameworkPack.slugs`
+  property and builds handler ids with the file's own slug; shared JS/TS
+  tree-sitter helpers live in `packs/_js_ast.py`.
+
 - **Flask routes (feat-011).** A built-in Flask framework pack extracts
   `@app.route("/x", methods=[...])` / blueprint `@bp.route(...)` and the Flask
   2.0 shortcuts (`@app.get` …) into `Route` nodes + `HANDLED_BY` edges. A `route`

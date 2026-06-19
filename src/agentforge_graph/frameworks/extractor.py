@@ -25,7 +25,8 @@ class FrameworkExtractor:
         self._packs = list(packs)
         self._by_slug: dict[str, list[FrameworkPack]] = {}
         for pack in packs:
-            self._by_slug.setdefault(pack.language_slug, []).append(pack)
+            for slug in pack.slugs:
+                self._by_slug.setdefault(slug, []).append(pack)
 
     @property
     def active(self) -> bool:

@@ -259,9 +259,20 @@ handlers resolve to `Class#method`; a dynamic path is counted unresolved. Shares
 the route helpers (`enclosing_class`/`member_descriptor`/`first_string_in`/
 `string_list_kwarg`) now factored into `packs/_python_ast.py` with FastAPI.
 
+**Express routes shipped (0.4 follow-on)** — the built-in **Express** pack
+extracts `app.get('/x', handler)` / `router.post('/x', mw, handler)` over **both
+JavaScript and TypeScript**. A `FrameworkPack.slugs` property (default
+`(language_slug,)`) lets a pack span sibling languages: Express declares
+`("js","ts")` and builds handler ids with the *file's* slug. A **named** handler
+(last argument) gets a `HANDLED_BY` edge to its symbol; an **anonymous** inline
+handler still yields the `Route` (the API surface) with `attrs.handler = ""`.
+`app.use`/`app.listen` and dynamic paths are skipped/counted. New `_js_ast.py`
+holds the shared JS/TS tree-sitter helpers.
+
 ### Follow-ups (same harness)
-- Cross-file pass-2: `include_router(prefix=…)` composition, Django `urls.py`
-  string view refs (the `resolve()`/`coupled_files()` hooks are reserved).
-- Express/NestJS (TS), Spring (Java) — need framework extraction over the TS /
-  Java language packs (no `_python_ast` reuse), a larger per-language effort.
+- Cross-file pass-2: `include_router(prefix=…)` / `app.use('/p', router)`
+  composition, Django `urls.py` string view refs (the `resolve()`/
+  `coupled_files()` hooks are reserved).
+- NestJS (TS decorators) and Spring (Java annotations) — controller/method
+  decorator styles over the TS / Java packs.
 - Ground DI provider names to their function definitions (cross-file).

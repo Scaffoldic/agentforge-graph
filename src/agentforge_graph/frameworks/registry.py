@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from .base import FrameworkPack
 from .packs.django import DJANGO_PACK
+from .packs.express import EXPRESS_PACK
 from .packs.fastapi import FASTAPI_PACK
 from .packs.flask import FLASK_PACK
 from .packs.sqlalchemy import SQLALCHEMY_PACK
@@ -15,6 +16,7 @@ BUILTIN_FRAMEWORK_PACKS: list[FrameworkPack] = [
     SQLALCHEMY_PACK,
     DJANGO_PACK,
     FLASK_PACK,
+    EXPRESS_PACK,
 ]
 
 
