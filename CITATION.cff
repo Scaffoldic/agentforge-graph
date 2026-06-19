@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: agentforge-graph
+abstract: >-
+  A Code Knowledge Graph (CKG) engine and agent toolset: it turns a repository
+  into a typed, provenance-tracked graph — symbols, calls, imports, API routes,
+  ORM models, dependency injection, architecture decisions, git history, and LLM
+  summaries — and serves that knowledge to coding agents over MCP or as an
+  AgentForge toolset.
+type: software
+authors:
+  - family-names: Joshi
+    given-names: Khemchand
+    email: engg.kjoshi@gmail.com
+repository-code: "https://github.com/Scaffoldic/agentforge-graph"
+url: "https://pypi.org/project/agentforge-graph/"
+license: Apache-2.0
+keywords:
+  - code-knowledge-graph
+  - knowledge-graph
+  - code-search
+  - static-analysis
+  - tree-sitter
+  - mcp
+  - ai-agents
+  - retrieval-augmented-generation

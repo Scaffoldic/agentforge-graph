@@ -8,7 +8,16 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+### Changed
+
+- **Upgraded the AgentForge framework pin to `>=0.3,<0.4`** (from the validated
+  0.2.x line). Re-validated: the full gate (666 tests / 95%, ruff + mypy) and an
+  MCP server-construction smoke pass on `agentforge-py` 0.3.1 — the `Tool` /
+  `BudgetPolicy` / `MCPServer` surfaces are unchanged.
+
 ### Added
+
+- **`CITATION.cff`** — GitHub "Cite this repository" metadata.
 
 - **Consumer feature guides + a runnable example.** New `docs/guides/` for the
   headline features — framework extraction (routes/models/services), architecture

@@ -9,14 +9,14 @@ resolution-markers = [
 
 [[package]]
 name = "agentforge-anthropic"
-version = "0.2.4"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "agentforge-core" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e6/33/fe598682177714d41c1ca37e562fa15acdb28992eb14ed6e7c297b16e640/agentforge_anthropic-0.2.4.tar.gz", hash = "sha256:b03f676159426376094184cd6ba83d821911fe42b1e84da7de97f05da25405d5", size = 17041, upload-time = "2026-06-03T07:24:26.241Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/10/b9/566b984c847192a977de4f31c118640e5105026a9bb4227daa16435305cd/agentforge_anthropic-0.3.1.tar.gz", hash = "sha256:f26ab40e766999e3f3da7be0ead4270c5303525e1ff694769fb2dab707a0266b", size = 17432, upload-time = "2026-06-17T03:18:37.975Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6d/3e/bd0c222928878a413782520009ae1ede7838ab375d74980eda29ca7a18cc/agentforge_anthropic-0.2.4-py3-none-any.whl", hash = "sha256:2ae22045bcf4c27146fd5c0ad76d0e7a25aecd25ddd77f71f24711406301893d", size = 16353, upload-time = "2026-06-03T07:23:47.726Z" },
+    { url = "https://files.pythonhosted.org/packages/43/0a/0cb73eb7c15bd9f46721cb61a346209902bf1093a4e3450141f756c2fc41/agentforge_anthropic-0.3.1-py3-none-any.whl", hash = "sha256:cce0805cd7ba689aa905541af7ec9ff39882025b7c24290cefefb256dd1549ed", size = 16538, upload-time = "2026-06-17T03:17:55.979Z" },
 ]
 
 [package.optional-dependencies]
@@ -26,16 +26,16 @@ anthropic = [
 
 [[package]]
 name = "agentforge-core"
-version = "0.2.4"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "opentelemetry-api" },
     { name = "pydantic" },
     { name = "python-ulid" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/81/04/43f67f2106aecbe8faaea34af833fd802657e910312fa7a3731f50df0159/agentforge_core-0.2.4.tar.gz", hash = "sha256:9b1e77a9eda197391317521fe349912286736f828ed1eccbb096cc8a8724e21a", size = 110971, upload-time = "2026-06-03T07:24:31.417Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9b/45/e88cf4c3f6cd3a787bde6c1f36711da541d67d6e994156164cf9e11b7a7d/agentforge_core-0.3.1.tar.gz", hash = "sha256:d5073a0080ed1dd27275f7b5a64ccc5a0b5d1e5f1b2ae9bbc4c2924b1c4b1238", size = 121439, upload-time = "2026-06-17T03:18:44.537Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5d/4f/4c34b4dfbf08fa16390f22e4fce59a4307a2a13fee36d1ec6e23701dfe00/agentforge_core-0.2.4-py3-none-any.whl", hash = "sha256:695d2f302bd430a9778bfeade6243d2e86cb67f6ee00d5ba11c122609966f966", size = 102466, upload-time = "2026-06-03T07:23:56.167Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/f1/ad1281b4a70ceb1dc731867ecfd3d44c7dbb97bdd8a7c3e885d7c0930449/agentforge_core-0.3.1-py3-none-any.whl", hash = "sha256:1cefa5856d606f32a0958ee7929add0cd67d9588f50ef3a8d6079bafffad559d", size = 106579, upload-time = "2026-06-17T03:18:04.504Z" },
 ]
 
 [[package]]
@@ -92,10 +92,10 @@ voyage = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agentforge-anthropic", extras = ["anthropic"], specifier = ">=0.2.4,<0.3" },
-    { name = "agentforge-mcp", extras = ["mcp"], specifier = ">=0.2.4,<0.3" },
+    { name = "agentforge-anthropic", extras = ["anthropic"], specifier = ">=0.3,<0.4" },
+    { name = "agentforge-mcp", extras = ["mcp"], specifier = ">=0.3,<0.4" },
     { name = "agentforge-otel", marker = "extra == 'otel'" },
-    { name = "agentforge-py", specifier = ">=0.2.4,<0.3" },
+    { name = "agentforge-py", specifier = ">=0.3,<0.4" },
     { name = "agentforge-voyage", marker = "extra == 'voyage'" },
     { name = "asyncpg", marker = "extra == 'pgvector'", specifier = ">=0.30" },
     { name = "boto3", marker = "extra == 'bedrock'", specifier = ">=1.35" },
@@ -122,14 +122,14 @@ provides-extras = ["engine", "rerank", "neo4j", "pgvector", "surrealdb", "voyage
 
 [[package]]
 name = "agentforge-mcp"
-version = "0.2.4"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "agentforge-core" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/34/7f/4c3a736eeaba0a030dcfb94ad9a1c1377c43ac2f799b82bff5d5de1c070e/agentforge_mcp-0.2.4.tar.gz", hash = "sha256:3a65ed0249bdcc1e2aec39b925da883807a952a23f6dab4b81289f922feb283f", size = 21454, upload-time = "2026-06-03T07:24:37.354Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/89/e294429818a8a3233444a02b8c852cf8ee6dff5026569fb9fbccda42aaf6/agentforge_mcp-0.3.1.tar.gz", hash = "sha256:524c3c851637ed3e4da2e2795b3efafbf5525d7089fdb728d3884322cf08bd12", size = 22666, upload-time = "2026-06-17T03:18:52.494Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e5/e9/3aec6ac07affb4d38b8ecc0c43f593a5db281b52abe7c5627b7f67481416/agentforge_mcp-0.2.4-py3-none-any.whl", hash = "sha256:89380e267b5cdbed9bafc7436f8906efc5c397564e1cb44a95fdc5a7e0080e48", size = 19714, upload-time = "2026-06-03T07:24:06.207Z" },
+    { url = "https://files.pythonhosted.org/packages/e0/92/b7138135e594f6369a2fd078e54c49b13d22c12f29c0d9dae2077241ec7d/agentforge_mcp-0.3.1-py3-none-any.whl", hash = "sha256:2947be3083c4c944df382f388635aebeb737d2e7422bf0626ef356ca46426e20", size = 20158, upload-time = "2026-06-17T03:18:15.527Z" },
 ]
 
 [package.optional-dependencies]
@@ -139,21 +139,21 @@ mcp = [
 
 [[package]]
 name = "agentforge-otel"
-version = "0.2.4"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "agentforge-core" },
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
     { name = "opentelemetry-sdk" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/da/2a/055e20704fa0ce70405edea37b90b84a43be1c272a4dfb47936be6fde8b0/agentforge_otel-0.2.4.tar.gz", hash = "sha256:67872275fdcd54ff2421c17776e40c27954cca4d1f246ef1215d46e0ed27cdfd", size = 13211, upload-time = "2026-06-03T07:24:42.365Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/35/24/ad21900ffd57ef52ca47e5e60c6195f2a1cf9abcad56f835e0ad6a0d3a50/agentforge_otel-0.3.1.tar.gz", hash = "sha256:dfb25ccccc022af0f00fbdde10302a655fb5f3ea8f2b5a4ea1f6cc79587644eb", size = 13376, upload-time = "2026-06-17T03:18:58.863Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f6/f4/b2da20a4a884941e133c054624c7710af6bb877465b23ed50abbf025624e/agentforge_otel-0.2.4-py3-none-any.whl", hash = "sha256:b9746b620f02ca2bc83135c0ae02423ac14845f46ab6c84d25aba7b35dbc1be5", size = 10502, upload-time = "2026-06-03T07:24:14.265Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/19/d039e07d62c4f059f8e814ccd0ef26ba2e0865309f89333b6d3b12000ad2/agentforge_otel-0.3.1-py3-none-any.whl", hash = "sha256:effc69fffc3dbb01ac7719f70c814b32107be0813d09ea6956e7af149d305087", size = 10503, upload-time = "2026-06-17T03:18:24.083Z" },
 ]
 
 [[package]]
 name = "agentforge-py"
-version = "0.2.4"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "agentforge-core" },
@@ -162,21 +162,21 @@ dependencies = [
     { name = "pyyaml" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e1/c5/e137aca02e594b105f9ddd3a7025ed0f2bc9e95d27957822c957d5aba34a/agentforge_py-0.2.4.tar.gz", hash = "sha256:cd18ea6595ab7816f2cf176788560f0fff1c82b12bca2977b580888f253c0dc8", size = 236149, upload-time = "2026-06-03T07:24:43.994Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/57/842a7e8d4ec4a34a72310fc5d7d5e094519f085329bc1ed9123d9ce89156/agentforge_py-0.3.1.tar.gz", hash = "sha256:17475b6f45f83104bed3f499a93509fd4737131f5edc3692cbc297152ac82857", size = 246332, upload-time = "2026-06-17T03:19:00.671Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/31/674c26afca49718d5427e526a589a67bd2be877dbae39c853145b8929141/agentforge_py-0.2.4-py3-none-any.whl", hash = "sha256:d5e2ac4bc253f41dd0eafe5a528fc47bb20349a7c6889dc314c9bea2f45a6c8c", size = 228511, upload-time = "2026-06-03T07:24:16.537Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/0b/72f163c2d8fc10494312f9b17f414e8e31a4f7dd2c517f87ff7df31af56b/agentforge_py-0.3.1-py3-none-any.whl", hash = "sha256:bcfbf47627c76b8241af5f9d9e24ff432c3df0bbb3ade781247dd936d0153695", size = 231544, upload-time = "2026-06-17T03:18:26.727Z" },
 ]
 
 [[package]]
 name = "agentforge-voyage"
-version = "0.2.4"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "agentforge-core" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/67/92/e7e445b080eb691380a583d6665db62a36eb864f36d431b72dc1d518a772/agentforge_voyage-0.2.4.tar.gz", hash = "sha256:b49d734fffd43584d47e62a162b01959115b4cc942cdbabfa581d1d374b91322", size = 9400, upload-time = "2026-06-03T07:24:48.71Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b8/36/6c6cf85b544680f0737b757297b5f62112c440852ff332dfa78d54dcc53a/agentforge_voyage-0.3.1.tar.gz", hash = "sha256:e9648be864b9a228b47754df1f9a35003f9975afab6e5510283c27da0fd5b7aa", size = 9799, upload-time = "2026-06-17T03:19:07.987Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2f/5f/04f1c77a025bbc173a3b622b345ecb7c57540bbf09a56b3ece2395faf1d3/agentforge_voyage-0.2.4-py3-none-any.whl", hash = "sha256:a2e7921c935fe3a7ab1308440745b1f8f9e11049ab93ef8cd6e8384b08c7c156", size = 10346, upload-time = "2026-06-03T07:24:24.698Z" },
+    { url = "https://files.pythonhosted.org/packages/25/10/3b0fc0a05e4adcc990b29c23bd96960765bf7a8f176f6b551a59604f252a/agentforge_voyage-0.3.1-py3-none-any.whl", hash = "sha256:8c03e17b1072602d9dea1c1f1eff67584fa10f1f530b764bf6577e8657e5158e", size = 10530, upload-time = "2026-06-17T03:18:35.921Z" },
 ]
 
 [[package]]
