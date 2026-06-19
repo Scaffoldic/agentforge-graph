@@ -8,6 +8,23 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-06-19
+
+Leaner base install + the refreshed README on PyPI.
+
+### Changed
+
+- **Dropped the unused `fastembed` dependency** from the base install (and the
+  heavy `onnxruntime` wheel it pulled). It was a leftover from the original
+  feat-005 plan to default to local embeddings; the shipped embedders are
+  `bedrock` / `openai` / `fake`, none of which import it. Removing it keeps the
+  promise true: the base install carries only what the engine actually uses, and
+  every model/DB provider is opt-in. (No local-embeddings driver existed, so
+  nothing is lost; a `fastembed` driver behind a `[local]` extra can be added as
+  a deliberate feature later.)
+- README refreshed (out-of-the-box overview, quick start, demo) now renders on
+  the PyPI project page.
+
 ## [0.3.2] - 2026-06-19
 
 Packaging fix — base-install completeness (caught on a TestPyPI dry run).
@@ -412,7 +429,8 @@ questions over the tools, unattended.
   on a real repo (fixed BUG-008, a default-config `ckg query` break); and parse
   coverage holds at scale (`django`, 2922 files, ~100%, no crash).
 
-[Unreleased]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.2.0...v0.3.0
