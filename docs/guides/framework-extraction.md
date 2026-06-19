@@ -75,4 +75,4 @@ frameworks:
 Cross-file route-prefix composition (`include_router(prefix=…)` / `app.use('/p',
 router)` / Django `urls.py`), grounding DI provider names to their definitions,
 and more frameworks (Rails, Laravel, Gin, ASP.NET) — see
-[`docs/features/feat-011-framework-extractors.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/features/feat-011-framework-extractors.md).
+[`docs/features/feat-011-framework-extractors.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/features/feat-011-framework-extractors.md).

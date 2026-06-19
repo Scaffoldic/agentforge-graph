@@ -33,7 +33,7 @@ ckg embed .
 
 AST-aware chunks → vectors. Incremental: only changed chunks re-embed (skipped by
 content hash). Pick/realize a provider per
-[`docs/guides/model-providers.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/model-providers.md);
+[`docs/guides/model-providers.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/model-providers.md);
 `embed.driver: fake` gives a fully offline path.
 
 ## 3. Query — hybrid retrieval
@@ -72,6 +72,6 @@ embed:
 
 Everything above is also available read-only over **MCP (10 tools)** or as an
 in-process AgentForge toolset — see
-[`docs/guides/using-over-mcp.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/using-over-mcp.md).
+[`docs/guides/using-over-mcp.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/using-over-mcp.md).
 Every response carries a **staleness envelope** (indexed commit + whether the
 working tree moved), so an agent knows if the graph is behind `HEAD`.

@@ -2,10 +2,10 @@
 <!-- NOTE: customized for agentforge-graph (forked from the scaffold README). -->
 # agentforge-graph
 
-[![CI](https://github.com/Scaffoldic/agentforge-grpah/actions/workflows/ci.yml/badge.svg)](https://github.com/Scaffoldic/agentforge-grpah/actions/workflows/ci.yml)
+[![CI](https://github.com/Scaffoldic/agentforge-graph/actions/workflows/ci.yml/badge.svg)](https://github.com/Scaffoldic/agentforge-graph/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/agentforge-graph.svg)](https://pypi.org/project/agentforge-graph/)
 [![Python](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://pypi.org/project/agentforge-graph/)
-[![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](https://github.com/Scaffoldic/agentforge-grpah/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](https://github.com/Scaffoldic/agentforge-graph/blob/main/LICENSE)
 
 > **Turn any repo into a knowledge graph your coding agent can actually reason
 > over.** Symbols, calls, imports, **API routes, ORM models, dependency
@@ -57,8 +57,8 @@ ckg serve-mcp --repo .              # → 10 read-only tools for your agent
 **Status: 0.3.3 — all 12 planned features shipped.** Published on
 [PyPI](https://pypi.org/project/agentforge-graph/). Each language pack validated on
 a real OSS repo with a creds-enabled embed/retrieval/enrich run; a real agent
-answers questions over the tools unattended. See the [`CHANGELOG`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/CHANGELOG.md)
-and [`docs/features/TRACKER.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/features/TRACKER.md).
+answers questions over the tools unattended. See the [`CHANGELOG`](https://github.com/Scaffoldic/agentforge-graph/blob/main/CHANGELOG.md)
+and [`docs/features/TRACKER.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/features/TRACKER.md).
 
 ---
 
@@ -143,7 +143,7 @@ agent = Agent(model="anthropic:claude-sonnet-4-6", tools=code_graph_tools("."))
 ```
 
 → Full guide (tool schemas, client config, guardrails, staleness envelope):
-[`docs/guides/using-over-mcp.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/using-over-mcp.md).
+[`docs/guides/using-over-mcp.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/using-over-mcp.md).
 
 ---
 
@@ -169,9 +169,9 @@ and the vectors in an embedded **LanceDB** index, both under `.ckg/` in your rep
 (ADR-0006). Zero config, no server.
 
 Storage is **pluggable** behind two contracts — `GraphStore` and `VectorStore`
-([`core/contracts.py`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/src/agentforge_graph/core/contracts.py)) — resolved by a
+([`core/contracts.py`](https://github.com/Scaffoldic/agentforge-graph/blob/main/src/agentforge_graph/core/contracts.py)) — resolved by a
 **driver registry** with entry-point groups
-([`store/registry.py`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/src/agentforge_graph/store/registry.py)):
+([`store/registry.py`](https://github.com/Scaffoldic/agentforge-graph/blob/main/src/agentforge_graph/store/registry.py)):
 
 ```yaml
 # ckg.yaml
@@ -187,7 +187,7 @@ Three server backends ship first-party as opt-in extras: **Neo4j** (graph),
 in CI). Anything else (SurrealDB aside, FalkorDB, …) is an **out-of-tree adapter**:
 implement the contract, pass the conformance suite, register an entry point — then
 it's `pip install + one config line`, no core change.
-→ [`docs/guides/storage-backends.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/storage-backends.md).
+→ [`docs/guides/storage-backends.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/storage-backends.md).
 
 ## Models — pick a provider, or bring your own
 
@@ -207,13 +207,13 @@ switching providers is a `ckg.yaml` line — not a code change:
 - **Fully offline?** `embed.driver: fake` + `enrich.provider: scripted`.
 
 CI uses the deterministic fakes, so **no model calls or cloud creds are needed to
-build or test**. → [`docs/guides/model-providers.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/model-providers.md).
+build or test**. → [`docs/guides/model-providers.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/model-providers.md).
 
 ---
 
 ## Architecture
 
-See **[`docs/ARCHITECTURE.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/ARCHITECTURE.md)** for the full overview (layer
+See **[`docs/ARCHITECTURE.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/ARCHITECTURE.md)** for the full overview (layer
 diagram, data model, every pipeline in ASCII, extension points). In one breath: a
 `core` of contracts + value types, a **deterministic engine** that never imports the
 framework (parse, store, resolve, embed, retrieve, **frameworks**, knowledge), and a
@@ -263,27 +263,27 @@ the `anthropic` SDK ships with the base install.
 
 This repo is built to be worked on **with** AI agents. Start here:
 
-- **[`CONTRIBUTING.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/CONTRIBUTING.md)** — setup, the quality gate, the per-feature
+- **[`CONTRIBUTING.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/CONTRIBUTING.md)** — setup, the quality gate, the per-feature
   development pipeline, and step-by-step playbooks (add a language pack, a framework
   pack, a storage backend, a model adapter, an MCP tool, an enricher).
-- **[`AGENTS.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/AGENTS.md)** — read by Claude Code, Cursor, Aider, etc.
+- **[`AGENTS.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/AGENTS.md)** — read by Claude Code, Cursor, Aider, etc.
   (the [AGENTS.md convention](https://agents.md)); the invariants an AI assistant must respect.
-- **[`docs/ARCHITECTURE.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/ARCHITECTURE.md)** — the system map.
+- **[`docs/ARCHITECTURE.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/ARCHITECTURE.md)** — the system map.
 
 ## Documentation map
 
 | Doc | What it is |
 |---|---|
-| [`docs/ARCHITECTURE.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/ARCHITECTURE.md) | High-level architecture + every pipeline (ASCII) |
-| [`docs/guides/`](https://github.com/Scaffoldic/agentforge-grpah/tree/main/docs/guides/) | Consumer guides: [indexing & retrieval](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/indexing-and-retrieval.md), [framework extraction](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/framework-extraction.md), [architecture decisions](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/architecture-decisions.md), [temporal/history](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/temporal-history.md), [enrichment](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/enrichment.md), [using over MCP](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/using-over-mcp.md), [model providers](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/model-providers.md), [storage backends](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/storage-backends.md) |
-| [`examples/`](https://github.com/Scaffoldic/agentforge-grpah/tree/main/examples) | Runnable sample repos (index → routes/models/services/query) |
-| [`docs/adr/`](https://github.com/Scaffoldic/agentforge-grpah/tree/main/docs/adr/) | 9 architecture decision records (the *why*) |
-| [`docs/features/`](https://github.com/Scaffoldic/agentforge-grpah/tree/main/docs/features/) + [`TRACKER.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/features/TRACKER.md) | 12 feature specs + status board |
-| [`docs/design/`](https://github.com/Scaffoldic/agentforge-grpah/tree/main/docs/design/) | Per-feature design docs (the *how*, pre-build) |
-| [`docs/open-source-ckg-research.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/open-source-ckg-research.md) | The survey that motivates the design |
+| [`docs/ARCHITECTURE.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/ARCHITECTURE.md) | High-level architecture + every pipeline (ASCII) |
+| [`docs/guides/`](https://github.com/Scaffoldic/agentforge-graph/tree/main/docs/guides/) | Consumer guides: [indexing & retrieval](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/indexing-and-retrieval.md), [framework extraction](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/framework-extraction.md), [architecture decisions](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/architecture-decisions.md), [temporal/history](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/temporal-history.md), [enrichment](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/enrichment.md), [using over MCP](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/using-over-mcp.md), [model providers](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/model-providers.md), [storage backends](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/storage-backends.md) |
+| [`examples/`](https://github.com/Scaffoldic/agentforge-graph/tree/main/examples) | Runnable sample repos (index → routes/models/services/query) |
+| [`docs/adr/`](https://github.com/Scaffoldic/agentforge-graph/tree/main/docs/adr/) | 9 architecture decision records (the *why*) |
+| [`docs/features/`](https://github.com/Scaffoldic/agentforge-graph/tree/main/docs/features/) + [`TRACKER.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/features/TRACKER.md) | 12 feature specs + status board |
+| [`docs/design/`](https://github.com/Scaffoldic/agentforge-graph/tree/main/docs/design/) | Per-feature design docs (the *how*, pre-build) |
+| [`docs/open-source-ckg-research.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/open-source-ckg-research.md) | The survey that motivates the design |
 
 ## License
 
-[**Apache-2.0**](https://github.com/Scaffoldic/agentforge-grpah/blob/main/LICENSE) — permissive, with an explicit patent grant and
-patent-retaliation clause. See [`LICENSE`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/LICENSE) and [`NOTICE`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/NOTICE). Aligns
+[**Apache-2.0**](https://github.com/Scaffoldic/agentforge-graph/blob/main/LICENSE) — permissive, with an explicit patent grant and
+patent-retaliation clause. See [`LICENSE`](https://github.com/Scaffoldic/agentforge-graph/blob/main/LICENSE) and [`NOTICE`](https://github.com/Scaffoldic/agentforge-graph/blob/main/NOTICE). Aligns
 with AgentForge, which is also Apache-2.0.
