@@ -10,6 +10,16 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **Django ORM models (feat-011).** A built-in Django framework pack extracts
+  `models.Model` classes into `DataModel` nodes with `HAS_FIELD` columns and
+  `RELATES_TO` edges for `ForeignKey`/`OneToOneField`/`ManyToManyField` (kind
+  `fk`|`o2o`|`m2m`; FK/O2O also a column, M2M relation-only). Model evidence is a
+  `Model`-tail base or any `models.*Field` assignment (catching abstract-base
+  subclasses); the table comes from `class Meta: db_table` when set. Relation
+  targets (class ref, `"app.Model"` string, or `"self"`) resolve by class name.
+  Built on shared ORM rails (`frameworks/orm.py`, `packs/_python_ast.py`) now
+  used by both the SQLAlchemy and Django packs.
+
 - **ORM `RELATES_TO` edges from `relationship`/`ForeignKey` (feat-011).** The
   framework pass-2 hook (`FrameworkPack.resolve`) is now wired into the full
   pipeline and the incremental indexer. The SQLAlchemy pack records each

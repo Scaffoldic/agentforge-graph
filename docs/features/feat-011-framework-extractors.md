@@ -227,8 +227,17 @@ from the whole-repo model set), so an incremental refresh converges to the
 full-index graph. Surfaced in `ModelInfo.relations`, `ckg models`, and
 `IndexReport.relations_resolved`.
 
+**Django models shipped (0.4 follow-on)** — the built-in **Django** pack mirrors
+the SQLAlchemy one over the shared ORM rails (`frameworks/orm.py` pass-2 +
+`packs/_python_ast.py` helpers). A class is a `DataModel` when it has a `Model`-
+tail base (`class X(models.Model)`) or any `models.*Field` assignment (catching
+abstract-base subclasses); fields are the `*Field(...)` columns (table from
+`class Meta: db_table` when set). `ForeignKey`/`OneToOneField`/`ManyToManyField`
+targets (class ref, `"app.Model"` string, or `"self"`) become `RELATES_TO`
+edges (`attrs.kind` = `fk`|`o2o`|`m2m`) — FK/O2O also a `HAS_FIELD` column, M2M
+relation-only. Resolves by class name against the whole-repo model set.
+
 ### Follow-ups (same harness)
-- Django models (`models.Model` subclasses, FK/M2M `RELATES_TO`).
 - DI (`Service`/`INJECTED_INTO`).
 - Cross-file pass-2: `include_router(prefix=…)` composition, Django `urls.py`
   string view refs (the `resolve()`/`coupled_files()` hooks are reserved).

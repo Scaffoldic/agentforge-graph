@@ -5,10 +5,11 @@ Third-party packs register out-of-tree via an entry point later."""
 from __future__ import annotations
 
 from .base import FrameworkPack
+from .packs.django import DJANGO_PACK
 from .packs.fastapi import FASTAPI_PACK
 from .packs.sqlalchemy import SQLALCHEMY_PACK
 
-BUILTIN_FRAMEWORK_PACKS: list[FrameworkPack] = [FASTAPI_PACK, SQLALCHEMY_PACK]
+BUILTIN_FRAMEWORK_PACKS: list[FrameworkPack] = [FASTAPI_PACK, SQLALCHEMY_PACK, DJANGO_PACK]
 
 
 class FrameworkRegistry:
