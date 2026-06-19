@@ -88,11 +88,11 @@ ckg = "agentforge_graph.main:main"             # primary CLI (feat-002/008: inde
 agentforge-graph = "agentforge_graph.main:main"
 
 [project.urls]
-Homepage = "https://github.com/Scaffoldic/agentforge-grpah"
-Repository = "https://github.com/Scaffoldic/agentforge-grpah"
-Changelog = "https://github.com/Scaffoldic/agentforge-grpah/blob/main/CHANGELOG.md"
-Issues = "https://github.com/Scaffoldic/agentforge-grpah/issues"
-Documentation = "https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/ARCHITECTURE.md"
+Homepage = "https://github.com/Scaffoldic/agentforge-graph"
+Repository = "https://github.com/Scaffoldic/agentforge-graph"
+Changelog = "https://github.com/Scaffoldic/agentforge-graph/blob/main/CHANGELOG.md"
+Issues = "https://github.com/Scaffoldic/agentforge-graph/issues"
+Documentation = "https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/ARCHITECTURE.md"
 
 [build-system]
 requires = ["hatchling>=1.27"]

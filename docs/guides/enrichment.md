@@ -52,4 +52,4 @@ Set `enrich.provider: scripted` for a deterministic, credential-free path — th
 what CI uses, so **no model calls or cloud creds are needed to build or test**.
 Pick a provider (AWS Bedrock, the direct Anthropic API, or a local
 OpenAI-compatible server) per
-[`docs/guides/model-providers.md`](https://github.com/Scaffoldic/agentforge-grpah/blob/main/docs/guides/model-providers.md).
+[`docs/guides/model-providers.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/model-providers.md).

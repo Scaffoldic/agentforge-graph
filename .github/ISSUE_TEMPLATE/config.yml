@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/Scaffoldic/agentforge-grpah/security/advisories/new
+    url: https://github.com/Scaffoldic/agentforge-graph/security/advisories/new
     about: Please report security issues privately — see SECURITY.md, not a public issue.
   - name: Question / usage help
-    url: https://github.com/Scaffoldic/agentforge-grpah/discussions
+    url: https://github.com/Scaffoldic/agentforge-graph/discussions
     about: Ask how to use the engine, MCP tools, or a provider/backend.
