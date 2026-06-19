@@ -10,6 +10,12 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **Consumer feature guides + a runnable example.** New `docs/guides/` for the
+  headline features — framework extraction (routes/models/services), architecture
+  decisions, temporal/history, enrichment, and an index→query walkthrough — plus
+  `examples/fastapi-shop/`, a tiny FastAPI+SQLAlchemy app you can index in one
+  command to see routes/models/services (output verified against the CLI).
+
 - **Project metadata + community health.** `[project.urls]` (Homepage,
   Repository, Changelog, Issues, Documentation) so the PyPI page links out;
   `SECURITY.md`, `CODE_OF_CONDUCT.md`, GitHub issue + PR templates; README doc
