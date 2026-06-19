@@ -269,10 +269,17 @@ handler still yields the `Route` (the API surface) with `attrs.handler = ""`.
 `app.use`/`app.listen` and dynamic paths are skipped/counted. New `_js_ast.py`
 holds the shared JS/TS tree-sitter helpers.
 
+**Spring routes shipped (0.4 follow-on)** — the built-in **Spring** pack extracts
+Java MVC controller endpoints. A class is a route source only when it is a
+controller (`@RestController`/`@Controller`, or a class-level `@RequestMapping`)
+— ADR-0004. Each method `@GetMapping`/`@PostMapping`/… (or
+`@RequestMapping(method=RequestMethod.X)`) becomes a `Route` whose path is the
+class base path joined with the method path, with a `HANDLED_BY` edge to the
+`Class#method` symbol (verified e2e: lands on the real Java method node).
+
 ### Follow-ups (same harness)
 - Cross-file pass-2: `include_router(prefix=…)` / `app.use('/p', router)`
   composition, Django `urls.py` string view refs (the `resolve()`/
   `coupled_files()` hooks are reserved).
-- NestJS (TS decorators) and Spring (Java annotations) — controller/method
-  decorator styles over the TS / Java packs.
+- NestJS (TS decorators); Rails/Laravel/Gin/ASP.NET (cross-language parity §6).
 - Ground DI provider names to their function definitions (cross-file).

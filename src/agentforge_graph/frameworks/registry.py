@@ -9,6 +9,7 @@ from .packs.django import DJANGO_PACK
 from .packs.express import EXPRESS_PACK
 from .packs.fastapi import FASTAPI_PACK
 from .packs.flask import FLASK_PACK
+from .packs.spring import SPRING_PACK
 from .packs.sqlalchemy import SQLALCHEMY_PACK
 
 BUILTIN_FRAMEWORK_PACKS: list[FrameworkPack] = [
@@ -17,6 +18,7 @@ BUILTIN_FRAMEWORK_PACKS: list[FrameworkPack] = [
     DJANGO_PACK,
     FLASK_PACK,
     EXPRESS_PACK,
+    SPRING_PACK,
 ]
 
 
