@@ -54,7 +54,7 @@ ckg serve-mcp --repo .              # → 10 read-only tools for your agent
   Repository,"* with confidence + rationale) and bottom-up module summaries, all
   `llm`-provenance. **CI needs no model calls or cloud creds.**
 
-**Status: 0.3.2 — all 12 planned features shipped.** Published on
+**Status: 0.3.3 — all 12 planned features shipped.** Published on
 [PyPI](https://pypi.org/project/agentforge-graph/). Each language pack validated on
 a real OSS repo with a creds-enabled embed/retrieval/enrich run; a real agent
 answers questions over the tools unattended. See the [`CHANGELOG`](CHANGELOG.md)
