@@ -55,7 +55,7 @@ These are the load-bearing rules; each maps to an ADR.
 │  serve   (FRAMEWORK LAYER)       │   │  enrich  (FRAMEWORK LAYER)         │
 │  • Tool ABC (agentforge-core)    │   │  • BudgetPolicy (agentforge-core)  │
 │  • MCP stdio (agentforge-mcp)    │   │  • Bedrock Claude judge/summarizer │
-│  • 9 read-only ckg_* tools       │   │  • writes llm-provenance facts     │
+│  • 10 read-only ckg_* tools      │   │  • writes llm-provenance facts     │
 └───────────────┬─────────────────┘   └──────────┬─────────────────────────┘
                 │ read-only queries               │ enrich (explicit only)
 ┌───────────────▼─────────────────────────────────▼─────────────────────────┐
@@ -318,8 +318,8 @@ The engine is exposed read-only to agents, from one tool definition, two ways:
  code_graph_tools(repo)  ─►  list[Tool]   ──►  Agent(tools=…)        (in-process)
  build_mcp_server(repo)  ─►  MCPServer    ──►  ckg serve-mcp         (stdio)
 
- 9 tools:  ckg_repo_map  ckg_search  ckg_symbol  ckg_impact  ckg_neighbors
-           ckg_status    ckg_routes  ckg_decisions  ckg_explain
+ 10 tools: ckg_repo_map  ckg_search  ckg_symbol  ckg_impact  ckg_neighbors
+           ckg_status    ckg_routes  ckg_decisions  ckg_explain  ckg_history
 ```
 
 Every structured response carries a staleness envelope (`indexed_commit`,

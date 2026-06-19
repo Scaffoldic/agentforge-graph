@@ -52,7 +52,7 @@ embed:
 ```
 ```bash
 export OPENAI_API_KEY=sk-...
-uv sync --extra engine --extra openai
+uv sync --extra openai      # engine ships in the base install
 uv run ckg embed .
 ```
 
