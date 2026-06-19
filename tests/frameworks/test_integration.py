@@ -119,6 +119,30 @@ def test_ckg_services_cli(tmp_path: Path, capsys: pytest.CaptureFixture[str]) ->
     assert "get_db" in out and "refund" in out
 
 
+async def test_class_based_handler_resolves_to_method_node(tmp_path: Path) -> None:
+    repo = tmp_path / "cbv"
+    repo.mkdir()
+    (repo / "views.py").write_text(
+        "from fastapi import APIRouter\n\n"
+        "router = APIRouter()\n\n"
+        "class ItemsView:\n"
+        "    @router.get('/items')\n"
+        "    def list_items(self):\n"
+        "        return []\n"
+    )
+    cg = await CodeGraph.index(repo_path=repo)
+    try:
+        assert cg.stats().routes_extracted == 1
+        assert cg.stats().framework_unresolved == 0
+        route = (await cg.store.graph.query(GraphQuery(kinds=[NodeKind.ROUTE], limit=10))).nodes[0]
+        # the HANDLED_BY edge lands on the real ItemsView.list_items method node
+        nbrs = await cg.store.graph.neighbors(route.id, [EdgeKind.HANDLED_BY], depth=1)
+        assert [n.kind for n in nbrs] == [NodeKind.METHOD]
+        assert SymbolID.parse(nbrs[0].id).descriptor == "ItemsView#list_items()."
+    finally:
+        await cg.close()
+
+
 async def test_no_framework_no_routes(tmp_path: Path) -> None:
     repo = tmp_path / "plain"
     repo.mkdir()

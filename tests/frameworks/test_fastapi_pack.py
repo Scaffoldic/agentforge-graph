@@ -58,7 +58,7 @@ def test_unresolved_counts_dynamic_path_not_middleware() -> None:
     assert facts.unresolved == 1
 
 
-def test_class_method_handler_counted_unresolved() -> None:
+def test_class_method_handler_resolves_to_class_method() -> None:
     text = (
         "from fastapi import FastAPI\n"
         "app = FastAPI()\n\n"
@@ -74,8 +74,11 @@ def test_class_method_handler_counted_unresolved() -> None:
         content_hash=hashlib.sha256(text.encode()).hexdigest(),
     )
     facts = FASTAPI_PACK.extract(sf, repo="fixture", commit="c0")
-    assert [n for n in facts.nodes if n.kind is NodeKind.ROUTE] == []
-    assert facts.unresolved == 1  # class-based handler not pinned at MVP
+    route = next(n for n in facts.nodes if n.kind is NodeKind.ROUTE)
+    assert route.name == "GET /m"
+    assert facts.unresolved == 0  # class-based handler now resolves
+    # HANDLED_BY targets the Views#handler method symbol
+    assert SymbolID.parse(route.attrs["handler"]).descriptor == "Views#handler()."
 
 
 def _src(text: str) -> SourceFile:
@@ -111,7 +114,7 @@ def test_security_and_typed_depends_recognised() -> None:
     assert services == {"dep_a", "dep_b"}
 
 
-def test_class_based_consumer_counted_unresolved() -> None:
+def test_class_based_consumer_resolves_to_class_method() -> None:
     facts = FASTAPI_PACK.extract(
         _src(
             "from fastapi import Depends\n\n"
@@ -122,8 +125,11 @@ def test_class_based_consumer_counted_unresolved() -> None:
         repo="fixture",
         commit="c0",
     )
-    assert [n for n in facts.nodes if n.kind is NodeKind.SERVICE] == []
-    assert facts.unresolved == 1  # class-based consumer not pinned at MVP
+    service = next(n for n in facts.nodes if n.kind is NodeKind.SERVICE)
+    injected = next(e for e in facts.edges if e.kind is EdgeKind.INJECTED_INTO)
+    assert injected.src == service.id
+    assert SymbolID.parse(injected.dst).descriptor == "V#h()."
+    assert facts.unresolved == 0  # class-based consumer now resolves
 
 
 def test_no_services_without_depends() -> None:
