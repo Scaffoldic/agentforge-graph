@@ -31,11 +31,11 @@ classifiers = [
 ]
 dependencies = [
     # --- AgentForge framework (runtime + provider + serving) ---
-    # Pinned to the validated 0.2.x line (built + tested against 0.2.4); the
-    # framework's 0.3.x is not yet validated here.
-    "agentforge-py>=0.2.4,<0.3",            # core contracts + Agent runtime + CLI
-    "agentforge-anthropic[anthropic]>=0.2.4,<0.3",  # LLM provider for enrichment (feat-010, feat-012)
-    "agentforge-mcp[mcp]>=0.2.4,<0.3",      # MCP serving layer + mcp SDK (feat-008)
+    # Pinned to the 0.3.x line (re-validated: full gate + MCP server construct
+    # green on agentforge-py 0.3.1; Tool/BudgetPolicy/MCPServer surfaces unchanged).
+    "agentforge-py>=0.3,<0.4",            # core contracts + Agent runtime + CLI
+    "agentforge-anthropic[anthropic]>=0.3,<0.4",  # LLM provider for enrichment (feat-010, feat-012)
+    "agentforge-mcp[mcp]>=0.3,<0.4",      # MCP serving layer + mcp SDK (feat-008)
     "python-dotenv>=1.0",
     "pyyaml>=6",                           # read ckg.yaml engine config (feat-003+)
     # --- deterministic graph engine (feat-002/003/007) ---
