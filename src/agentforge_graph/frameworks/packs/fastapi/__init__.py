@@ -20,7 +20,6 @@ from tree_sitter import Node as TSNode
 from tree_sitter import Parser, Query, QueryCursor
 
 from agentforge_graph.core import (
-    Descriptor,
     Edge,
     EdgeKind,
     NodeKind,
@@ -33,9 +32,11 @@ from agentforge_graph.frameworks.base import FrameworkFacts, FrameworkPack
 from agentforge_graph.frameworks.packs._python_ast import (
     callee_name,
     dotted_tail,
+    enclosing_class,
     first_positional_arg,
+    first_string_in,
+    member_descriptor,
     python_language,
-    strip_quotes,
     text,
 )
 
@@ -52,35 +53,6 @@ def _routes_query() -> str:
 @cache
 def _depends_query() -> str:
     return (_HERE / "depends.scm").read_text(encoding="utf-8")
-
-
-def _first_string(args: TSNode, src: bytes) -> str | None:
-    """The first string-literal positional arg (the path), or None if the path
-    is dynamic/non-literal."""
-    for child in args.named_children:
-        if child.type == "string":
-            return strip_quotes(text(child, src))
-    return None
-
-
-def _enclosing_class(node: TSNode, src: bytes) -> str | None:
-    """The name of the nearest enclosing ``class_definition``, or None for a
-    module-level definition — lets a class-based handler/consumer resolve to its
-    ``Class#method`` symbol instead of being counted unresolved."""
-    anc = node.parent
-    while anc is not None:
-        if anc.type == "class_definition":
-            name = anc.child_by_field_name("name")
-            return text(name, src) if name is not None else None
-        anc = anc.parent
-    return None
-
-
-def _member_descriptor(name: str, enclosing_class: str | None) -> str:
-    """``Class#method().`` for a method, ``method().`` for a free function."""
-    if enclosing_class is not None:
-        return Descriptor.type(enclosing_class) + Descriptor.method(name)
-    return Descriptor.method(name)
 
 
 class FastAPIPack(FrameworkPack):
@@ -123,13 +95,13 @@ class FastAPIPack(FrameworkPack):
 
             # A route we recognise but can't pin down statically is counted,
             # not dropped: a dynamic (non-literal) path.
-            path = _first_string(args_caps[0], src)
+            path = first_string_in(args_caps[0], src)
             if path is None:
                 facts.unresolved += 1
                 continue
 
             handler = text(handler_caps[0], src)
-            handler_desc = _member_descriptor(handler, _enclosing_class(handler_caps[0], src))
+            handler_desc = member_descriptor(handler, enclosing_class(handler_caps[0], src))
             handler_id = SymbolID.for_symbol(self.language_slug, repo, file.path, handler_desc)
             method_u = method.upper()
             route_id = SymbolID.for_symbol(
@@ -184,8 +156,8 @@ class FastAPIPack(FrameworkPack):
             providers = self._depends_providers(params, src)
             if not providers:
                 continue
-            consumer_desc = _member_descriptor(
-                text(name_caps[0], src), _enclosing_class(name_caps[0], src)
+            consumer_desc = member_descriptor(
+                text(name_caps[0], src), enclosing_class(name_caps[0], src)
             )
             consumer_id = SymbolID.for_symbol(self.language_slug, repo, file.path, consumer_desc)
             for provider in providers:

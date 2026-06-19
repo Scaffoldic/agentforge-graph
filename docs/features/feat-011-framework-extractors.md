@@ -251,8 +251,17 @@ or `Depends`/`Security` parameter on a *method* now resolves to its
 method node) instead of being counted unresolved. Only a dynamic (non-literal)
 route path remains unresolved.
 
+**Flask routes shipped (0.4 follow-on)** — the built-in **Flask** pack extracts
+`@app.route("/x", methods=[...])` / blueprint `@bp.route(...)` and the 2.0
+shortcuts (`@app.get` …) into `Route` nodes + `HANDLED_BY` edges. A `route`
+decorator defaults to `GET` and emits one `Route` per listed method; class-based
+handlers resolve to `Class#method`; a dynamic path is counted unresolved. Shares
+the route helpers (`enclosing_class`/`member_descriptor`/`first_string_in`/
+`string_list_kwarg`) now factored into `packs/_python_ast.py` with FastAPI.
+
 ### Follow-ups (same harness)
 - Cross-file pass-2: `include_router(prefix=…)` composition, Django `urls.py`
   string view refs (the `resolve()`/`coupled_files()` hooks are reserved).
-- Flask, Express/NestJS (TS), Spring (Java).
+- Express/NestJS (TS), Spring (Java) — need framework extraction over the TS /
+  Java language packs (no `_python_ast` reuse), a larger per-language effort.
 - Ground DI provider names to their function definitions (cross-file).

@@ -10,6 +10,13 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **Flask routes (feat-011).** A built-in Flask framework pack extracts
+  `@app.route("/x", methods=[...])` / blueprint `@bp.route(...)` and the Flask
+  2.0 shortcuts (`@app.get` …) into `Route` nodes + `HANDLED_BY` edges. A `route`
+  decorator defaults to `GET` and emits one route per listed method; class-based
+  handlers resolve to `Class#method`; a dynamic (non-literal) path is counted
+  unresolved. Shares the route helpers with FastAPI (now in `packs/_python_ast`).
+
 - **Class-based FastAPI handlers & DI consumers (feat-011).** A route decorator
   or `Depends`/`Security` parameter on a *method* now resolves to its
   `Class#method` symbol — `HANDLED_BY` / `INJECTED_INTO` land on the real method
