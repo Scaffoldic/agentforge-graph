@@ -38,6 +38,14 @@ class FrameworkPack(ABC):
     name: str = ""  # "fastapi"
     language: str = ""  # the language pack this rides ("python")
     language_slug: str = ""  # SymbolID slug of that language ("py")
+
+    @property
+    def slugs(self) -> tuple[str, ...]:
+        """The SymbolID slugs this pack extracts over. Defaults to the single
+        ``language_slug``; a pack spanning sibling languages (e.g. Express over
+        JS *and* TS) overrides this and uses ``file.language`` per file."""
+        return (self.language_slug,)
+
     version: str = "1"  # bump on pattern changes (provenance + future --full)
     dep_names: tuple[str, ...] = ()  # manifest dependency names that imply this framework
     import_markers: tuple[str, ...] = ()  # source substrings that confirm use

@@ -8,6 +8,7 @@ from agentforge_graph.frameworks import (
     builtin_framework_registry,
 )
 from agentforge_graph.frameworks.packs.django import DJANGO_PACK
+from agentforge_graph.frameworks.packs.express import EXPRESS_PACK
 from agentforge_graph.frameworks.packs.fastapi import FASTAPI_PACK
 from agentforge_graph.frameworks.packs.flask import FLASK_PACK
 from agentforge_graph.frameworks.packs.sqlalchemy import SQLALCHEMY_PACK
@@ -26,6 +27,7 @@ def test_registry_lookup() -> None:
     assert reg.by_name("django") is DJANGO_PACK
     assert reg.by_name("sqlalchemy") is SQLALCHEMY_PACK
     assert reg.by_name("flask") is FLASK_PACK
+    assert reg.by_name("express") is EXPRESS_PACK
     assert set(reg.for_language("python")) == {
         FASTAPI_PACK,
         SQLALCHEMY_PACK,
