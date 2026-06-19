@@ -487,23 +487,39 @@ class CodeGraph:
 
     async def models(self) -> list[ModelInfo]:
         """Every extracted ORM data model (feat-011): table, framework, mapped
-        field names, the underlying class symbol and source location, sorted by
-        name."""
+        field names, ``RELATES_TO`` relations (FK / relationship), the underlying
+        class symbol and source location, sorted by name."""
         from agentforge_graph.core import EdgeKind, GraphQuery, NodeKind, SymbolID
 
         nodes = (
             await self._store.graph.query(GraphQuery(kinds=[NodeKind.DATA_MODEL], limit=10_000_000))
         ).nodes
+        name_of = {n.id: str(n.attrs.get("table") or n.name) for n in nodes}
         models: list[ModelInfo] = []
         for n in nodes:
             fields = await self._store.graph.neighbors(n.id, [EdgeKind.HAS_FIELD], depth=1)
             field_names = sorted(f.name for f in fields if f.kind is NodeKind.VARIABLE and f.name)
+            rel_edges = await self._store.graph.adjacent(
+                n.id, [EdgeKind.RELATES_TO], direction="out"
+            )
+            relations = sorted(
+                (
+                    {
+                        "to": name_of.get(e.dst, e.dst),
+                        "kind": str(e.attrs.get("kind", "")),
+                        "via": str(e.attrs.get("via", "")),
+                    }
+                    for e in rel_edges
+                ),
+                key=lambda r: (r["to"], r["via"]),
+            )
             models.append(
                 ModelInfo(
                     name=str(n.attrs.get("table") or n.name),
                     table=str(n.attrs.get("table", "")),
                     framework=str(n.attrs.get("framework", "")),
                     fields=field_names,
+                    relations=relations,
                     cls=str(n.attrs.get("class", "")),
                     file=SymbolID.parse(n.id).path,
                     line=n.span[0] if n.span else 0,

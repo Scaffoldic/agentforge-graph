@@ -9,10 +9,11 @@ classes in a SQLAlchemy app never mint false models (ADR-0004).
 
 Both the classic (``name = Column(Integer)``) and 2.0-style
 (``name: Mapped[int] = mapped_column()``) field forms are recognised. Intra-
-file: model, fields, and edges all live in the file's ``FileSubgraph`` and ride
-feat-004 incrementality. Relationship/foreign-key edges (``RELATES_TO``) cross
-files via string targets and are a pass-2 follow-up; they are counted as
-unresolved here, never silently dropped.
+file: model, fields, and `HAS_FIELD` edges all live in the file's
+``FileSubgraph`` and ride feat-004 incrementality. ``relationship("X")`` /
+``ForeignKey("t.c")`` string targets are recorded on the model node in pass-1
+and stitched into cross-file ``RELATES_TO`` edges in pass-2 (``resolve``) — a
+unique-match-only resolution against the whole-repo model set (ADR-0004).
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ from agentforge_graph.core import (
     Descriptor,
     Edge,
     EdgeKind,
+    GraphStore,
     NodeKind,
     Provenance,
     SourceFile,
@@ -37,10 +39,8 @@ from agentforge_graph.core import Node as GraphNode
 from agentforge_graph.frameworks.base import FrameworkFacts, FrameworkPack
 
 _HERE = Path(__file__).parent
+_ALL = 10_000_000  # effectively unbounded query for v0.1 graph sizes
 _COLUMN_CALLS = {"Column", "mapped_column"}
-# relationship()/ForeignKey() are the RELATES_TO signal — recognised but
-# deferred to the cross-file pass-2 follow-up; counted as unresolved here.
-_RELATION_CALLS = {"relationship", "ForeignKey"}
 
 
 @cache
@@ -89,6 +89,30 @@ def _positional_type(call: TSNode, src: bytes) -> str:
         if arg.type in ("identifier", "attribute"):
             return _callee_name(arg, src) if arg.type == "attribute" else _text(arg, src)
         return ""
+    return ""
+
+
+def _first_string_arg(call: TSNode, src: bytes) -> str:
+    """The first string-literal positional arg, stripped — the target name in
+    ``relationship("Post")`` / ``ForeignKey("users.id")``; "" when non-literal."""
+    args = call.child_by_field_name("arguments")
+    if args is None:
+        return ""
+    for arg in args.named_children:
+        if arg.type == "string":
+            return _strip_quotes(_text(arg, src))
+    return ""
+
+
+def _foreign_key_target(call: TSNode, src: bytes) -> str:
+    """A ``ForeignKey("table.col")`` target nested in a ``Column(...)`` arg list
+    (``author_id = Column(Integer, ForeignKey("users.id"))``), or ""."""
+    args = call.child_by_field_name("arguments")
+    if args is None:
+        return ""
+    for arg in args.named_children:
+        if arg.type == "call" and _callee_name(arg, src) == "ForeignKey":
+            return _first_string_arg(arg, src)
     return ""
 
 
@@ -158,7 +182,9 @@ class SQLAlchemyPack(FrameworkPack):
 
         table: str | None = None
         fields: list[tuple[str, str, TSNode]] = []  # (name, column_type, assignment node)
-        relations = 0
+        # pending RELATES_TO targets resolved cross-file in pass-2 (resolve()):
+        # relationship("Post") -> class name; ForeignKey("users.id") -> table.col
+        relations: list[dict[str, str]] = []
         for stmt in body.named_children:
             # a class-level field is `name = Column(...)`; the block may hold the
             # assignment directly or wrapped in an expression_statement.
@@ -185,8 +211,15 @@ class SQLAlchemyPack(FrameworkPack):
             if callee in _COLUMN_CALLS:
                 col_type = _positional_type(right, src) or _mapped_type(assign, src)
                 fields.append((field_name, col_type, assign))
-            elif callee in _RELATION_CALLS:
-                relations += 1  # RELATES_TO — pass-2 follow-up, counted not dropped
+                fk = _foreign_key_target(right, src)  # Column(.., ForeignKey("t.c"))
+                if fk:
+                    relations.append({"field": field_name, "target": fk, "kind": "fk"})
+            elif callee == "relationship":
+                target = _first_string_arg(right, src)
+                if target:
+                    relations.append(
+                        {"field": field_name, "target": target, "kind": "relationship"}
+                    )
 
         # Conservative: a class is a model only with declarative evidence.
         if table is None and not fields:
@@ -196,9 +229,15 @@ class SQLAlchemyPack(FrameworkPack):
         class_id = SymbolID.for_symbol(
             self.language_slug, repo, file.path, Descriptor.type(class_name)
         )
-        attrs: dict[str, object] = {"framework": self.name, "class": class_id}
+        attrs: dict[str, object] = {
+            "framework": self.name,
+            "class": class_id,
+            "model_class": class_name,  # cross-file RELATES_TO target lookup (pass-2)
+        }
         if table is not None:
             attrs["table"] = table
+        if relations:
+            attrs["relations"] = relations
         facts.nodes.append(
             GraphNode(
                 id=model_id,
@@ -229,7 +268,74 @@ class SQLAlchemyPack(FrameworkPack):
             facts.edges.append(
                 Edge(src=model_id, dst=field_id, kind=EdgeKind.HAS_FIELD, provenance=prov)
             )
-        facts.unresolved += relations
+
+    async def resolve(self, store: GraphStore, commit: str = "") -> list[Edge]:
+        """Pass-2: stitch the ``relationship``/``ForeignKey`` string targets
+        recorded in pass-1 into ``RELATES_TO`` edges. Targets resolve against the
+        whole-repo model set: a ``relationship("Post")`` to the model whose class
+        is ``Post``; a ``ForeignKey("users.id")`` to the model whose table is
+        ``users``. Ambiguous class names (same name in two files) are left
+        unresolved (ADR-0004 — never guess)."""
+        from agentforge_graph.core import GraphQuery
+
+        models = (await store.query(GraphQuery(kinds=[NodeKind.DATA_MODEL], limit=_ALL))).nodes
+        models = [m for m in models if m.attrs.get("framework") == self.name]
+
+        by_class: dict[str, set[str]] = {}
+        by_table: dict[str, set[str]] = {}
+        for m in models:
+            cls = str(m.attrs.get("model_class", ""))
+            if cls:
+                by_class.setdefault(cls, set()).add(m.id)
+            tbl = str(m.attrs.get("table", ""))
+            if tbl:
+                by_table.setdefault(tbl, set()).add(m.id)
+
+        prov = Provenance.resolved(f"pack:{self.name}@{self.version}", commit)
+        edges: list[Edge] = []
+        seen: set[tuple[str, str]] = set()
+        for m in models:
+            relations = m.attrs.get("relations") or []
+            for rel in relations:
+                target_id = _resolve_target(rel, by_class, by_table)
+                if target_id is None:
+                    continue
+                key = (m.id, target_id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                edges.append(
+                    Edge(
+                        src=m.id,
+                        dst=target_id,
+                        kind=EdgeKind.RELATES_TO,
+                        attrs={"kind": str(rel.get("kind", "")), "via": str(rel.get("field", ""))},
+                        provenance=prov,
+                        origin_path=SymbolID.parse(m.id).path,
+                    )
+                )
+        return edges
+
+
+def _resolve_target(
+    rel: dict[str, str], by_class: dict[str, set[str]], by_table: dict[str, set[str]]
+) -> str | None:
+    """Resolve one pending relation to a target model id, or None when the
+    target is external/ambiguous (unique match only — ADR-0004)."""
+    target = str(rel.get("target", ""))
+    if not target:
+        return None
+    if rel.get("kind") == "fk":
+        # "users.id" / "schema.users.id" -> the table segment (second-to-last)
+        parts = target.split(".")
+        table = parts[-2] if len(parts) >= 2 else parts[0]
+        candidates = by_table.get(table)
+    else:  # relationship("Post") / "module.Post" -> bare class name
+        name = target.rsplit(".", 1)[-1]
+        candidates = by_class.get(name)
+    if candidates is None or len(candidates) != 1:
+        return None
+    return next(iter(candidates))
 
 
 SQLALCHEMY_PACK = SQLAlchemyPack()

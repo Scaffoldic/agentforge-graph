@@ -118,4 +118,16 @@ class IngestPipeline:
                 report.by_edge_kind.get("INHERITS", 0) + stats.inherits_resolved
             )
         report.edges += imports + stats.refs_resolved + stats.inherits_resolved
+
+        # feat-011 pass-2: stitch ORM relationship/FK string targets into
+        # RELATES_TO edges (and future router-prefix composition).
+        if self.frameworks is not None and self.frameworks.active:
+            resolved, unresolved = await self.frameworks.resolve(store, self.commit)
+            if resolved:
+                report.relations_resolved = resolved
+                report.by_edge_kind["RELATES_TO"] = (
+                    report.by_edge_kind.get("RELATES_TO", 0) + resolved
+                )
+                report.edges += resolved
+            report.framework_unresolved += unresolved
         return report

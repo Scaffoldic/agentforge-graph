@@ -53,9 +53,12 @@ class FrameworkPack(ABC):
     def extract(self, file: SourceFile, repo: str, commit: str) -> FrameworkFacts:
         """Pass-1, file-isolated: emit framework nodes/edges for ``file``."""
 
-    def resolve(self, store: GraphStore) -> list[Edge]:
-        """Optional pass-2 cross-file stitching (router prefixes, string view
-        refs). MVP packs return ``[]``."""
+    async def resolve(self, store: GraphStore, commit: str = "") -> list[Edge]:
+        """Optional pass-2 cross-file stitching (ORM relationship/FK string
+        targets, router prefixes, string view refs). Reads the graph built in
+        pass-1 and returns resolved-provenance edges; the orchestrator clears the
+        previous generation and upserts the result (idempotent). Packs with no
+        cross-file step return ``[]``."""
         return []
 
     def coupled_files(self, path: str) -> bool:

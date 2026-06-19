@@ -64,7 +64,8 @@ def _format_report(report: IndexReport) -> str:
     if report.routes_extracted or report.models_extracted or report.framework_unresolved:
         lines.append(
             f"  frameworks: {report.routes_extracted} routes, "
-            f"{report.models_extracted} models "
+            f"{report.models_extracted} models, "
+            f"{report.relations_resolved} relations "
             f"({report.framework_unresolved} unresolved)"
         )
     if report.decisions_indexed or report.governs_resolved:
@@ -252,6 +253,11 @@ async def _models(args: argparse.Namespace) -> int:
             fields = ", ".join(m.fields) if m.fields else "—"
             print(f"{m.name}{table}  ({m.file}:{m.line})")
             print(f"    fields: {fields}")
+            if m.relations:
+                rels = ", ".join(
+                    f"{r['via'] or r['kind']}→{r['to']} ({r['kind']})" for r in m.relations
+                )
+                print(f"    relations: {rels}")
     finally:
         await cg.close()
     return 0
