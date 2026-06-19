@@ -10,6 +10,14 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **FastAPI dependency injection as `Service` / `INJECTED_INTO` (feat-011).** A
+  parameter defaulting to `Depends(provider)` / `Security(provider)` becomes a
+  `Service` node (the provider) with an `INJECTED_INTO` edge to the consuming
+  function — so "what is injected into this handler" and "where is `get_db`
+  injected" are graph traversals. Intra-file, module-level consumers (class-based
+  consumers counted, not dropped). Surfaced via `CodeGraph.services()`, the
+  `ckg services` CLI, and `IndexReport.services_extracted`.
+
 - **Django ORM models (feat-011).** A built-in Django framework pack extracts
   `models.Model` classes into `DataModel` nodes with `HAS_FIELD` columns and
   `RELATES_TO` edges for `ForeignKey`/`OneToOneField`/`ManyToManyField` (kind

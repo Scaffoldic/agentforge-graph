@@ -78,6 +78,61 @@ def test_class_method_handler_counted_unresolved() -> None:
     assert facts.unresolved == 1  # class-based handler not pinned at MVP
 
 
+def _src(text: str) -> SourceFile:
+    return SourceFile(
+        path="d.py",
+        text=text,
+        language="py",
+        content_hash=hashlib.sha256(text.encode()).hexdigest(),
+    )
+
+
+def test_depends_creates_service_and_injected_into() -> None:
+    facts = _facts()
+    services = {n.name: n for n in facts.nodes if n.kind is NodeKind.SERVICE}
+    assert "get_db" in services
+    assert services["get_db"].attrs["provider"] == "get_db"
+    injected = {(e.src, e.dst) for e in facts.edges if e.kind is EdgeKind.INJECTED_INTO}
+    refund = SymbolID.for_symbol("py", "fixture", "app.py", "refund().")
+    assert (services["get_db"].id, refund) in injected
+
+
+def test_security_and_typed_depends_recognised() -> None:
+    facts = FASTAPI_PACK.extract(
+        _src(
+            "from fastapi import Depends, Security\n\n"
+            "def h(a = Depends(dep_a), b: User = Security(dep_b)):\n"
+            "    return 1\n"
+        ),
+        repo="fixture",
+        commit="c0",
+    )
+    services = {n.name for n in facts.nodes if n.kind is NodeKind.SERVICE}
+    assert services == {"dep_a", "dep_b"}
+
+
+def test_class_based_consumer_counted_unresolved() -> None:
+    facts = FASTAPI_PACK.extract(
+        _src(
+            "from fastapi import Depends\n\n"
+            "class V:\n"
+            "    def h(self, db = Depends(get_db)):\n"
+            "        return 1\n"
+        ),
+        repo="fixture",
+        commit="c0",
+    )
+    assert [n for n in facts.nodes if n.kind is NodeKind.SERVICE] == []
+    assert facts.unresolved == 1  # class-based consumer not pinned at MVP
+
+
+def test_no_services_without_depends() -> None:
+    facts = FASTAPI_PACK.extract(
+        _src("def plain(a, b=1):\n    return a + b\n"), repo="fixture", commit="c0"
+    )
+    assert [n for n in facts.nodes if n.kind is NodeKind.SERVICE] == []
+
+
 def test_no_routes_on_plain_file() -> None:
     text = "def helper():\n    return 1\n"
     sf = SourceFile(

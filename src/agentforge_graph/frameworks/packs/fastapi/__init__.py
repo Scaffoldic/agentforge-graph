@@ -1,10 +1,13 @@
-"""FastAPI framework pack (feat-011 MVP) — routes only.
+"""FastAPI framework pack (feat-011) — routes + dependency injection.
 
-Extracts ``@app.get("/x")`` / ``@router.post(...)`` decorators into ``Route``
-nodes + ``HANDLED_BY`` edges to the handler ``Function``. Intra-file: the
-decorator and handler live in the same file, so the edge endpoints are both in
-the file's ``FileSubgraph``. Cross-file ``include_router`` prefix composition
-and class-based handlers are follow-ups (counted as unresolved here).
+Routes: ``@app.get("/x")`` / ``@router.post(...)`` decorators become ``Route``
+nodes + ``HANDLED_BY`` edges to the handler ``Function``. DI: a parameter
+defaulting to ``Depends(provider)`` / ``Security(provider)`` becomes a
+``Service`` node (the provider) + an ``INJECTED_INTO`` edge to the consuming
+function. Both are intra-file (decorator/param and the function share a file, so
+the edge endpoints are in the file's ``FileSubgraph``). Cross-file
+``include_router`` prefix composition, class-based handlers, and grounding the
+provider name to its definition are follow-ups (counted as unresolved here).
 """
 
 from __future__ import annotations
@@ -12,9 +15,8 @@ from __future__ import annotations
 from functools import cache
 from pathlib import Path
 
-from tree_sitter import Language, Parser, Query, QueryCursor
 from tree_sitter import Node as TSNode
-from tree_sitter_language_pack import get_language
+from tree_sitter import Parser, Query, QueryCursor
 
 from agentforge_graph.core import (
     Descriptor,
@@ -27,29 +29,28 @@ from agentforge_graph.core import (
 )
 from agentforge_graph.core import Node as GraphNode
 from agentforge_graph.frameworks.base import FrameworkFacts, FrameworkPack
+from agentforge_graph.frameworks.packs._python_ast import (
+    callee_name,
+    dotted_tail,
+    first_positional_arg,
+    python_language,
+    strip_quotes,
+    text,
+)
 
 _HERE = Path(__file__).parent
 _HTTP_METHODS = {"get", "post", "put", "delete", "patch", "options", "head"}
+_DI_CALLS = {"Depends", "Security"}  # FastAPI dependency markers
 
 
 @cache
-def _language() -> Language:
-    return get_language("python")
-
-
-@cache
-def _query_text() -> str:
+def _routes_query() -> str:
     return (_HERE / "routes.scm").read_text(encoding="utf-8")
 
 
-def _text(node: TSNode, src: bytes) -> str:
-    return src[node.start_byte : node.end_byte].decode("utf-8", errors="replace")
-
-
-def _strip_quotes(s: str) -> str:
-    if len(s) >= 2 and s[0] in "\"'" and s[-1] == s[0]:
-        return s[1:-1]
-    return s
+@cache
+def _depends_query() -> str:
+    return (_HERE / "depends.scm").read_text(encoding="utf-8")
 
 
 def _first_string(args: TSNode, src: bytes) -> str | None:
@@ -57,7 +58,7 @@ def _first_string(args: TSNode, src: bytes) -> str | None:
     is dynamic/non-literal."""
     for child in args.named_children:
         if child.type == "string":
-            return _strip_quotes(_text(child, src))
+            return strip_quotes(text(child, src))
     return None
 
 
@@ -80,19 +81,31 @@ class FastAPIPack(FrameworkPack):
 
     def extract(self, file: SourceFile, repo: str, commit: str) -> FrameworkFacts:
         src = file.text.encode("utf-8")
-        root = Parser(_language()).parse(src).root_node
-        query = Query(_language(), _query_text())
+        root = Parser(python_language()).parse(src).root_node
         prov = Provenance.parsed(f"pack:{self.name}@{self.version}", commit)
         facts = FrameworkFacts()
-        seen: set[str] = set()
+        self._extract_routes(root, src, repo, file, prov, facts)
+        self._extract_depends(root, src, repo, file, prov, facts)
+        return facts
 
+    def _extract_routes(
+        self,
+        root: TSNode,
+        src: bytes,
+        repo: str,
+        file: SourceFile,
+        prov: Provenance,
+        facts: FrameworkFacts,
+    ) -> None:
+        query = Query(python_language(), _routes_query())
+        seen: set[str] = set()
         for _pattern, caps in QueryCursor(query).matches(root):
             method_caps = caps.get("method")
             handler_caps = caps.get("handler")
             args_caps = caps.get("args")
             if not (method_caps and handler_caps and args_caps):
                 continue
-            method = _text(method_caps[0], src).lower()
+            method = text(method_caps[0], src).lower()
             if method not in _HTTP_METHODS:
                 continue  # @app.middleware / @app.on_event / etc. — not a route
 
@@ -103,7 +116,7 @@ class FastAPIPack(FrameworkPack):
                 facts.unresolved += 1
                 continue
 
-            handler = _text(handler_caps[0], src)
+            handler = text(handler_caps[0], src)
             handler_id = SymbolID.for_symbol(
                 self.language_slug, repo, file.path, Descriptor.method(handler)
             )
@@ -133,7 +146,84 @@ class FastAPIPack(FrameworkPack):
             facts.edges.append(
                 Edge(src=route_id, dst=handler_id, kind=EdgeKind.HANDLED_BY, provenance=prov)
             )
-        return facts
+
+    def _extract_depends(
+        self,
+        root: TSNode,
+        src: bytes,
+        repo: str,
+        file: SourceFile,
+        prov: Provenance,
+        facts: FrameworkFacts,
+    ) -> None:
+        query = Query(python_language(), _depends_query())
+        seen_service: set[str] = set()
+        seen_edge: set[tuple[str, str]] = set()
+        for _pattern, caps in QueryCursor(query).matches(root):
+            fn_caps = caps.get("fn")
+            name_caps = caps.get("func")
+            if not (fn_caps and name_caps):
+                continue
+            fn_node = fn_caps[0]
+            # MVP: only module-level functions (class-based consumers, like
+            # class-based route handlers, are a follow-up) — counted, not dropped.
+            params = fn_node.child_by_field_name("parameters")
+            if params is None:
+                continue
+            providers = self._depends_providers(params, src)
+            if not providers:
+                continue
+            if _inside_class(fn_node):
+                facts.unresolved += len(providers)
+                continue
+            consumer_id = SymbolID.for_symbol(
+                self.language_slug, repo, file.path, Descriptor.method(text(name_caps[0], src))
+            )
+            for provider in providers:
+                service_id = SymbolID.for_symbol(
+                    self.language_slug, repo, file.path, f"service({provider})."
+                )
+                if service_id not in seen_service:
+                    seen_service.add(service_id)
+                    facts.nodes.append(
+                        GraphNode(
+                            id=service_id,
+                            kind=NodeKind.SERVICE,
+                            name=provider,
+                            span=(fn_node.start_point[0] + 1, fn_node.start_point[0] + 1),
+                            attrs={"framework": self.name, "provider": provider},
+                            provenance=prov,
+                        )
+                    )
+                edge_key = (service_id, consumer_id)
+                if edge_key not in seen_edge:
+                    seen_edge.add(edge_key)
+                    facts.edges.append(
+                        Edge(
+                            src=service_id,
+                            dst=consumer_id,
+                            kind=EdgeKind.INJECTED_INTO,
+                            provenance=prov,
+                        )
+                    )
+
+    def _depends_providers(self, params: TSNode, src: bytes) -> list[str]:
+        """Provider names from ``= Depends(provider)`` / ``= Security(provider)``
+        parameter defaults, in source order (deduped)."""
+        providers: list[str] = []
+        for param in params.named_children:
+            if param.type not in ("default_parameter", "typed_default_parameter"):
+                continue
+            value = param.child_by_field_name("value")
+            if value is None or value.type != "call":
+                continue
+            if callee_name(value, src) not in _DI_CALLS:
+                continue
+            arg = first_positional_arg(value, src)
+            provider = dotted_tail(arg, src) if arg is not None else ""
+            if provider and provider not in providers:
+                providers.append(provider)
+        return providers
 
 
 FASTAPI_PACK = FastAPIPack()
