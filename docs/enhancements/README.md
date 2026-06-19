@@ -18,6 +18,13 @@ One file per enhancement: `ENH-NNN-short-slug.md`. Keep this index current.
 | [ENH-007](ENH-007-repomap-public-api-orientation.md) | Bias the repo map toward the public API | Medium | S–M | repomap | done |
 | [ENH-008](ENH-008-typescript-symbol-completeness.md) | Broaden TS/JS symbol extraction (interfaces/enums/types/arrow-consts) | Med–High | M | ingest.packs | done |
 | [ENH-009](ENH-009-retrieval-precision-dense-codebases.md) | Sharpen retrieval precision on dense / comment-sparse codebases (rerank/anchoring) | High | M | retrieve | partial (opt-in lexical rerank) |
+| [ENH-010](ENH-010-surrealdb-storage-backend.md) | SurrealDB storage backend (graph + vectors in one) | Med–High | M–L | store | shipped (unreleased) |
+| [ENH-011](ENH-011-cross-file-framework-resolution.md) | Cross-file framework resolution (route prefixes + DI grounding) | Med–High | M | frameworks | proposed · 0.4 candidate |
+| [ENH-012](ENH-012-additional-framework-packs.md) | Additional framework packs (Rails, Laravel, Gin, ASP.NET) | Med | M–L | frameworks.packs | proposed · 0.4/0.5 |
+| [ENH-013](ENH-013-rerank-measurement-campaign.md) | Cross-encoder rerank measurement & default-on decision | High | M | retrieve | proposed (needs creds/torch) |
+| [ENH-014](ENH-014-agentforge-production-rails.md) | Leverage AgentForge rails (otel / Agent / FallbackChain) | Med | M | enrich/serve | proposed · 0.4 (otel) / 0.5 |
+| [ENH-015](ENH-015-postgres-graph-backend.md) | Postgres graph backend (one Postgres for graph + vectors) | Med | M–L | store | proposed · 0.4/0.5 |
+| [ENH-016](ENH-016-hosted-docs-site.md) | Hosted documentation site (MkDocs Material + GitHub Pages) | Med | S–M | docs/infra | proposed · post-public |
 
 ## Template
 

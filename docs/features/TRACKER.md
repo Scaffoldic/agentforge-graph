@@ -21,6 +21,18 @@ Flask, SQLAlchemy, Django (Python); Express, NestJS (JS/TS); Spring (Java) — e
 `Route`/`DataModel`/`Service` nodes + `HANDLED_BY`/`HAS_FIELD`/`RELATES_TO`/`INJECTED_INTO`
 edges, surfaced via `ckg routes|models|services`. Older history below._
 
+> **▶ 0.4.0 roadmap (proposed — discuss before cutting).** Published to **PyPI**
+> (0.3.3). `main` is release-ready for **0.4.0** (a *minor* — ENH-010 SurrealDB
+> backend + the master-stroke README/guides/examples + community health +
+> `agentforge-py 0.3.x`); the cut is **held** for a consumer-side checklist pass.
+> Candidate enhancements specced for 0.4.0+ (see
+> [`docs/enhancements/`](../enhancements/README.md)): **ENH-011** cross-file
+> framework resolution · **ENH-012** more framework packs (Rails/Laravel/Gin/
+> ASP.NET) · **ENH-013** rerank measurement campaign · **ENH-014** AgentForge
+> production rails (otel/Agent/FallbackChain) · **ENH-015** Postgres graph backend
+> · **ENH-016** hosted docs site (post-public). The repo going **public** is a
+> separate gate (pre-checks pending)._
+
 _Older (2026-06-15): · **MVP feature-complete; hardening 0.1 in progress.**
 All 12 features ≥MVP. **OSS-prep done** (Apache-2.0 PR #17); **ENH-003 DONE** — registry
 + non-Bedrock adapters (PR #18/#20); **MCP dual transport** stdio+HTTP (PR #22). **0.1
