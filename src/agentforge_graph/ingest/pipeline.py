@@ -100,6 +100,7 @@ class IngestPipeline:
         report.skipped = list(source.skipped)
         report.routes_extracted = report.by_node_kind.get("Route", 0)
         report.models_extracted = report.by_node_kind.get("DataModel", 0)
+        report.services_extracted = report.by_node_kind.get("Service", 0)
 
         if paths is not None:
             # Scoped (incremental) extract: the caller re-resolves with the

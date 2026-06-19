@@ -92,6 +92,33 @@ def test_ckg_routes_cli(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> N
     assert "GET" in out and "/health" in out and "app.py" in out
 
 
+async def test_index_extracts_services(app_graph: tuple[CodeGraph, Path]) -> None:
+    cg, _ = app_graph
+    assert cg.stats().services_extracted == 1
+    nodes = (await cg.store.graph.query(GraphQuery(kinds=[NodeKind.SERVICE], limit=100))).nodes
+    assert {n.name for n in nodes} == {"get_db"}
+
+
+async def test_services_api_and_injected_into(app_graph: tuple[CodeGraph, Path]) -> None:
+    cg, _ = app_graph
+    services = await cg.services()
+    assert [s.name for s in services] == ["get_db"]
+    svc = services[0]
+    assert svc.framework == "fastapi" and svc.file == "app.py"
+    # injected into the refund handler
+    assert any(SymbolID.parse(c).descriptor == "refund()." for c in svc.injected_into)
+
+
+def test_ckg_services_cli(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    repo = tmp_path / "proj"
+    shutil.copytree(FIXTURES, repo)
+    assert main(["index", str(repo)]) == 0
+    capsys.readouterr()
+    assert main(["services", str(repo)]) == 0
+    out = capsys.readouterr().out
+    assert "get_db" in out and "refund" in out
+
+
 async def test_no_framework_no_routes(tmp_path: Path) -> None:
     repo = tmp_path / "plain"
     repo.mkdir()

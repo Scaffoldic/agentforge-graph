@@ -61,11 +61,17 @@ def _format_report(report: IndexReport) -> str:
         f"  resolve: imports {r.imports_resolved} in-repo + {r.imports_external} external, "
         f"calls {r.refs_resolved} resolved / {r.refs_unresolved} unresolved"
     )
-    if report.routes_extracted or report.models_extracted or report.framework_unresolved:
+    if (
+        report.routes_extracted
+        or report.models_extracted
+        or report.services_extracted
+        or report.framework_unresolved
+    ):
         lines.append(
             f"  frameworks: {report.routes_extracted} routes, "
             f"{report.models_extracted} models, "
-            f"{report.relations_resolved} relations "
+            f"{report.relations_resolved} relations, "
+            f"{report.services_extracted} services "
             f"({report.framework_unresolved} unresolved)"
         )
     if report.decisions_indexed or report.governs_resolved:
@@ -258,6 +264,22 @@ async def _models(args: argparse.Namespace) -> int:
                     f"{r['via'] or r['kind']}→{r['to']} ({r['kind']})" for r in m.relations
                 )
                 print(f"    relations: {rels}")
+    finally:
+        await cg.close()
+    return 0
+
+
+async def _services(args: argparse.Namespace) -> int:
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        services = await cg.services()
+        if not services:
+            print("(no services found)")
+            return 0
+        for s in services:
+            consumers = ", ".join(c.rsplit(" ", 1)[-1] for c in s.injected_into) or "—"
+            print(f"{s.name}  ({s.file}:{s.line})")
+            print(f"    injected into: {consumers}")
     finally:
         await cg.close()
     return 0
@@ -506,6 +528,11 @@ def build_parser() -> argparse.ArgumentParser:
     _add_repo_arg(md)
     md.add_argument("--config", default=None, help="path to ckg.yaml")
     md.set_defaults(func=_models)
+
+    sv = sub.add_parser("services", help="list DI-provided services and their injection sites")
+    _add_repo_arg(sv)
+    sv.add_argument("--config", default=None, help="path to ckg.yaml")
+    sv.set_defaults(func=_services)
 
     dec = sub.add_parser(
         "decisions", help="list architecture decisions (ADRs) and what they govern"

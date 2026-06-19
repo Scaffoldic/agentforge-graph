@@ -237,8 +237,17 @@ targets (class ref, `"app.Model"` string, or `"self"`) become `RELATES_TO`
 edges (`attrs.kind` = `fk`|`o2o`|`m2m`) — FK/O2O also a `HAS_FIELD` column, M2M
 relation-only. Resolves by class name against the whole-repo model set.
 
+**DI shipped (0.4 follow-on)** — the FastAPI pack now models dependency
+injection. A parameter defaulting to `Depends(provider)` / `Security(provider)`
+becomes a `Service` node (the provider) + an `INJECTED_INTO` edge to the
+consuming function — so "what is injected into this handler" / "where is
+`get_db` used" are graph queries. Intra-file, module-level consumers (class-based
+consumers counted unresolved, like class-based route handlers). Surfaced via
+`CodeGraph.services()`, `ckg services`, and `IndexReport.services_extracted`.
+Grounding the provider name to its definition (cross-file) is a follow-up.
+
 ### Follow-ups (same harness)
-- DI (`Service`/`INJECTED_INTO`).
 - Cross-file pass-2: `include_router(prefix=…)` composition, Django `urls.py`
   string view refs (the `resolve()`/`coupled_files()` hooks are reserved).
-- Class-based view handlers; Flask, Express/NestJS (TS), Spring (Java).
+- Class-based view/handler consumers; Flask, Express/NestJS (TS), Spring (Java).
+- Ground DI provider names to their function definitions (cross-file).

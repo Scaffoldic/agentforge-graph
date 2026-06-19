@@ -17,7 +17,7 @@ from agentforge_graph.store import Store
 from .pack import PackRegistry
 from .packs import BUILTIN_PACKS, builtin_registry
 from .pipeline import IngestPipeline
-from .report import IndexReport, ModelInfo, RouteInfo
+from .report import IndexReport, ModelInfo, RouteInfo, ServiceInfo
 from .source import RepoSource
 
 if TYPE_CHECKING:
@@ -527,6 +527,32 @@ class CodeGraph:
             )
         models.sort(key=lambda m: m.name)
         return models
+
+    async def services(self) -> list[ServiceInfo]:
+        """Every DI-provided service (feat-011): provider name, framework, the
+        consumer symbols it is ``INJECTED_INTO``, and source location, sorted by
+        name."""
+        from agentforge_graph.core import EdgeKind, GraphQuery, NodeKind, SymbolID
+
+        nodes = (
+            await self._store.graph.query(GraphQuery(kinds=[NodeKind.SERVICE], limit=10_000_000))
+        ).nodes
+        services: list[ServiceInfo] = []
+        for n in nodes:
+            edges = await self._store.graph.adjacent(
+                n.id, [EdgeKind.INJECTED_INTO], direction="out"
+            )
+            services.append(
+                ServiceInfo(
+                    name=str(n.attrs.get("provider") or n.name),
+                    framework=str(n.attrs.get("framework", "")),
+                    injected_into=sorted(e.dst for e in edges),
+                    file=SymbolID.parse(n.id).path,
+                    line=n.span[0] if n.span else 0,
+                )
+            )
+        services.sort(key=lambda s: s.name)
+        return services
 
     def _temporal_index(self) -> Any:
         """A ``TemporalIndex`` over the sidecar, or ``None`` when the evolution

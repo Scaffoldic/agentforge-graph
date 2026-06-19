@@ -47,6 +47,20 @@ class ModelInfo(BaseModel):
         return self.model_dump()
 
 
+class ServiceInfo(BaseModel):
+    """One DI-provided service (feat-011), for ``CodeGraph.services`` /
+    ``ckg services``."""
+
+    name: str  # the provider (dependency) name
+    framework: str
+    injected_into: list[str]  # consumer symbol ids the service is INJECTED_INTO
+    file: str
+    line: int
+
+    def to_dict(self) -> dict[str, object]:
+        return self.model_dump()
+
+
 class IndexReport(BaseModel):
     """Summary of a full ``IngestPipeline.run`` / ``CodeGraph.index``."""
 
@@ -59,6 +73,7 @@ class IndexReport(BaseModel):
     resolve: ResolveStats = Field(default_factory=ResolveStats)
     routes_extracted: int = 0  # feat-011: framework Route nodes emitted
     models_extracted: int = 0  # feat-011: ORM DataModel nodes emitted
+    services_extracted: int = 0  # feat-011: DI Service nodes emitted
     relations_resolved: int = 0  # feat-011: RELATES_TO edges from ORM relationship/FK targets
     framework_unresolved: int = 0  # framework registrations seen but not extractable
     decisions_indexed: int = 0  # feat-010: ADR Decision nodes
