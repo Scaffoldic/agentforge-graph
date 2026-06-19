@@ -9,6 +9,7 @@ from pathlib import Path
 
 from agentforge_graph.core import EdgeKind, NodeKind, SourceFile, SymbolID
 from agentforge_graph.frameworks.base import FrameworkFacts, FrameworkPack
+from agentforge_graph.frameworks.orm import ModelIndex
 from agentforge_graph.frameworks.packs.sqlalchemy import SQLALCHEMY_PACK, _resolve_target
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sqlalchemy"
@@ -87,22 +88,18 @@ def test_pending_relations_recorded_on_model_nodes() -> None:
 
 
 def test_resolve_target_unique_match_only() -> None:
-    by_class = {"Post": {"id:Post"}, "Tag": {"a:Tag", "b:Tag"}}
-    by_table = {"users": {"id:User"}}
+    index = ModelIndex([])
+    index.by_class = {"Post": {"id:Post"}, "Tag": {"a:Tag", "b:Tag"}}
+    index.by_table = {"users": {"id:User"}}
     # relationship by class name (last segment of a dotted target)
-    assert (
-        _resolve_target({"target": "Post", "kind": "relationship"}, by_class, by_table) == "id:Post"
-    )
-    assert (
-        _resolve_target({"target": "models.Post", "kind": "relationship"}, by_class, by_table)
-        == "id:Post"
-    )
+    assert _resolve_target({"target": "Post", "kind": "relationship"}, index) == "id:Post"
+    assert _resolve_target({"target": "models.Post", "kind": "relationship"}, index) == "id:Post"
     # fk by the table segment of "users.id"
-    assert _resolve_target({"target": "users.id", "kind": "fk"}, by_class, by_table) == "id:User"
+    assert _resolve_target({"target": "users.id", "kind": "fk"}, index) == "id:User"
     # ambiguous class name (two models) -> unresolved (ADR-0004)
-    assert _resolve_target({"target": "Tag", "kind": "relationship"}, by_class, by_table) is None
+    assert _resolve_target({"target": "Tag", "kind": "relationship"}, index) is None
     # external / unknown target -> unresolved
-    assert _resolve_target({"target": "Other", "kind": "relationship"}, by_class, by_table) is None
+    assert _resolve_target({"target": "Other", "kind": "relationship"}, index) is None
 
 
 def test_plain_class_is_not_a_model() -> None:
