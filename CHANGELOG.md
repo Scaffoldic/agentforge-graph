@@ -10,6 +10,11 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **Project metadata + community health.** `[project.urls]` (Homepage,
+  Repository, Changelog, Issues, Documentation) so the PyPI page links out;
+  `SECURITY.md`, `CODE_OF_CONDUCT.md`, GitHub issue + PR templates; README doc
+  links made absolute so they resolve on the PyPI project page.
+
 - **SurrealDB storage backend — graph + vectors in one (ENH-010).** A first-party
   `surrealdb` driver for *both* `store.graph.driver` and `store.vectors.driver`,
   so one multi-model server is a complete backend (`pip install
