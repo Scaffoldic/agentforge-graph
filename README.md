@@ -31,7 +31,7 @@ agent can traverse — every fact carrying its provenance.**
 | **Agent-native** | Served read-only over MCP (9 tools) or as a native AgentForge toolset. Every response carries a staleness envelope. |
 | **Embedded-first** | Local Kuzu graph + LanceDB vectors under `.ckg/`. No server to run. Storage and models are pluggable (see below). |
 
-**Status: 0.3.1 — production-grade.** The full pipeline works end-to-end on real
+**Status: 0.3.2 — production-grade.** The full pipeline works end-to-end on real
 code — `index → embed → enrich → query / map / decisions / routes / models /
 services / explain / history`, served over MCP. 0.3.0 completes the
 History + decisions theme (temporal/git-evolution + ADR/docs ingestion) and adds
