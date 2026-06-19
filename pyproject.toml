@@ -62,6 +62,9 @@ rerank = ["sentence-transformers>=2.2"]
 neo4j = ["neo4j>=5"]
 # Opt-in server vector backend: Postgres + pgvector (ENH-004). `--extra pgvector`.
 pgvector = ["asyncpg>=0.30", "pgvector>=0.3"]
+# Opt-in single server backend: SurrealDB — graph + vectors in one (ENH-010).
+# `--extra surrealdb`. Pinned <3 (the 3.0 SDK has breaking API changes).
+surrealdb = ["surrealdb>=2,<3"]
 # Opt-in hosted embeddings (feat-005). `--extra voyage`.
 voyage = ["agentforge-voyage"]
 # AWS Bedrock embeddings + LLM enrichment (feat-005/012, Cohere + Claude). `--extra bedrock`.
@@ -123,6 +126,7 @@ module = [
     "neo4j.*",        # ENH-004 Neo4j graph backend; in the `neo4j` extra
     "asyncpg.*",      # ENH-004 pgvector backend; in the `pgvector` extra
     "pgvector.*",     # ENH-004 pgvector backend; in the `pgvector` extra
+    "surrealdb.*",    # ENH-010 SurrealDB backend; in the `surrealdb` extra
     "sentence_transformers.*",  # ENH-009 cross-encoder rerank; in the `rerank` extra
     "agentforge.*",
     "agentforge_core.*",
@@ -130,6 +134,17 @@ module = [
     "mcp.*",          # ENH-005 HTTP-auth runner; mcp SDK ships in the [mcp] extra
 ]
 ignore_missing_imports = true
+
+[tool.coverage.run]
+omit = [
+    # Server-backend store adapters (ENH-004/010) are exercised by the dedicated
+    # `server-backends` CI job (conformance against live Neo4j/Postgres/SurrealDB),
+    # not the base coverage job — which has no servers — so they would otherwise
+    # read as uncovered here. Their behavior is proven by the conformance suite.
+    "src/agentforge_graph/store/neo4j_store.py",
+    "src/agentforge_graph/store/pgvector_store.py",
+    "src/agentforge_graph/store/surreal_store.py",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

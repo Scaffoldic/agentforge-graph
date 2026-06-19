@@ -11,14 +11,19 @@ you can move either (or both).
 
 ## What ships
 
-| Layer | Embedded (default) | Server (ENH-004) |
+| Layer | Embedded (default) | Server |
 |---|---|---|
-| **Graph** | `kuzu` | **`neo4j`** — `pip install agentforge-graph[neo4j]` |
-| **Vectors** | `lancedb` | **`pgvector`** — `pip install agentforge-graph[pgvector]` |
+| **Graph** | `kuzu` | **`neo4j`** (`[neo4j]`) · **`surrealdb`** (`[surrealdb]`) |
+| **Vectors** | `lancedb` | **`pgvector`** (`[pgvector]`) · **`surrealdb`** (`[surrealdb]`) |
+
+**SurrealDB is multi-model** — one `surrealdb` server covers *both* the graph and
+the vectors (ENH-010), so `store.graph.driver: surrealdb` +
+`store.vectors.driver: surrealdb` is a complete single-server setup.
 
 Every backend passes the **same** `GraphStoreConformance` / `VectorStoreConformance`
 suite — they are true drop-ins, verified by the identical tests the embedded
-defaults pass (and, for the server backends, run against real Neo4j + Postgres
+defaults pass (and, for the server backends, run against real Neo4j + Postgres +
+SurrealDB
 in CI).
 
 ## Switch the graph to Neo4j
@@ -64,6 +69,26 @@ The adapter ensures the `vector` extension exists, creates a `ckg_vectors` table
 (dimension fixed from your embedder on first write), and uses cosine distance —
 exposing a similarity in `[0, 1]` exactly like the embedded default.
 
+## Switch both to SurrealDB (one server)
+
+SurrealDB is multi-model, so a single server is **both** the graph and the
+vectors (ENH-010):
+
+```bash
+pip install 'agentforge-graph[surrealdb]'   # or: uv sync --extra surrealdb
+```
+```yaml
+# ckg.yaml
+store:
+  graph:   { driver: surrealdb, config: { url: ws://your-host:8000/rpc } }
+  vectors: { driver: surrealdb, config: { url: ws://your-host:8000/rpc } }
+```
+
+Password via `CKG_SURREALDB_PASS` (or `config.password`); `namespace`/`database`
+default to `ckg`. The graph is two document tables (`ckg_node`/`ckg_edge`, the
+same open schema); vectors use brute-force cosine in `[0, 1]`. Local server:
+`docker run -p 8000:8000 surrealdb/surrealdb:latest start --user root --pass root memory`.
+
 ## Mix and match
 
 The two are orthogonal — e.g. a shared Neo4j graph with embedded LanceDB vectors,
@@ -79,10 +104,11 @@ for the *HTTP MCP transport* is a separate concern — see ENH-005.)
 
 ## Bring your own backend
 
-The two server backends are first-party, but the registry is open: a third-party
-adapter registers via the `agentforge_graph.graph_drivers` /
-`agentforge_graph.vector_drivers` entry-point groups and is selected by the same
-`driver:` key, with no core change. Implement `GraphStore` / `VectorStore` and pass
-the conformance suite. (SurrealDB — graph **and** vector in one — is an attractive
-future single backend now that the contract is proven against two independent
-servers.)
+The first-party server backends (Neo4j, pgvector, SurrealDB) are just the start —
+the registry is open: a third-party adapter registers via the
+`agentforge_graph.graph_drivers` / `agentforge_graph.vector_drivers` entry-point
+groups and is selected by the same `driver:` key, with no core change. Implement
+`GraphStore` / `VectorStore`, pass the conformance suite, register the entry
+point — then it's `pip install your-adapter` + one config line. The SurrealDB
+adapter (a multi-model single server) is the worked proof that the contract holds
+for an independent third backend.

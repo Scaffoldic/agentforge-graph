@@ -8,6 +8,19 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+### Added
+
+- **SurrealDB storage backend — graph + vectors in one (ENH-010).** A first-party
+  `surrealdb` driver for *both* `store.graph.driver` and `store.vectors.driver`,
+  so one multi-model server is a complete backend (`pip install
+  agentforge-graph[surrealdb]`). It passes the same `GraphStoreConformance` /
+  `VectorStoreConformance` suites as Kuzu/Neo4j/LanceDB/pgvector — verified
+  against a live SurrealDB in the `server-backends` CI job. Nodes/edges are
+  document tables on the shared open schema (hash-keyed records, the symbol id in
+  a `key` field); vector search is brute-force cosine in `[0, 1]`. This makes the
+  "day-one, plug in a different DB" promise provable end-to-end against an
+  independent third backend.
+
 ## [0.3.3] - 2026-06-19
 
 Leaner base install + the refreshed README on PyPI.
