@@ -55,7 +55,7 @@ jobs:
   # no secrets), so Neo4j/pgvector are verified in CI — not just locally. Separate
   # job so a DB hiccup can't fail the core gate; both must pass to merge.
   server-backends:
-    name: server backends (neo4j + pgvector conformance)
+    name: server backends (neo4j + pgvector + surrealdb conformance)
     runs-on: ubuntu-latest
     services:
       neo4j:
@@ -81,14 +81,26 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - name: Sync dependencies (+ neo4j + pgvector extras)
-        run: uv sync --extra dev --extra engine --extra neo4j --extra pgvector
+      - name: Sync dependencies (+ neo4j + pgvector + surrealdb extras)
+        run: uv sync --extra dev --extra engine --extra neo4j --extra pgvector --extra surrealdb
+      # SurrealDB needs its `start` command + args, which a `services:` container
+      # can't express — so run it directly and wait for the /health endpoint.
+      - name: Start SurrealDB
+        run: |
+          docker run -d --name surreal -p 8000:8000 \
+            surrealdb/surrealdb:latest start --user root --pass root memory
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/health && break
+            sleep 1
+          done
       - name: Server-backend conformance
         env:
           CKG_NEO4J_URI: bolt://localhost:7687
           CKG_NEO4J_PASSWORD: ckgckgckg
           CKG_PGVECTOR_DSN: postgresql://postgres:ckg@localhost:5432/ckg
+          CKG_SURREALDB_URL: ws://localhost:8000/rpc
         run: >-
           uv run pytest --no-cov
           tests/store/test_neo4j_conformance.py
           tests/store/test_pgvector_conformance.py
+          tests/store/test_surreal_conformance.py

@@ -180,10 +180,14 @@ store:
   vectors: { driver: lancedb }    # built-in
 ```
 
-A server backend (Neo4j, pgvector, …) is an **out-of-tree adapter**: implement the
-contract, pass the reusable `GraphStoreConformance` suite, register an entry point —
-then it's `pip install + one config line`, no core change. Neo4j and pgvector ship
-first-party as opt-in extras. → [`docs/guides/storage-backends.md`](docs/guides/storage-backends.md).
+Three server backends ship first-party as opt-in extras: **Neo4j** (graph),
+**Postgres/pgvector** (vectors), and **SurrealDB** — multi-model, so one server is
+*both* graph + vectors. Each passes the *same* `GraphStoreConformance` /
+`VectorStoreConformance` suite the embedded defaults do (run against live servers
+in CI). Anything else (SurrealDB aside, FalkorDB, …) is an **out-of-tree adapter**:
+implement the contract, pass the conformance suite, register an entry point — then
+it's `pip install + one config line`, no core change.
+→ [`docs/guides/storage-backends.md`](docs/guides/storage-backends.md).
 
 ## Models — pick a provider, or bring your own
 
@@ -247,6 +251,7 @@ The base `pip install agentforge-graph` includes the deterministic engine
 | `…[bedrock]` | `boto3` — Bedrock embeddings + Claude enrichment |
 | `…[openai]` | `openai` — OpenAI / local OpenAI-compatible embeddings |
 | `…[neo4j]` / `…[pgvector]` | opt-in server graph / vector backends |
+| `…[surrealdb]` | opt-in single server — graph **and** vectors (multi-model) |
 | `…[rerank]` | sentence-transformers cross-encoder (off by default) |
 
 The Anthropic-API enrichment path (`enrich.provider: anthropic`) needs no extra —

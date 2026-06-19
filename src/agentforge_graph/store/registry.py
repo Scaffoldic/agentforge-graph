@@ -17,12 +17,21 @@ from .kuzu_store import KuzuGraphStore
 from .lance_store import LanceVectorStore
 from .neo4j_store import Neo4jGraphStore
 from .pgvector_store import PgVectorStore
+from .surreal_store import SurrealGraphStore, SurrealVectorStore
 
 GRAPH_GROUP = "agentforge_graph.graph_drivers"
 VECTOR_GROUP = "agentforge_graph.vector_drivers"
 
-_GRAPH_BUILTINS: dict[str, Any] = {"kuzu": KuzuGraphStore, "neo4j": Neo4jGraphStore}
-_VECTOR_BUILTINS: dict[str, Any] = {"lancedb": LanceVectorStore, "pgvector": PgVectorStore}
+_GRAPH_BUILTINS: dict[str, Any] = {
+    "kuzu": KuzuGraphStore,
+    "neo4j": Neo4jGraphStore,
+    "surrealdb": SurrealGraphStore,
+}
+_VECTOR_BUILTINS: dict[str, Any] = {
+    "lancedb": LanceVectorStore,
+    "pgvector": PgVectorStore,
+    "surrealdb": SurrealVectorStore,
+}
 
 
 def _resolve(name: str, builtins: dict[str, Any], group: str) -> Any:
