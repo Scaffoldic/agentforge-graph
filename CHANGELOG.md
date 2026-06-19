@@ -8,6 +8,19 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-19
+
+Packaging release — the **PyPI debut**. No functional changes.
+
+### Packaging
+
+- Add PyPI distribution metadata: `readme` (renders the README on the project
+  page), `keywords`, and trove `classifiers`.
+- Pin the AgentForge framework dependencies (`agentforge-py`,
+  `agentforge-anthropic`, `agentforge-mcp`) to the validated `>=0.2.4,<0.3`
+  line, so a fresh `pip install` resolves the framework version this release was
+  built and tested against (rather than an unvalidated newer line).
+
 ## [0.3.0] - 2026-06-19
 
 The **History + decisions** release, plus the **framework-aware extractors**
@@ -384,7 +397,8 @@ questions over the tools, unattended.
   on a real repo (fixed BUG-008, a default-config `ckg query` break); and parse
   coverage holds at scale (`django`, 2922 files, ~100%, no crash).
 
-[Unreleased]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Scaffoldic/agentforge-grpah/releases/tag/v0.1.0
