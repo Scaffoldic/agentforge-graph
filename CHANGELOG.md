@@ -10,6 +10,13 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **NestJS routes — TypeScript (feat-011).** A built-in NestJS pack extracts
+  controller endpoints into `Route` nodes + `HANDLED_BY` edges. A class is a
+  route source only with an `@Controller` decorator (its `@Controller('base')`
+  arg is the base path); each `@Get`/`@Post`/`@Put`/`@Delete`/`@Patch`/`@All`
+  method becomes a route (base joined with the decorator path) handled by the
+  `Class#method` symbol. Handles TS's preceding-sibling decorator placement.
+
 - **Spring MVC routes — Java (feat-011).** A built-in Spring pack extracts
   controller endpoints into `Route` nodes + `HANDLED_BY` edges. A class is a
   route source only when it's a controller (`@RestController`/`@Controller` or a

@@ -277,9 +277,17 @@ controller (`@RestController`/`@Controller`, or a class-level `@RequestMapping`)
 class base path joined with the method path, with a `HANDLED_BY` edge to the
 `Class#method` symbol (verified e2e: lands on the real Java method node).
 
+**NestJS routes shipped (0.4 follow-on)** — the built-in **NestJS** pack extracts
+TypeScript controller endpoints. A class is a route source only with an
+`@Controller` decorator (its optional `@Controller('base')` arg = base path);
+each `@Get`/`@Post`/`@Put`/`@Delete`/`@Patch`/`@All` method becomes a `Route`
+(base joined with the decorator path) handled by `Class#method`. TS decorators
+are preceding siblings, so the pack reads the class's preceding decorators and
+walks the class body in order (verified e2e on the real TS method node).
+
 ### Follow-ups (same harness)
 - Cross-file pass-2: `include_router(prefix=…)` / `app.use('/p', router)`
   composition, Django `urls.py` string view refs (the `resolve()`/
   `coupled_files()` hooks are reserved).
-- NestJS (TS decorators); Rails/Laravel/Gin/ASP.NET (cross-language parity §6).
+- Rails/Laravel/Gin/ASP.NET (cross-language parity §6).
 - Ground DI provider names to their function definitions (cross-file).
