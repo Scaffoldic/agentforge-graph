@@ -8,7 +8,16 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
-### Added (unreleased, toward 0.3.0)
+## [0.3.0] - 2026-06-19
+
+The **History + decisions** release, plus the **framework-aware extractors**
+differentiator landed early. feat-009 temporal layer (shipped in 0.2.0) +
+feat-010 ADR/docs ingestion complete the 0.3 theme; feat-011 adds framework
+edge extraction across Python, JavaScript/TypeScript, and Java. The on-disk
+index schema is unchanged from 0.2.0 (the new node/edge kinds were reserved at
+0.1).
+
+### Added
 
 - **NestJS routes — TypeScript (feat-011).** A built-in NestJS pack extracts
   controller endpoints into `Route` nodes + `HANDLED_BY` edges. A class is a
@@ -375,5 +384,7 @@ questions over the tools, unattended.
   on a real repo (fixed BUG-008, a default-config `ckg query` break); and parse
   coverage holds at scale (`django`, 2922 files, ~100%, no crash).
 
-[Unreleased]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Scaffoldic/agentforge-grpah/releases/tag/v0.1.0
