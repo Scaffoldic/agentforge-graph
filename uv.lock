@@ -40,7 +40,7 @@ wheels = [
 
 [[package]]
 name = "agentforge-graph"
-version = "0.3.0.dev0"
+version = "0.3.1"
 source = { editable = "." }
 dependencies = [
     { name = "agentforge-anthropic", extra = ["anthropic"] },
@@ -92,10 +92,10 @@ voyage = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agentforge-anthropic", extras = ["anthropic"] },
-    { name = "agentforge-mcp", extras = ["mcp"] },
+    { name = "agentforge-anthropic", extras = ["anthropic"], specifier = ">=0.2.4,<0.3" },
+    { name = "agentforge-mcp", extras = ["mcp"], specifier = ">=0.2.4,<0.3" },
     { name = "agentforge-otel", marker = "extra == 'otel'" },
-    { name = "agentforge-py" },
+    { name = "agentforge-py", specifier = ">=0.2.4,<0.3" },
     { name = "agentforge-voyage", marker = "extra == 'voyage'" },
     { name = "asyncpg", marker = "extra == 'pgvector'", specifier = ">=0.30" },
     { name = "boto3", marker = "extra == 'bedrock'", specifier = ">=1.35" },

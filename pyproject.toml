@@ -3,16 +3,39 @@
 # scaffold default. Managed-file upgrades will treat this as forked.
 [project]
 name = "agentforge-graph"
-version = "0.3.0"
+version = "0.3.1"
 description = "Code Knowledge Graph (CKG) engine + agent toolset, built on AgentForge."
+readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.13"
+keywords = [
+    "code-knowledge-graph",
+    "ckg",
+    "tree-sitter",
+    "code-search",
+    "static-analysis",
+    "agent",
+    "mcp",
+    "rag",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Documentation",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
 dependencies = [
     # --- AgentForge framework (runtime + provider + serving) ---
-    "agentforge-py",                       # core contracts + Agent runtime + CLI
-    "agentforge-anthropic[anthropic]",     # LLM provider for enrichment (feat-010, feat-012)
-    "agentforge-mcp[mcp]",                 # MCP serving layer + mcp SDK (feat-008)
+    # Pinned to the validated 0.2.x line (built + tested against 0.2.4); the
+    # framework's 0.3.x is not yet validated here.
+    "agentforge-py>=0.2.4,<0.3",            # core contracts + Agent runtime + CLI
+    "agentforge-anthropic[anthropic]>=0.2.4,<0.3",  # LLM provider for enrichment (feat-010, feat-012)
+    "agentforge-mcp[mcp]>=0.2.4,<0.3",      # MCP serving layer + mcp SDK (feat-008)
     "python-dotenv>=1.0",
     "pyyaml>=6",                           # read ckg.yaml engine config (feat-003+)
 ]
