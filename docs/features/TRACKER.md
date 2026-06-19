@@ -12,14 +12,14 @@ pick, and milestones. Specs live alongside in
 > in `.claude/state/current.md` once the project is scaffolded — this
 > tracker is the planning/dependency view, not the live work log.
 
-_Last updated: 2026-06-18 · **v0.1.0 + v0.2.0 RELEASED; 0.3 feature-complete (unreleased,
-`0.3.0.dev0`).** **0.2.0** shipped the temporal/git-evolution layer (feat-009), a
-cross-encoder reranker seam (ENH-009), and a resolver-completeness sweep (BUG-006:
-intra-type calls resolve across all 10 packs). **0.3** completed **feat-010** (ADR & docs
-ingestion) end-to-end: ADR/doc prose embedded + searchable, `infer_governs` LLM pass,
-docstrings (Python + JS/TS JSDoc) + general `doc_globs` + commit messages → `DESCRIBES`,
-incremental doc embedding, code-vs-doc retrieval weighting. **Both 0.3 themes (feat-009 +
-feat-010) are DONE → 0.3.0 is ready to cut.** Older history below._
+_Last updated: 2026-06-19 · **v0.1.0 + v0.2.0 + v0.3.0 RELEASED** (GitHub; PyPI is the next
+phase). **0.2.0** shipped the temporal/git-evolution layer (feat-009), a cross-encoder reranker
+seam (ENH-009), and a resolver-completeness sweep (BUG-006: intra-type calls resolve across all
+10 packs). **0.3.0** completed **feat-010** (ADR & docs ingestion) end-to-end and landed the
+**feat-011** framework-aware extractors early: 7 packs — FastAPI (routes + DI + class-based),
+Flask, SQLAlchemy, Django (Python); Express, NestJS (JS/TS); Spring (Java) — emitting
+`Route`/`DataModel`/`Service` nodes + `HANDLED_BY`/`HAS_FIELD`/`RELATES_TO`/`INJECTED_INTO`
+edges, surfaced via `ckg routes|models|services`. Older history below._
 
 _Older (2026-06-15): · **MVP feature-complete; hardening 0.1 in progress.**
 All 12 features ≥MVP. **OSS-prep done** (Apache-2.0 PR #17); **ENH-003 DONE** — registry
@@ -55,7 +55,7 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 | [004](feat-004-incremental-indexing.md) | Incremental indexing | 2 incr | 0.2 | shipped | 002,003 | 009 | ✅ |
 | [009](feat-009-temporal-evolution-layer.md) | Temporal / git evolution | 2 incr | 0.2 | **shipped (0.2.0)** | 004 | — | ✅ |
 | [010](feat-010-adr-and-docs-ingestion.md) | ADR & docs ingestion | 3 diff | 0.3 | **shipped (0.3 — ADR/docs/docstrings/commits + GOVERNS/DESCRIBES)** | 005,006 | — | ✅ |
-| [011](feat-011-framework-extractors.md) | Framework-aware extractors | 3 diff | 0.4 | MVP shipped (FastAPI routes) | 002 | — | 🟡 |
+| [011](feat-011-framework-extractors.md) | Framework-aware extractors | 3 diff | 0.4 | shipped v0.3.0 (7 packs: routes/ORM/DI) | 002 | — | 🟢 |
 | [012](feat-012-llm-enrichment.md) | LLM enrichment (summaries, tags) | 3 diff | 0.4 | shipped (tags + summaries) | 006 | — | ✅ |
 
 ---

@@ -6,7 +6,7 @@
 |---|---|
 | **ID** | feat-011 |
 | **Title** | Framework-aware extractors (routes, ORM, DI as graph edges) |
-| **Status** | proposed |
+| **Status** | shipped (v0.3.0) |
 | **Owner** | kjoshi |
 | **Created** | 2026-06-11 |
 | **Target version** | 0.4.0 |
