@@ -61,9 +61,10 @@ def _format_report(report: IndexReport) -> str:
         f"  resolve: imports {r.imports_resolved} in-repo + {r.imports_external} external, "
         f"calls {r.refs_resolved} resolved / {r.refs_unresolved} unresolved"
     )
-    if report.routes_extracted or report.framework_unresolved:
+    if report.routes_extracted or report.models_extracted or report.framework_unresolved:
         lines.append(
-            f"  frameworks: {report.routes_extracted} routes "
+            f"  frameworks: {report.routes_extracted} routes, "
+            f"{report.models_extracted} models "
             f"({report.framework_unresolved} unresolved)"
         )
     if report.decisions_indexed or report.governs_resolved:
@@ -234,6 +235,23 @@ async def _routes(args: argparse.Namespace) -> int:
         for r in routes:
             handler = r.handler.rsplit(" ", 1)[-1] if r.handler else "?"
             print(f"{r.method:<{width}}  {r.path}  →  {handler}  ({r.file}:{r.line})")
+    finally:
+        await cg.close()
+    return 0
+
+
+async def _models(args: argparse.Namespace) -> int:
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        models = await cg.models()
+        if not models:
+            print("(no models found)")
+            return 0
+        for m in models:
+            table = f" [{m.table}]" if m.table else ""
+            fields = ", ".join(m.fields) if m.fields else "—"
+            print(f"{m.name}{table}  ({m.file}:{m.line})")
+            print(f"    fields: {fields}")
     finally:
         await cg.close()
     return 0
@@ -477,6 +495,11 @@ def build_parser() -> argparse.ArgumentParser:
     _add_repo_arg(rt)
     rt.add_argument("--config", default=None, help="path to ckg.yaml")
     rt.set_defaults(func=_routes)
+
+    md = sub.add_parser("models", help="list extracted ORM data models (table, fields)")
+    _add_repo_arg(md)
+    md.add_argument("--config", default=None, help="path to ckg.yaml")
+    md.set_defaults(func=_models)
 
     dec = sub.add_parser(
         "decisions", help="list architecture decisions (ADRs) and what they govern"

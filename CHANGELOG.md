@@ -10,6 +10,18 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **SQLAlchemy ORM models as `DataModel` nodes (feat-011).** The built-in
+  SQLAlchemy framework pack extracts declarative models into `DataModel` nodes
+  (table from `__tablename__`, the underlying class in `attrs.class`) with
+  `HAS_FIELD` edges to each mapped column — a `Variable` field carrying its
+  `column_type`. Classic (`name = Column(Integer)`) and 2.0-style
+  (`id: Mapped[int] = mapped_column()`) forms both recognised; a class becomes a
+  model only with declarative evidence (`__tablename__` or ≥1 column), so plain
+  classes never mint false models. Surfaced via `CodeGraph.models()`, the
+  `ckg models` CLI, and `IndexReport.models_extracted`. `relationship()` /
+  `ForeignKey()` are counted in `framework_unresolved` pending the cross-file
+  `RELATES_TO` pass-2.
+
 - **JS/TS JSDoc as `DESCRIBES` doc nodes (feat-010).** A `/** … */` block comment
   immediately before a function/class/method becomes a `DocChunk` that `DESCRIBES`
   the symbol — extending docstring ingestion (Python) to JavaScript/TypeScript. The

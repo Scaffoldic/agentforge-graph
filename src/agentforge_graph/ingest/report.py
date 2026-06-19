@@ -30,6 +30,22 @@ class RouteInfo(BaseModel):
         return self.model_dump()
 
 
+class ModelInfo(BaseModel):
+    """One extracted ORM data model (feat-011), for ``CodeGraph.models`` /
+    ``ckg models``."""
+
+    name: str  # table name when known, else the class name
+    table: str  # mapped table name ("" when not statically known)
+    framework: str
+    fields: list[str]  # mapped column/field names
+    cls: str  # the underlying class symbol id
+    file: str
+    line: int
+
+    def to_dict(self) -> dict[str, object]:
+        return self.model_dump()
+
+
 class IndexReport(BaseModel):
     """Summary of a full ``IngestPipeline.run`` / ``CodeGraph.index``."""
 
@@ -41,6 +57,7 @@ class IndexReport(BaseModel):
     skipped: list[str] = Field(default_factory=list)
     resolve: ResolveStats = Field(default_factory=ResolveStats)
     routes_extracted: int = 0  # feat-011: framework Route nodes emitted
+    models_extracted: int = 0  # feat-011: ORM DataModel nodes emitted
     framework_unresolved: int = 0  # framework registrations seen but not extractable
     decisions_indexed: int = 0  # feat-010: ADR Decision nodes
     governs_resolved: int = 0  # GOVERNS edges from unambiguous ADR mentions

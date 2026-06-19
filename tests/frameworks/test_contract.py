@@ -8,6 +8,7 @@ from agentforge_graph.frameworks import (
     builtin_framework_registry,
 )
 from agentforge_graph.frameworks.packs.fastapi import FASTAPI_PACK
+from agentforge_graph.frameworks.packs.sqlalchemy import SQLALCHEMY_PACK
 
 
 def test_default_resolve_and_coupled_files_are_inert() -> None:
@@ -21,7 +22,8 @@ def test_registry_lookup() -> None:
     assert FASTAPI_PACK in BUILTIN_FRAMEWORK_PACKS
     assert reg.by_name("fastapi") is FASTAPI_PACK
     assert reg.by_name("django") is None
-    assert reg.for_language("python") == [FASTAPI_PACK]
+    assert reg.by_name("sqlalchemy") is SQLALCHEMY_PACK
+    assert set(reg.for_language("python")) == {FASTAPI_PACK, SQLALCHEMY_PACK}
     assert reg.for_language("rust") == []
 
 

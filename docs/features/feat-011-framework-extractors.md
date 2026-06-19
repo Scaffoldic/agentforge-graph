@@ -204,8 +204,21 @@ inherit feat-004 incrementality unchanged — a changed file re-emits its routes
 ≥97% package coverage; `mypy --strict` + ruff clean. Design:
 `docs/design/design-011-framework-extractors.md`.
 
+**ORM models shipped (0.4 follow-on)** — **SQLAlchemy declarative models**.
+The built-in **SQLAlchemy** pack (`models.scm` + body analysis) emits a
+`DataModel` node per declarative model (table from `__tablename__`, the
+underlying class symbol in `attrs.class`) with `HAS_FIELD` edges to each mapped
+column — a `Variable` field carrying its `column_type`. Both classic
+(`name = Column(Integer)`) and 2.0-style (`id: Mapped[int] = mapped_column()`)
+forms are recognised; a class mints a model only with declarative evidence
+(`__tablename__` or ≥1 column), so plain classes never become false models
+(ADR-0004). Surfaces: `CodeGraph.models()`, `ckg models` CLI, `IndexReport.
+models_extracted`. `relationship()`/`ForeignKey()` are counted in
+`framework_unresolved` pending the cross-file `RELATES_TO` pass-2.
+
 ### Follow-ups (same harness)
-- ORM pack (`DataModel`/`HAS_FIELD`/`RELATES_TO`) — SQLAlchemy/Django models.
+- ORM `RELATES_TO`: SQLAlchemy `relationship("X")` / `ForeignKey("t.c")` string
+  targets (cross-file pass-2); Django models (`models.Model` subclasses, FK/M2M).
 - DI (`Service`/`INJECTED_INTO`).
 - Cross-file pass-2: `include_router(prefix=…)` composition, Django `urls.py`
   string view refs (the `resolve()`/`coupled_files()` hooks are reserved).
