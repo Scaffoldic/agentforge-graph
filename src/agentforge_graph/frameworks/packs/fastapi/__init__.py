@@ -5,9 +5,10 @@ nodes + ``HANDLED_BY`` edges to the handler ``Function``. DI: a parameter
 defaulting to ``Depends(provider)`` / ``Security(provider)`` becomes a
 ``Service`` node (the provider) + an ``INJECTED_INTO`` edge to the consuming
 function. Both are intra-file (decorator/param and the function share a file, so
-the edge endpoints are in the file's ``FileSubgraph``). Cross-file
-``include_router`` prefix composition, class-based handlers, and grounding the
-provider name to its definition are follow-ups (counted as unresolved here).
+the edge endpoints are in the file's ``FileSubgraph``). Class-based handlers /
+consumers resolve to their ``Class#method`` symbol. Cross-file ``include_router``
+prefix composition and grounding the provider name to its definition are
+follow-ups; a dynamic (non-literal) route path is counted as unresolved.
 """
 
 from __future__ import annotations
@@ -62,13 +63,24 @@ def _first_string(args: TSNode, src: bytes) -> str | None:
     return None
 
 
-def _inside_class(node: TSNode) -> bool:
+def _enclosing_class(node: TSNode, src: bytes) -> str | None:
+    """The name of the nearest enclosing ``class_definition``, or None for a
+    module-level definition — lets a class-based handler/consumer resolve to its
+    ``Class#method`` symbol instead of being counted unresolved."""
     anc = node.parent
     while anc is not None:
         if anc.type == "class_definition":
-            return True
+            name = anc.child_by_field_name("name")
+            return text(name, src) if name is not None else None
         anc = anc.parent
-    return False
+    return None
+
+
+def _member_descriptor(name: str, enclosing_class: str | None) -> str:
+    """``Class#method().`` for a method, ``method().`` for a free function."""
+    if enclosing_class is not None:
+        return Descriptor.type(enclosing_class) + Descriptor.method(name)
+    return Descriptor.method(name)
 
 
 class FastAPIPack(FrameworkPack):
@@ -110,16 +122,15 @@ class FastAPIPack(FrameworkPack):
                 continue  # @app.middleware / @app.on_event / etc. — not a route
 
             # A route we recognise but can't pin down statically is counted,
-            # not dropped: dynamic path, or a class-based handler (MVP).
+            # not dropped: a dynamic (non-literal) path.
             path = _first_string(args_caps[0], src)
-            if path is None or _inside_class(handler_caps[0]):
+            if path is None:
                 facts.unresolved += 1
                 continue
 
             handler = text(handler_caps[0], src)
-            handler_id = SymbolID.for_symbol(
-                self.language_slug, repo, file.path, Descriptor.method(handler)
-            )
+            handler_desc = _member_descriptor(handler, _enclosing_class(handler_caps[0], src))
+            handler_id = SymbolID.for_symbol(self.language_slug, repo, file.path, handler_desc)
             method_u = method.upper()
             route_id = SymbolID.for_symbol(
                 self.language_slug, repo, file.path, f"route({method_u} {path})."
@@ -173,12 +184,10 @@ class FastAPIPack(FrameworkPack):
             providers = self._depends_providers(params, src)
             if not providers:
                 continue
-            if _inside_class(fn_node):
-                facts.unresolved += len(providers)
-                continue
-            consumer_id = SymbolID.for_symbol(
-                self.language_slug, repo, file.path, Descriptor.method(text(name_caps[0], src))
+            consumer_desc = _member_descriptor(
+                text(name_caps[0], src), _enclosing_class(name_caps[0], src)
             )
+            consumer_id = SymbolID.for_symbol(self.language_slug, repo, file.path, consumer_desc)
             for provider in providers:
                 service_id = SymbolID.for_symbol(
                     self.language_slug, repo, file.path, f"service({provider})."

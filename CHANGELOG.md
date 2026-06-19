@@ -10,6 +10,12 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **Class-based FastAPI handlers & DI consumers (feat-011).** A route decorator
+  or `Depends`/`Security` parameter on a *method* now resolves to its
+  `Class#method` symbol — `HANDLED_BY` / `INJECTED_INTO` land on the real method
+  node — instead of being counted unresolved. Only a dynamic (non-literal) route
+  path remains unresolved.
+
 - **FastAPI dependency injection as `Service` / `INJECTED_INTO` (feat-011).** A
   parameter defaulting to `Depends(provider)` / `Security(provider)` becomes a
   `Service` node (the provider) with an `INJECTED_INTO` edge to the consuming

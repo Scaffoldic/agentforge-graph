@@ -241,13 +241,18 @@ relation-only. Resolves by class name against the whole-repo model set.
 injection. A parameter defaulting to `Depends(provider)` / `Security(provider)`
 becomes a `Service` node (the provider) + an `INJECTED_INTO` edge to the
 consuming function — so "what is injected into this handler" / "where is
-`get_db` used" are graph queries. Intra-file, module-level consumers (class-based
-consumers counted unresolved, like class-based route handlers). Surfaced via
-`CodeGraph.services()`, `ckg services`, and `IndexReport.services_extracted`.
-Grounding the provider name to its definition (cross-file) is a follow-up.
+`get_db` used" are graph queries. Surfaced via `CodeGraph.services()`, `ckg
+services`, and `IndexReport.services_extracted`. Grounding the provider name to
+its definition (cross-file) is a follow-up.
+
+**Class-based handlers/consumers shipped (0.4 follow-on)** — a route decorator
+or `Depends`/`Security` parameter on a *method* now resolves to its
+`Class#method` symbol (verified: `HANDLED_BY`/`INJECTED_INTO` land on the real
+method node) instead of being counted unresolved. Only a dynamic (non-literal)
+route path remains unresolved.
 
 ### Follow-ups (same harness)
 - Cross-file pass-2: `include_router(prefix=…)` composition, Django `urls.py`
   string view refs (the `resolve()`/`coupled_files()` hooks are reserved).
-- Class-based view/handler consumers; Flask, Express/NestJS (TS), Spring (Java).
+- Flask, Express/NestJS (TS), Spring (Java).
 - Ground DI provider names to their function definitions (cross-file).
