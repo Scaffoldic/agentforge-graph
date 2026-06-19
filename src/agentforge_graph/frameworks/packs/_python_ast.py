@@ -14,6 +14,8 @@ from tree_sitter import Language
 from tree_sitter import Node as TSNode
 from tree_sitter_language_pack import get_language
 
+from agentforge_graph.core import Descriptor
+
 
 @cache
 def python_language() -> Language:
@@ -97,6 +99,49 @@ def first_string_arg(call: TSNode, src: bytes) -> str:
         if arg.type == "string":
             return strip_quotes(text(arg, src))
     return ""
+
+
+def enclosing_class(node: TSNode, src: bytes) -> str | None:
+    """The name of the nearest enclosing ``class_definition``, or None for a
+    module-level definition — lets a class-based handler/consumer resolve to its
+    ``Class#method`` symbol."""
+    anc = node.parent
+    while anc is not None:
+        if anc.type == "class_definition":
+            name = anc.child_by_field_name("name")
+            return text(name, src) if name is not None else None
+        anc = anc.parent
+    return None
+
+
+def member_descriptor(name: str, enclosing: str | None) -> str:
+    """``Class#method().`` for a method, ``method().`` for a free function."""
+    if enclosing is not None:
+        return Descriptor.type(enclosing) + Descriptor.method(name)
+    return Descriptor.method(name)
+
+
+def first_string_in(args: TSNode, src: bytes) -> str | None:
+    """The first string-literal positional arg (a route path), or None when the
+    arg is dynamic/non-literal."""
+    for child in args.named_children:
+        if child.type == "string":
+            return strip_quotes(text(child, src))
+    return None
+
+
+def string_list_kwarg(args: TSNode, name: str, src: bytes) -> list[str]:
+    """The string elements of a ``name=[...]`` keyword argument (e.g. Flask's
+    ``methods=["GET", "POST"]``), in order; [] when absent or non-literal."""
+    for arg in args.named_children:
+        if arg.type != "keyword_argument":
+            continue
+        key = arg.child_by_field_name("name")
+        value = arg.child_by_field_name("value")
+        if key is None or text(key, src) != name or value is None or value.type != "list":
+            continue
+        return [strip_quotes(text(e, src)) for e in value.named_children if e.type == "string"]
+    return []
 
 
 def first_positional_arg(call: TSNode, src: bytes) -> TSNode | None:
