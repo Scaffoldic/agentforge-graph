@@ -108,6 +108,19 @@ class IncrementalIndexer:
             )
         report.edges += imports + stats.refs_resolved + stats.inherits_resolved
 
+        # feat-011 pass-2: ORM RELATES_TO is globally idempotent (clear all +
+        # rebuild from the whole-repo model set), so a scoped refresh converges
+        # to the same edges a full re-index would produce.
+        if self.frameworks is not None and self.frameworks.active:
+            resolved, unresolved = await self.frameworks.resolve(self.store.graph, self.commit)
+            if resolved:
+                report.relations_resolved = resolved
+                report.by_edge_kind["RELATES_TO"] = (
+                    report.by_edge_kind.get("RELATES_TO", 0) + resolved
+                )
+                report.edges += resolved
+            report.framework_unresolved += unresolved
+
         # (5) dirty propagation: touched symbols + 1-hop neighbours of all dirty
         after_symbols = await self._symbols_in(sorted(touched))
         dirty_ids |= after_symbols

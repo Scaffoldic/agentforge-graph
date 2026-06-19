@@ -10,6 +10,17 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **ORM `RELATES_TO` edges from `relationship`/`ForeignKey` (feat-011).** The
+  framework pass-2 hook (`FrameworkPack.resolve`) is now wired into the full
+  pipeline and the incremental indexer. The SQLAlchemy pack records each
+  `relationship("X")` / `ForeignKey("t.c")` string target in pass-1 and stitches
+  them into cross-file `RELATES_TO` edges in pass-2 (`attrs.kind` =
+  `relationship`|`fk`, `attrs.via` = the field): `relationship` → the model whose
+  class is `X`, `fk` → the model whose table matches. Unique-match-only
+  (ambiguous class names left unresolved). Globally idempotent — an incremental
+  refresh converges to the full-index graph. Surfaced via `ModelInfo.relations`,
+  `ckg models`, and `IndexReport.relations_resolved`.
+
 - **SQLAlchemy ORM models as `DataModel` nodes (feat-011).** The built-in
   SQLAlchemy framework pack extracts declarative models into `DataModel` nodes
   (table from `__tablename__`, the underlying class in `attrs.class`) with
@@ -18,9 +29,9 @@ on a schema mismatch is **rebuild** (ADR-0006).
   (`id: Mapped[int] = mapped_column()`) forms both recognised; a class becomes a
   model only with declarative evidence (`__tablename__` or ≥1 column), so plain
   classes never mint false models. Surfaced via `CodeGraph.models()`, the
-  `ckg models` CLI, and `IndexReport.models_extracted`. `relationship()` /
-  `ForeignKey()` are counted in `framework_unresolved` pending the cross-file
-  `RELATES_TO` pass-2.
+  `ckg models` CLI, and `IndexReport.models_extracted`. (Cross-file
+  `relationship`/`ForeignKey` → `RELATES_TO` edges land in the companion entry
+  above.)
 
 - **JS/TS JSDoc as `DESCRIBES` doc nodes (feat-010).** A `/** … */` block comment
   immediately before a function/class/method becomes a `DocChunk` that `DESCRIBES`

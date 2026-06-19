@@ -38,6 +38,7 @@ class ModelInfo(BaseModel):
     table: str  # mapped table name ("" when not statically known)
     framework: str
     fields: list[str]  # mapped column/field names
+    relations: list[dict[str, str]]  # RELATES_TO out: {to, kind, via}
     cls: str  # the underlying class symbol id
     file: str
     line: int
@@ -58,6 +59,7 @@ class IndexReport(BaseModel):
     resolve: ResolveStats = Field(default_factory=ResolveStats)
     routes_extracted: int = 0  # feat-011: framework Route nodes emitted
     models_extracted: int = 0  # feat-011: ORM DataModel nodes emitted
+    relations_resolved: int = 0  # feat-011: RELATES_TO edges from ORM relationship/FK targets
     framework_unresolved: int = 0  # framework registrations seen but not extractable
     decisions_indexed: int = 0  # feat-010: ADR Decision nodes
     governs_resolved: int = 0  # GOVERNS edges from unambiguous ADR mentions

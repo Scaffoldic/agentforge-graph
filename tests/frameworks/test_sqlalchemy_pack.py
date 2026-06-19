@@ -1,6 +1,6 @@
 """SQLAlchemy pack golden tests (feat-011): DataModel + HAS_FIELD extraction,
-the conservative non-model guard, and the deferred-relation (unresolved)
-counter — asserted directly on FrameworkFacts."""
+the conservative non-model guard, pass-1 relation recording, and the pass-2
+RELATES_TO target resolution — asserted directly on FrameworkFacts / helpers."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 
 from agentforge_graph.core import EdgeKind, NodeKind, SourceFile, SymbolID
 from agentforge_graph.frameworks.base import FrameworkFacts, FrameworkPack
-from agentforge_graph.frameworks.packs.sqlalchemy import SQLALCHEMY_PACK
+from agentforge_graph.frameworks.packs.sqlalchemy import SQLALCHEMY_PACK, _resolve_target
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sqlalchemy"
 
@@ -74,9 +74,35 @@ def test_column_types_captured() -> None:
     assert types["author_id"] == "Integer"
 
 
-def test_relationship_counted_unresolved_not_dropped() -> None:
-    # the one `relationship("Post")` is a RELATES_TO target deferred to pass-2
-    assert _facts().unresolved == 1
+def test_pending_relations_recorded_on_model_nodes() -> None:
+    # pass-1 records relationship/FK targets on the model node for pass-2 to
+    # stitch into RELATES_TO; they are NOT counted as unresolved here.
+    facts = _facts()
+    assert facts.unresolved == 0
+    models = {n.name: n for n in facts.nodes if n.kind is NodeKind.DATA_MODEL}
+    user_rels = models["users"].attrs["relations"]
+    assert {"field": "posts", "target": "Post", "kind": "relationship"} in user_rels
+    post_rels = models["posts"].attrs["relations"]
+    assert {"field": "author_id", "target": "users.id", "kind": "fk"} in post_rels
+
+
+def test_resolve_target_unique_match_only() -> None:
+    by_class = {"Post": {"id:Post"}, "Tag": {"a:Tag", "b:Tag"}}
+    by_table = {"users": {"id:User"}}
+    # relationship by class name (last segment of a dotted target)
+    assert (
+        _resolve_target({"target": "Post", "kind": "relationship"}, by_class, by_table) == "id:Post"
+    )
+    assert (
+        _resolve_target({"target": "models.Post", "kind": "relationship"}, by_class, by_table)
+        == "id:Post"
+    )
+    # fk by the table segment of "users.id"
+    assert _resolve_target({"target": "users.id", "kind": "fk"}, by_class, by_table) == "id:User"
+    # ambiguous class name (two models) -> unresolved (ADR-0004)
+    assert _resolve_target({"target": "Tag", "kind": "relationship"}, by_class, by_table) is None
+    # external / unknown target -> unresolved
+    assert _resolve_target({"target": "Other", "kind": "relationship"}, by_class, by_table) is None
 
 
 def test_plain_class_is_not_a_model() -> None:

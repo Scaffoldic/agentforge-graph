@@ -61,6 +61,43 @@ async def test_has_field_edges_in_graph(app_graph: tuple[CodeGraph, Path]) -> No
     assert all(f.kind is NodeKind.VARIABLE for f in fields)
 
 
+async def test_relates_to_edges_resolved(app_graph: tuple[CodeGraph, Path]) -> None:
+    cg, _ = app_graph
+    assert cg.stats().relations_resolved == 2  # User->Post (relationship) + Post->User (fk)
+    nodes = {
+        n.name: n
+        for n in (
+            await cg.store.graph.query(GraphQuery(kinds=[NodeKind.DATA_MODEL], limit=100))
+        ).nodes
+    }
+    out = await cg.store.graph.adjacent(nodes["users"].id, [EdgeKind.RELATES_TO], direction="out")
+    assert [e.dst for e in out] == [nodes["posts"].id]
+    assert out[0].attrs["kind"] == "relationship" and out[0].attrs["via"] == "posts"
+    out_post = await cg.store.graph.adjacent(
+        nodes["posts"].id, [EdgeKind.RELATES_TO], direction="out"
+    )
+    assert [(e.dst, e.attrs["kind"]) for e in out_post] == [(nodes["users"].id, "fk")]
+
+
+async def test_models_api_exposes_relations(app_graph: tuple[CodeGraph, Path]) -> None:
+    cg, _ = app_graph
+    models = {m.name: m for m in await cg.models()}
+    assert models["users"].relations == [{"to": "posts", "kind": "relationship", "via": "posts"}]
+    assert models["posts"].relations == [{"to": "users", "kind": "fk", "via": "author_id"}]
+
+
+async def test_relates_to_idempotent_across_incremental(app_graph: tuple[CodeGraph, Path]) -> None:
+    # a no-op-ish edit re-runs pass-2; RELATES_TO must not duplicate (global
+    # clear + rebuild = incremental converges to the full-index graph).
+    cg, repo = app_graph
+    (repo / "models.py").write_text((repo / "models.py").read_text() + "\n# touch\n")
+    await cg.refresh()
+    nodes = (await cg.store.graph.query(GraphQuery(kinds=[NodeKind.DATA_MODEL], limit=100))).nodes
+    users = next(n for n in nodes if n.name == "users")
+    out = await cg.store.graph.adjacent(users.id, [EdgeKind.RELATES_TO], direction="out")
+    assert len(out) == 1  # exactly one User->Post, not duplicated
+
+
 async def test_models_survive_incremental_edit(app_graph: tuple[CodeGraph, Path]) -> None:
     cg, repo = app_graph
     text = (

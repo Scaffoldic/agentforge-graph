@@ -11,9 +11,9 @@ from agentforge_graph.frameworks.packs.fastapi import FASTAPI_PACK
 from agentforge_graph.frameworks.packs.sqlalchemy import SQLALCHEMY_PACK
 
 
-def test_default_resolve_and_coupled_files_are_inert() -> None:
-    # MVP packs have no pass-2: resolve() yields no edges, no file is coupled.
-    assert FASTAPI_PACK.resolve(store=None) == []  # type: ignore[arg-type]
+async def test_default_resolve_and_coupled_files_are_inert() -> None:
+    # routes-only packs have no pass-2: resolve() yields no edges, no file coupled.
+    assert await FASTAPI_PACK.resolve(store=None) == []  # type: ignore[arg-type]
     assert FASTAPI_PACK.coupled_files("urls.py") is False
 
 

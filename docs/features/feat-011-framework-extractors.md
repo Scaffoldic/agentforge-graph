@@ -213,12 +213,22 @@ column — a `Variable` field carrying its `column_type`. Both classic
 forms are recognised; a class mints a model only with declarative evidence
 (`__tablename__` or ≥1 column), so plain classes never become false models
 (ADR-0004). Surfaces: `CodeGraph.models()`, `ckg models` CLI, `IndexReport.
-models_extracted`. `relationship()`/`ForeignKey()` are counted in
-`framework_unresolved` pending the cross-file `RELATES_TO` pass-2.
+models_extracted`.
+
+**ORM `RELATES_TO` shipped (0.4 follow-on)** — the framework **pass-2** hook
+(`FrameworkPack.resolve` / `FrameworkExtractor.resolve`) is now wired into both
+the full pipeline and the incremental indexer. Pass-1 records each
+`relationship("X")` / `ForeignKey("t.c")` string target on the model node;
+pass-2 stitches them into `RELATES_TO` edges (`attrs.kind` = `relationship`|`fk`,
+`attrs.via` = the field) — `relationship` to the model whose class is `X`, `fk`
+to the model whose table matches. Unique-match-only (ambiguous class names left
+unresolved, ADR-0004). Globally idempotent (clear all `RELATES_TO` + rebuild
+from the whole-repo model set), so an incremental refresh converges to the
+full-index graph. Surfaced in `ModelInfo.relations`, `ckg models`, and
+`IndexReport.relations_resolved`.
 
 ### Follow-ups (same harness)
-- ORM `RELATES_TO`: SQLAlchemy `relationship("X")` / `ForeignKey("t.c")` string
-  targets (cross-file pass-2); Django models (`models.Model` subclasses, FK/M2M).
+- Django models (`models.Model` subclasses, FK/M2M `RELATES_TO`).
 - DI (`Service`/`INJECTED_INTO`).
 - Cross-file pass-2: `include_router(prefix=…)` composition, Django `urls.py`
   string view refs (the `resolve()`/`coupled_files()` hooks are reserved).
