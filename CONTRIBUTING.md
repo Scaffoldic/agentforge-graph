@@ -11,7 +11,7 @@ first for the system map; this doc is the *how to work on it*.
 Tooling is **`uv`, not pip**.
 
 ```bash
-uv sync --extra engine --extra bedrock     # engine + native wheels + boto3
+uv sync --extra dev --extra bedrock        # engine ships in base; dev = test/lint toolchain
 cp .env.example .env                        # optional: AWS creds for live model tests
 ```
 
@@ -77,10 +77,22 @@ the framework, you're in the wrong layer.
 
 ### Add a framework pack (routes/ORM/DI)
 1. `src/agentforge_graph/frameworks/packs/<name>/`: a `FrameworkPack` with
-   `detect()` (dep manifest + import markers) and `extract()` emitting framework
-   nodes/edges. Mirror `packs/fastapi/`.
-2. Register in `frameworks/registry.py`. Facts are **merged into the
-   `FileSubgraph`** so they ride incremental indexing automatically.
+   `dep_names`/`import_markers` (detection) and `extract()` emitting framework
+   nodes/edges. Pick the closest reference pack: **routes** → `fastapi`/`flask`
+   (Python), `express` (JS/TS), `spring`/`nestjs` (decorator style); **ORM** →
+   `sqlalchemy`/`django`.
+2. **Reuse the shared rails** — don't re-parse from scratch:
+   `packs/_python_ast.py` (Python AST helpers: `iter_class_assignments`,
+   `enclosing_class`, `member_descriptor`, …), `packs/_js_ast.py` (JS/TS), and
+   `frameworks/orm.py` (`ModelIndex` + `relations_to_edges` for `RELATES_TO`).
+3. A pack spanning sibling languages (e.g. JS *and* TS) overrides the
+   `FrameworkPack.slugs` property and builds ids with the file's own slug.
+4. Cross-file stitching (FK/relationship targets, route prefixes) goes in the
+   pass-2 `resolve()` hook — see `sqlalchemy`/`django`. It's globally idempotent.
+5. Register in `frameworks/registry.py`. Pass-1 facts are **merged into the
+   `FileSubgraph`** so they ride incremental indexing automatically; add a golden
+   pack test + an end-to-end test asserting the edge lands on the real symbol node
+   (mirror `tests/frameworks/test_<name>_{pack,integration}.py`).
 
 ### Add a storage backend (Neo4j, SurrealDB, pgvector, …)
 1. Implement `GraphStore` and/or `VectorStore` (`core/contracts.py`).

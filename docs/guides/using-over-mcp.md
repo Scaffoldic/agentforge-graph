@@ -1,7 +1,7 @@
 # Using the CKG from an agent (MCP) or in-process
 
 agentforge-graph exposes a repo's Code Knowledge Graph to **any agent or
-developer** two ways, over the **same 9 read-only tools** and the same engine:
+developer** two ways, over the **same 10 read-only tools** and the same engine:
 
 1. **MCP server** — for external clients (Claude Code, Cursor, any MCP host), over
    **stdio** (subprocess) or **HTTP** (streamable-HTTP at a URL).
@@ -29,7 +29,7 @@ Re-running is incremental (feat-004). Minimum to serve: `ckg index .`. Without
 
 ## 2a. Serve over MCP (external agents)
 
-Two transports, **same 9 tools and guardrails** — pick by how the client connects.
+Two transports, **same 10 tools and guardrails** — pick by how the client connects.
 
 ### stdio — client launches a subprocess (simplest, local)
 
@@ -126,6 +126,7 @@ The agent tool-chooses and chains (e.g. `ckg_search` → take a `symbol_id` →
 | `ckg_routes` | "HTTP API surface" — method/path/handler (feat-011) | `method`, `path` |
 | `ckg_decisions` | "ADRs governing this code" — status/date/governed symbols | `scope`, `status` |
 | `ckg_explain` | "Design-pattern tags + 1-hop facts for a symbol" | **`symbol_id`** |
+| `ckg_history` | "When/who/churn for a symbol; what changed since a ref" (feat-009) | `symbol_id`, `since` |
 
 `ckg_repo_map` returns rendered text; the rest return JSON.
 
