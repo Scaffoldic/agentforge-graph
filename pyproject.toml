@@ -108,6 +108,9 @@ artifacts = ["src/agentforge_graph/**/*.scm"]
 line-length = 100
 target-version = "py313"
 src = ["src", "tests"]
+# `examples/` is illustrative sample code (intentional framework idioms like
+# FastAPI's `Depends()`-in-default); it's not part of the package or test gate.
+extend-exclude = ["examples"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
