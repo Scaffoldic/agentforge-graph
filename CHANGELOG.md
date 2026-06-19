@@ -8,6 +8,21 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-19
+
+Packaging fix — base-install completeness (caught on a TestPyPI dry run).
+
+### Fixed
+
+- `pip install agentforge-graph` now works out of the box. The deterministic
+  graph engine dependencies (`tree-sitter`, `tree-sitter-language-pack`, `kuzu`,
+  `lancedb`, `fastembed`, `networkx`) moved from the optional `engine` extra into
+  the base `dependencies` — the package's top-level import chain loads the
+  parse/store/embed/repo-map stack, so a bare install previously failed at
+  `import agentforge_graph` with `ModuleNotFoundError: No module named 'kuzu'`.
+  The `engine` extra is kept as an empty no-op for backward compatibility
+  (`pip install agentforge-graph[engine]` still resolves).
+
 ## [0.3.1] - 2026-06-19
 
 Packaging release — the **PyPI debut**. No functional changes.
@@ -397,7 +412,8 @@ questions over the tools, unattended.
   on a real repo (fixed BUG-008, a default-config `ckg query` break); and parse
   coverage holds at scale (`django`, 2922 files, ~100%, no crash).
 
-[Unreleased]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Scaffoldic/agentforge-grpah/compare/v0.1.0...v0.2.0

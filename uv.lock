@@ -40,14 +40,20 @@ wheels = [
 
 [[package]]
 name = "agentforge-graph"
-version = "0.3.1"
+version = "0.3.2"
 source = { editable = "." }
 dependencies = [
     { name = "agentforge-anthropic", extra = ["anthropic"] },
     { name = "agentforge-mcp", extra = ["mcp"] },
     { name = "agentforge-py" },
+    { name = "fastembed" },
+    { name = "kuzu" },
+    { name = "lancedb" },
+    { name = "networkx" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
+    { name = "tree-sitter" },
+    { name = "tree-sitter-language-pack" },
 ]
 
 [package.optional-dependencies]
@@ -61,14 +67,6 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
     { name = "types-pyyaml" },
-]
-engine = [
-    { name = "fastembed" },
-    { name = "kuzu" },
-    { name = "lancedb" },
-    { name = "networkx" },
-    { name = "tree-sitter" },
-    { name = "tree-sitter-language-pack" },
 ]
 neo4j = [
     { name = "neo4j" },
@@ -99,12 +97,12 @@ requires-dist = [
     { name = "agentforge-voyage", marker = "extra == 'voyage'" },
     { name = "asyncpg", marker = "extra == 'pgvector'", specifier = ">=0.30" },
     { name = "boto3", marker = "extra == 'bedrock'", specifier = ">=1.35" },
-    { name = "fastembed", marker = "extra == 'engine'", specifier = ">=0.4" },
-    { name = "kuzu", marker = "extra == 'engine'", specifier = ">=0.6" },
-    { name = "lancedb", marker = "extra == 'engine'", specifier = ">=0.15" },
+    { name = "fastembed", specifier = ">=0.4" },
+    { name = "kuzu", specifier = ">=0.6" },
+    { name = "lancedb", specifier = ">=0.15" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.13" },
     { name = "neo4j", marker = "extra == 'neo4j'", specifier = ">=5" },
-    { name = "networkx", marker = "extra == 'engine'", specifier = ">=3.3" },
+    { name = "networkx", specifier = ">=3.3" },
     { name = "openai", marker = "extra == 'openai'", specifier = ">=1.40" },
     { name = "pgvector", marker = "extra == 'pgvector'", specifier = ">=0.3" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
@@ -114,8 +112,8 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7" },
     { name = "sentence-transformers", marker = "extra == 'rerank'", specifier = ">=2.2" },
-    { name = "tree-sitter", marker = "extra == 'engine'", specifier = ">=0.23" },
-    { name = "tree-sitter-language-pack", marker = "extra == 'engine'", specifier = ">=0.9" },
+    { name = "tree-sitter", specifier = ">=0.23" },
+    { name = "tree-sitter-language-pack", specifier = ">=0.9" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6" },
 ]
 provides-extras = ["engine", "rerank", "neo4j", "pgvector", "voyage", "bedrock", "openai", "otel", "dev"]

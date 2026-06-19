@@ -3,7 +3,7 @@
 # scaffold default. Managed-file upgrades will treat this as forked.
 [project]
 name = "agentforge-graph"
-version = "0.3.1"
+version = "0.3.2"
 description = "Code Knowledge Graph (CKG) engine + agent toolset, built on AgentForge."
 readme = "README.md"
 license = "Apache-2.0"
@@ -38,12 +38,10 @@ dependencies = [
     "agentforge-mcp[mcp]>=0.2.4,<0.3",      # MCP serving layer + mcp SDK (feat-008)
     "python-dotenv>=1.0",
     "pyyaml>=6",                           # read ckg.yaml engine config (feat-003+)
-]
-
-[project.optional-dependencies]
-# Deterministic graph engine (feat-002/003/005/007). Heavy native wheels
-# (pyarrow, onnxruntime) — installed as features land: `uv sync --extra engine`.
-engine = [
+    # --- deterministic graph engine (feat-002/003/005/007) ---
+    # REQUIRED, not optional: the package is non-functional without these — the
+    # top-level import chain loads the parse/store/embed/repo-map stack. (Heavy
+    # native wheels: pyarrow via lancedb, onnxruntime via fastembed.)
     "tree-sitter>=0.23",                   # parsing core (feat-002)
     "tree-sitter-language-pack>=0.9",      # 100+ grammars incl. the v0.1 top-10 (feat-002)
     "kuzu>=0.6",                           # embedded graph store, default (feat-003 / ADR-0006)
@@ -51,6 +49,12 @@ engine = [
     "fastembed>=0.4",                      # local embeddings, default (feat-005)
     "networkx>=3.3",                       # PageRank for the repo map (feat-007)
 ]
+
+[project.optional-dependencies]
+# `engine` is now part of the base install (the package can't import without
+# it); the empty extra is kept so `pip install agentforge-graph[engine]` and
+# `uv sync --extra engine` still resolve as a no-op (backward compatibility).
+engine = []
 # Optional cross-encoder reranker (ENH-009, OFF by default — pulls torch).
 # `uv sync --extra rerank`; lazy-loaded, so the base install / CI stay torch-free.
 rerank = ["sentence-transformers>=2.2"]
