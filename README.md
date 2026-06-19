@@ -31,10 +31,14 @@ agent can traverse — every fact carrying its provenance.**
 | **Agent-native** | Served read-only over MCP (9 tools) or as a native AgentForge toolset. Every response carries a staleness envelope. |
 | **Embedded-first** | Local Kuzu graph + LanceDB vectors under `.ckg/`. No server to run. Storage and models are pluggable (see below). |
 
-**Status: 0.2.0 — production-grade.** The full pipeline works end-to-end on real
-code — `index → embed → enrich → query / map / decisions / routes / explain /
-history`, served over MCP. 0.2.0 adds a temporal / git-evolution layer, a
-cross-encoder reranker seam, and intra-type call resolution across all 10 packs.
+**Status: 0.3.0 — production-grade.** The full pipeline works end-to-end on real
+code — `index → embed → enrich → query / map / decisions / routes / models /
+services / explain / history`, served over MCP. 0.3.0 completes the
+History + decisions theme (temporal/git-evolution + ADR/docs ingestion) and adds
+**framework-aware extractors** — routes, ORM models, and DI as graph edges across
+FastAPI/Flask/SQLAlchemy/Django (Python), Express/NestJS (JS/TS), and Spring
+(Java). 0.2.0 added the temporal layer, a cross-encoder reranker seam, and
+intra-type call resolution across all 10 packs.
 Language packs: **all 10 — Python, TypeScript, JavaScript, Go,
 Ruby, PHP, Java, C#, C++, Rust** (each validated on a real OSS repo, with a
 creds-enabled embed/retrieval/enrich run). Opt-in server storage (Neo4j /
