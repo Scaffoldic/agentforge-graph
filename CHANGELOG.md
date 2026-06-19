@@ -10,6 +10,14 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added (unreleased, toward 0.3.0)
 
+- **Spring MVC routes — Java (feat-011).** A built-in Spring pack extracts
+  controller endpoints into `Route` nodes + `HANDLED_BY` edges. A class is a
+  route source only when it's a controller (`@RestController`/`@Controller` or a
+  class-level `@RequestMapping`); each `@GetMapping`/`@PostMapping`/… (or
+  `@RequestMapping(method=RequestMethod.X)`) method becomes a route whose path is
+  the class base path joined with the method path, handled by the `Class#method`
+  symbol. First Java framework extractor.
+
 - **Express routes — JavaScript + TypeScript (feat-011).** A built-in Express
   pack extracts `app.get('/x', handler)` / `router.post('/x', mw, handler)` into
   `Route` nodes. A named handler (the call's last argument) gets a `HANDLED_BY`
