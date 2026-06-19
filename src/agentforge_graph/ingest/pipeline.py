@@ -99,6 +99,7 @@ class IngestPipeline:
                 report.by_edge_kind[e.kind.value] = report.by_edge_kind.get(e.kind.value, 0) + 1
         report.skipped = list(source.skipped)
         report.routes_extracted = report.by_node_kind.get("Route", 0)
+        report.models_extracted = report.by_node_kind.get("DataModel", 0)
 
         if paths is not None:
             # Scoped (incremental) extract: the caller re-resolves with the

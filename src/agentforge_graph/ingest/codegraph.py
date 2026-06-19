@@ -17,7 +17,7 @@ from agentforge_graph.store import Store
 from .pack import PackRegistry
 from .packs import BUILTIN_PACKS, builtin_registry
 from .pipeline import IngestPipeline
-from .report import IndexReport, RouteInfo
+from .report import IndexReport, ModelInfo, RouteInfo
 from .source import RepoSource
 
 if TYPE_CHECKING:
@@ -484,6 +484,33 @@ class CodeGraph:
         ]
         routes.sort(key=lambda r: (r.path, r.method))
         return routes
+
+    async def models(self) -> list[ModelInfo]:
+        """Every extracted ORM data model (feat-011): table, framework, mapped
+        field names, the underlying class symbol and source location, sorted by
+        name."""
+        from agentforge_graph.core import EdgeKind, GraphQuery, NodeKind, SymbolID
+
+        nodes = (
+            await self._store.graph.query(GraphQuery(kinds=[NodeKind.DATA_MODEL], limit=10_000_000))
+        ).nodes
+        models: list[ModelInfo] = []
+        for n in nodes:
+            fields = await self._store.graph.neighbors(n.id, [EdgeKind.HAS_FIELD], depth=1)
+            field_names = sorted(f.name for f in fields if f.kind is NodeKind.VARIABLE and f.name)
+            models.append(
+                ModelInfo(
+                    name=str(n.attrs.get("table") or n.name),
+                    table=str(n.attrs.get("table", "")),
+                    framework=str(n.attrs.get("framework", "")),
+                    fields=field_names,
+                    cls=str(n.attrs.get("class", "")),
+                    file=SymbolID.parse(n.id).path,
+                    line=n.span[0] if n.span else 0,
+                )
+            )
+        models.sort(key=lambda m: m.name)
+        return models
 
     def _temporal_index(self) -> Any:
         """A ``TemporalIndex`` over the sidecar, or ``None`` when the evolution

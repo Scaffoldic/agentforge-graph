@@ -6,8 +6,9 @@ from __future__ import annotations
 
 from .base import FrameworkPack
 from .packs.fastapi import FASTAPI_PACK
+from .packs.sqlalchemy import SQLALCHEMY_PACK
 
-BUILTIN_FRAMEWORK_PACKS: list[FrameworkPack] = [FASTAPI_PACK]
+BUILTIN_FRAMEWORK_PACKS: list[FrameworkPack] = [FASTAPI_PACK, SQLALCHEMY_PACK]
 
 
 class FrameworkRegistry:
