@@ -78,6 +78,7 @@ class IndexReport(BaseModel):
     relations_resolved: int = 0  # feat-011: RELATES_TO edges from ORM relationship/FK targets
     route_prefixes_composed: int = 0  # ENH-011: routes whose path_pattern gained a prefix
     di_providers_grounded: int = 0  # ENH-011: PROVIDED_BY edges (Service -> provider)
+    route_handlers_grounded: int = 0  # ENH-012: cross-file HANDLED_BY (Laravel/Rails)
     framework_unresolved: int = 0  # framework registrations seen but not extractable
     decisions_indexed: int = 0  # feat-010: ADR Decision nodes
     governs_resolved: int = 0  # GOVERNS edges from unambiguous ADR mentions
