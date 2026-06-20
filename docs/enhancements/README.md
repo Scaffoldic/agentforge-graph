@@ -18,6 +18,8 @@ One file per enhancement: `ENH-NNN-short-slug.md`. Keep this index current.
 | [ENH-007](ENH-007-repomap-public-api-orientation.md) | Bias the repo map toward the public API | Medium | S–M | repomap | done |
 | [ENH-008](ENH-008-typescript-symbol-completeness.md) | Broaden TS/JS symbol extraction (interfaces/enums/types/arrow-consts) | Med–High | M | ingest.packs | done |
 | [ENH-009](ENH-009-retrieval-precision-dense-codebases.md) | Sharpen retrieval precision on dense / comment-sparse codebases (rerank/anchoring) | High | M | retrieve | partial (opt-in lexical rerank) |
+| ENH-010..013 | SurrealDB · cross-file resolution · more packs · rerank measurement (shipped in 0.4.0 — see each spec file) | — | — | — | done |
+| [ENH-017](ENH-017-surface-framework-upgrade-drift.md) | Surface framework-upgrade drift so consumers can clean workarounds | Med | S–M | framework / upstream | proposed (upstream) |
 
 ## Template
 

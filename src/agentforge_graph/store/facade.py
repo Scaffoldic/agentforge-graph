@@ -33,9 +33,13 @@ class Store:
 
     @classmethod
     async def open(cls, repo_path: str | Path = ".", config: str | Path | None = None) -> Store:
-        """Resolve drivers from ``config`` (a ckg.yaml path) and open the
-        embedded index under ``repo_path``/<store.path>. Raises before any
-        store is opened if the config or on-disk schema is bad."""
+        """Resolve drivers from ``config`` (an ``agentforge.yaml``/``ckg.yaml``
+        path, or discovered in ``repo_path``) and open the embedded index under
+        ``repo_path``/<store.path>. Raises before any store is opened if the
+        config or on-disk schema is bad."""
+        from agentforge_graph.config import resolve_config
+
+        config = resolve_config(config, repo_path)
         cfg = StoreConfig.load(config)
         root = Path(repo_path) / cfg.path
         _check_or_init_meta(root)  # fail-at-startup on schema mismatch

@@ -20,7 +20,7 @@ from agentforge_core.contracts.tool import Tool
 from agentforge_mcp import MCPServer
 
 from .engine import _Engine
-from .http_runner import CkgHttpRunner, is_loopback
+from .http_runner import BearerAuthMiddleware, is_loopback
 from .tools import ALL_TOOLS
 
 Transport = Literal["stdio", "http"]
@@ -73,13 +73,20 @@ def build_mcp_server(
     if transport == "stdio":
         # no auth: the client owns the subprocess (stdin/stdout).
         return MCPServer.from_stdio(tools=tools, allowed=allowed, server_name="ckg")
+    # HTTP: a bearer-token gate rides the framework's middleware seam
+    # (agentforge-mcp >=0.3 from_http(middleware=…)); no auth → the plain app.
+    middleware = None
     if token:
-        runner = CkgHttpRunner(host=host, port=port, token=token)
-        return MCPServer.from_http(
-            tools=tools, host=host, port=port, allowed=allowed, server_name="ckg", runner=runner
-        )
+        from starlette.middleware import Middleware
+
+        middleware = [Middleware(BearerAuthMiddleware, token=token)]
     return MCPServer.from_http(
-        tools=tools, host=host, port=port, allowed=allowed, server_name="ckg"
+        tools=tools,
+        host=host,
+        port=port,
+        allowed=allowed,
+        server_name="ckg",
+        middleware=middleware,
     )
 
 

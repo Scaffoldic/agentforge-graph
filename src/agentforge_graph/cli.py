@@ -131,12 +131,13 @@ async def _index(args: argparse.Namespace) -> int:
 
 
 async def _status(args: argparse.Namespace) -> int:
-    from agentforge_graph.config import StoreConfig
+    from agentforge_graph.config import StoreConfig, resolve_config
     from agentforge_graph.core import GraphQuery
     from agentforge_graph.ingest.codegraph import _git_commit
     from agentforge_graph.ingest.incremental import IndexMeta
 
-    root = Path(args.path) / StoreConfig.load(args.config).path
+    cfg = resolve_config(args.config, args.path)
+    root = Path(args.path) / StoreConfig.load(cfg).path
     meta = IndexMeta.load(root)
     head = _git_commit(args.path)
     dirty = bool(head) and bool(meta.indexed_commit) and head != meta.indexed_commit

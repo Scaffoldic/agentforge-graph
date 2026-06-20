@@ -10,6 +10,17 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Changed
 
+- **Consolidated engine config into `agentforge.yaml` (`app:` section).**
+  agentforge-py 0.3.x added a sanctioned `app:` passthrough to its strict config
+  file — the fix for the workaround that forced a separate `ckg.yaml`. The engine
+  now reads its config from `app:` (or a top-level standalone `ckg.yaml`, still
+  supported) using **plain pyyaml, no `agentforge` import** (ADR-0001), and
+  **auto-discovers** the file in the repo (previously only `--config` was read).
+  One config file. `config.resolve_config()` + `app:`-aware `_read_block`.
+- **HTTP MCP auth now rides the framework's `from_http(middleware=)` seam**
+  (agentforge-mcp 0.3.x), replacing the `CkgHttpRunner` that reimplemented ~60
+  lines of HTTP-serve internals to add a bearer gate. `BearerAuthMiddleware`
+  unchanged; verified live (401 / pass-through). (ENH-005.)
 - **Upgraded the AgentForge framework pin to `>=0.3,<0.4`** (from the validated
   0.2.x line). Re-validated: the full gate (666 tests / 95%, ruff + mypy) and an
   MCP server-construction smoke pass on `agentforge-py` 0.3.1 — the `Tool` /

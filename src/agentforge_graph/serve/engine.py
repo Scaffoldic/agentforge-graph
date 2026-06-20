@@ -44,9 +44,12 @@ def _git_head(repo_path: str | Path) -> str:
 
 class _Engine:
     def __init__(self, repo_path: str | Path = ".", config: str | Path | None = None) -> None:
+        from agentforge_graph.config import resolve_config
+
         self.repo_path = repo_path
-        self.config = config
-        self.serve = ServeConfig.load(config)
+        # discover agentforge.yaml app: / ckg.yaml when no explicit path is given
+        self.config = resolve_config(config, repo_path)
+        self.serve = ServeConfig.load(self.config)
         self._cg: CodeGraph | None = None
         self._retriever: Retriever | None = None
         self._repomap: RepoMap | None = None
