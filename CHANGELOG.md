@@ -8,6 +8,8 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-06-20
+
 ### Changed
 
 - **Consolidated engine config into `agentforge.yaml` (`app:` section).**
@@ -526,7 +528,8 @@ questions over the tools, unattended.
   on a real repo (fixed BUG-008, a default-config `ckg query` break); and parse
   coverage holds at scale (`django`, 2922 files, ~100%, no crash).
 
-[Unreleased]: https://github.com/Scaffoldic/agentforge-graph/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/Scaffoldic/agentforge-graph/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Scaffoldic/agentforge-graph/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/Scaffoldic/agentforge-graph/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/Scaffoldic/agentforge-graph/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/Scaffoldic/agentforge-graph/compare/v0.3.0...v0.3.1
