@@ -30,6 +30,7 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 from agentforge_graph.core import (
+    Descriptor,
     Edge,
     EdgeKind,
     GraphQuery,
@@ -49,7 +50,8 @@ class CrossFileStats(BaseModel):
 
     route_prefixes_composed: int = 0  # routes whose path_pattern gained a prefix
     di_providers_grounded: int = 0  # Service nodes grounded to a provider symbol
-    unresolved: int = 0  # mounts / providers seen but ambiguous or external
+    route_handlers_grounded: int = 0  # routes linked to a cross-file controller method
+    unresolved: int = 0  # mounts / providers / handlers seen but ambiguous or external
 
 
 def _file_id(node_id: str) -> str:
@@ -109,6 +111,7 @@ class _CrossFileResolver:
         stats = CrossFileStats()
         await self._compose_route_prefixes(stats)
         await self._ground_di_providers(stats)
+        await self._ground_route_handlers(stats)
         return stats
 
     # --- route-prefix composition -------------------------------------------
@@ -228,6 +231,68 @@ class _CrossFileResolver:
             stats.di_providers_grounded += 1
         if edges:
             await self._store.add(edges)
+
+    # --- route-handler grounding (Laravel / Rails) ---------------------------
+
+    async def _ground_route_handlers(self, stats: CrossFileStats) -> None:
+        """Ground a route's controller reference to the handler method that lives
+        in another file. Packs whose routing DSL names the handler by string
+        (Laravel ``[C::class, 'm']`` / ``'C@m'``, Rails ``'c#m'``) emit a
+        ``Route`` carrying ``attrs.handler_class`` + ``attrs.handler_method`` but
+        no ``HANDLED_BY`` (the method is cross-file). Here we resolve
+        ``Class#method`` to the real symbol — unique class match (ADR-0004) — and
+        emit the edge. Idempotent: routes carrying ``handler_class`` never have a
+        parsed ``HANDLED_BY``, so clearing+rebuilding their edge is safe."""
+        routes = await self._q(NodeKind.ROUTE)
+        pending = [r for r in routes if r.attrs.get("handler_class")]
+        if not pending:
+            return
+        await self._store.clear_outgoing([r.id for r in pending], EdgeKind.HANDLED_BY)
+
+        classes = await self._q(NodeKind.CLASS)
+        class_by_name: dict[str, set[str]] = {}
+        for c in classes:
+            if c.name:
+                class_by_name.setdefault(c.name, set()).add(c.id)
+        methods = await self._q(NodeKind.METHOD)
+        method_ids = {m.id for m in methods}
+
+        edges: list[Node | Edge] = []
+        for r in pending:
+            target = self._resolve_handler(r, class_by_name, method_ids)
+            if target is None:
+                stats.unresolved += 1
+                await self._store.set_attrs(r.id, {"handler": ""})
+                continue
+            edges.append(
+                Edge(
+                    src=r.id,
+                    dst=target,
+                    kind=EdgeKind.HANDLED_BY,
+                    provenance=self._prov,
+                    origin_path=SymbolID.parse(r.id).path,
+                )
+            )
+            await self._store.set_attrs(r.id, {"handler": target})
+            stats.route_handlers_grounded += 1
+        if edges:
+            await self._store.add(edges)
+
+    def _resolve_handler(
+        self, route: Node, class_by_name: dict[str, set[str]], method_ids: set[str]
+    ) -> str | None:
+        """The handler method's symbol id for a route's controller reference, or
+        None when the class is ambiguous/absent or the method doesn't exist."""
+        cls = str(route.attrs.get("handler_class", ""))
+        meth = str(route.attrs.get("handler_method", ""))
+        ids = class_by_name.get(cls)
+        if not ids or len(ids) != 1:
+            return None
+        p = SymbolID.parse(next(iter(ids)))
+        handler_id = SymbolID.for_symbol(
+            p.lang, p.repo, p.path, Descriptor.type(cls) + Descriptor.method(meth)
+        )
+        return handler_id if handler_id in method_ids else None
 
 
 async def resolve_cross_file(store: GraphStore, commit: str = "") -> CrossFileStats:

@@ -39,6 +39,11 @@ index. It reads **only the persisted graph**:
    `path` + the matched prefix.
 2. **DI grounding.** For each `Service`, resolve its `provider` name to a
    `Function`/`Method`/`Class` in an imported file and emit `PROVIDED_BY`.
+3. **Route-handler grounding.** For each `Route` carrying `handler_class` +
+   `handler_method` (Laravel / Rails, whose DSL names the controller by string
+   in a *different* file), resolve `Class#method` anywhere in the repo (unique
+   class match) and emit `HANDLED_BY`. Routes carrying `handler_class` never have
+   a parsed `HANDLED_BY`, so clearing+rebuilding their edge is safe.
 
 Both stages **recompute from scratch each run** (clear-and-rebuild), so an
 incremental re-index converges to the exact graph a full index would produce

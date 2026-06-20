@@ -31,6 +31,7 @@ class FrameworkResolveStats(BaseModel):
     relations_resolved: int = 0  # ORM RELATES_TO edges
     route_prefixes_composed: int = 0  # ENH-011 routes with a composed path_pattern
     di_providers_grounded: int = 0  # ENH-011 PROVIDED_BY edges
+    route_handlers_grounded: int = 0  # ENH-012 cross-file HANDLED_BY (Laravel/Rails)
     unresolved: int = 0  # targets seen but ambiguous or external
 
 
@@ -84,5 +85,6 @@ class FrameworkExtractor:
             relations_resolved=len(edges),
             route_prefixes_composed=cf.route_prefixes_composed,
             di_providers_grounded=cf.di_providers_grounded,
+            route_handlers_grounded=cf.route_handlers_grounded,
             unresolved=max(0, pending - len(edges)) + cf.unresolved,
         )

@@ -5,14 +5,19 @@
 | **ID** | ENH-012 |
 | **Value/Impact** | Med (cross-language parity for the framework differentiator) |
 | **Effort** | M–L (per pack; one PR each) |
-| **Status** | **in progress · 0.4.0** — Gin (Go) shipped; ASP.NET (C#) next; Laravel/Rails → 0.5 |
+| **Status** | **routes shipped · 0.4.0** — Gin, ASP.NET, Laravel, Rails routes done; ORM models + Rails `resources` are follow-ups |
 | **Area** | `frameworks.packs` |
 | **Relates to** | feat-011 (framework extractors), feat-002 (10 language packs) |
 
-> **Implemented (Gin):** `frameworks/packs/gin` on a new `_go_ast` helper —
-> method-call routes (`r.GET("/x", handler)`) → `Route` + `HANDLED_BY` to the Go
-> function symbol, conservative (ADR-0004). Mirrors Express. ASP.NET (attributes,
-> mirrors Spring) is the next 0.4.0 pack; Laravel + Rails are the 0.5 batch.
+> **Implemented (routes, all four):** `frameworks/packs/{gin,aspnet,laravel,rails}`
+> on new `_go_ast` / `_csharp_ast` / `_php_ast` / `_ruby_ast` helpers — Gin
+> (method-call, mirrors Express), ASP.NET (attributes, mirrors Spring), Laravel
+> (`Route::` DSL), Rails (`routes.rb` explicit declarations). Laravel + Rails name
+> their controller cross-file, so a **generic route-handler grounding** step was
+> added to `frameworks/cross_file.py` (Route `handler_class`+`handler_method` →
+> `Class#method`, unique-match, idempotent). Conservative throughout (ADR-0004).
+> **Follow-ups:** ORM models (EF Core / Eloquent / ActiveRecord), ASP.NET minimal
+> API, Rails resourceful `resources` DSL expansion.
 
 ## Motivation
 

@@ -41,6 +41,12 @@ def _apply_framework_resolve(report: IndexReport, fw: FrameworkResolveStats) -> 
             report.by_edge_kind.get("PROVIDED_BY", 0) + fw.di_providers_grounded
         )
         report.edges += fw.di_providers_grounded
+    if fw.route_handlers_grounded:
+        report.route_handlers_grounded = fw.route_handlers_grounded
+        report.by_edge_kind["HANDLED_BY"] = (
+            report.by_edge_kind.get("HANDLED_BY", 0) + fw.route_handlers_grounded
+        )
+        report.edges += fw.route_handlers_grounded
     report.framework_unresolved += fw.unresolved
 
 
