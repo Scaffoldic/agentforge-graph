@@ -17,6 +17,16 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **Gin framework pack — Go routes (ENH-012).** `r.GET("/x", handler)` /
+  `v.POST(...)` method calls become `Route` nodes; a named handler resolves to
+  its Go function symbol (`HANDLED_BY`), an anonymous/method-value handler still
+  yields the route. Mirrors the Express pack on a new `_go_ast` helper; detection
+  rides the `gin-gonic/gin` import marker (Go deps live in `go.mod`). Routes carry
+  `router_var` + `path_pattern` so the ENH-011 cross-file stitch applies once Gin
+  grows a group-prefix pass-1. Brings framework awareness to **8 packs** across
+  Python / JS-TS / Java / Go. ASP.NET (C#), Laravel (PHP) and Rails (Ruby) are the
+  remaining ENH-012 packs.
+
 - **Cross-file framework resolution — route prefixes + DI grounding (ENH-011).**
   A globally-idempotent pass-2 (`frameworks/cross_file.py`) stitches the
   compose-points real apps split across files, reading only the persisted graph

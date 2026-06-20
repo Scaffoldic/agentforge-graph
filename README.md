@@ -36,8 +36,9 @@ ckg serve-mcp --repo .              # → 10 read-only tools for your agent
   Java, C#, C++, Rust.
 - 🌐 **Framework semantics as graph edges** *(the differentiator)* — routes, ORM
   models, and DI, not just calls. `ckg routes` is your API surface, `ckg models`
-  your data model, `ckg services` your injection map — across **7 packs**: FastAPI,
-  Flask, SQLAlchemy, Django (Python); Express, NestJS (JS/TS); Spring (Java).
+  your data model, `ckg services` your injection map — across **8 packs**: FastAPI,
+  Flask, SQLAlchemy, Django (Python); Express, NestJS (JS/TS); Spring (Java);
+  Gin (Go).
 - 🏛️ **Decisions ↔ code** *(the differentiator)* — ingests ADRs/docs and links them
   to the code they `GOVERN`. A hit on `payments/` surfaces *"ADR-0012 (accepted):
   idempotency keys must be client-side"* **before** the agent edits.
