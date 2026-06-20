@@ -1,0 +1,44 @@
+# ENH-013 rerank eval — golden set over the `pallets/click` repo (external, a
+# second independent corpus). Matched on a node-id substring (path fragment).
+# Run after: ckg index /tmp/click_eval --embed
+
+- q: define a CLI command with a decorator
+  relevant: ["click/decorators.py", "click/core.py"]
+- q: group multiple subcommands under one parent
+  relevant: ["click/core.py", "click/decorators.py"]
+- q: prompt the user for input on the terminal
+  relevant: ["click/termui.py"]
+- q: print text to stdout handling unicode and color
+  relevant: ["click/utils.py", "click/termui.py"]
+- q: validate a parameter is one of a fixed set of choices
+  relevant: ["click/types.py"]
+- q: raise a usage error for invalid command line input
+  relevant: ["click/exceptions.py"]
+- q: the context object passed between nested commands
+  relevant: ["click/core.py"]
+- q: parse raw command line option strings
+  relevant: ["click/parser.py"]
+- q: test a command line application in isolation
+  relevant: ["click/testing.py"]
+- q: format help output and wrap paragraphs of text
+  relevant: ["click/formatting.py"]
+- q: an integer option constrained to a numeric range
+  relevant: ["click/types.py"]
+- q: show a progress bar while iterating over items
+  relevant: ["click/termui.py"]
+- q: a parameter type that opens a file path
+  relevant: ["click/types.py"]
+- q: decorator that adds an option flag to a command
+  relevant: ["click/decorators.py"]
+- q: find the OS-specific application config directory
+  relevant: ["click/utils.py"]
+- q: ask the user to confirm yes or no
+  relevant: ["click/termui.py"]
+- q: define a positional argument for a command
+  relevant: ["click/core.py", "click/decorators.py"]
+- q: automatically add a version flag to the cli
+  relevant: ["click/decorators.py"]
+- q: style terminal text with ansi escape colors
+  relevant: ["click/termui.py"]
+- q: the base class all parameter types inherit from
+  relevant: ["click/types.py"]

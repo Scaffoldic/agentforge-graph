@@ -50,9 +50,16 @@ retrieve:                       # feat-006 / ADR-0008 — hybrid (vector -> grap
   depth: 1
   decay: 0.6
   fanout_cap: 25                # max neighbors expanded per hop (overflow noted)
-  rerank: off                   # ENH-009: off | lexical | cross_encoder (both opt-in)
+  rerank: off                   # ENH-009: off | lexical | cross_encoder (opt-in; see ENH-013)
   rerank_weight: 0.5            # final = (1-w)*base + w*signal (subtoken overlap | σ(cross))
   rerank_model: ""             # cross_encoder model id (empty = small ms-marco default; needs `--extra rerank`)
+  rerank_region: us-east-1     # AWS region for a `bedrock:` rerank model
+  # ENH-013 measured (docs/validation/rerank/results.md): the cross-encoder is an
+  # ordering win (MRR +10–16%) but adds ~540 ms/query, so it stays opt-in. The
+  # recommended precision config — torch-free, reuses the embedder's Bedrock creds:
+  #   rerank: cross_encoder
+  #   rerank_model: bedrock:cohere.rerank-v3-5:0
+  #   rerank_weight: 0.3        # measured optimum
   doc_weight: 0.7               # feat-010: scale ADR/doc hits so code outranks equal-similarity
                                 # prose (→ 1.0 when the query smells architectural). 1.0 = no penalty
   edge_weights:                 # provenance-weighted scoring (ADR-0004)

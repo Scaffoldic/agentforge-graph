@@ -5,9 +5,18 @@
 | **ID** | ENH-013 |
 | **Value/Impact** | High (retrieval precision is the core agent-facing surface) |
 | **Effort** | M |
-| **Status** | proposed (0.4.0 candidate — needs creds/torch, not CI) |
+| **Status** | **done · 0.4.0** — measured (Bedrock Rerank); decision = stay opt-in, recommend `bedrock:cohere.rerank-v3-5:0` @ w=0.3 |
 | **Area** | `retrieve` (rerank) |
 | **Relates to** | ENH-009 (the rerank seam + adapter), feat-006 (retrieval) |
+
+> **Outcome:** added a torch-free **`BedrockRerankScorer`** (Bedrock Rerank API,
+> Cohere Rerank 3.5) behind the existing `CrossScorer` seam, then ran a two-corpus
+> campaign ([results](../validation/rerank/results.md), harness
+> `scripts/rerank_eval.py`). Base retrieval already saturates recall; the
+> reranker is an **ordering** win (MRR +10–16% at w=0.3) costing ~540 ms/query —
+> so the decision is **keep opt-in** and document the recommended precision config
+> (`rerank: cross_encoder` + `rerank_model: bedrock:cohere.rerank-v3-5:0` +
+> `rerank_weight: 0.3`).
 
 ## Motivation
 

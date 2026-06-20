@@ -17,6 +17,17 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **Bedrock-native reranker + measurement campaign (ENH-013).** A torch-free
+  `BedrockRerankScorer` (AWS Bedrock Rerank API — Cohere Rerank 3.5 / Amazon
+  Rerank) behind the existing `CrossScorer` seam, selected via
+  `rerank_model: bedrock:cohere.rerank-v3-5:0` — reuses the AWS creds the embedder
+  already uses, no `rerank`/torch extra. A two-corpus campaign (harness
+  `scripts/rerank_eval.py`, [results](docs/validation/rerank/results.md)) found
+  the cross-encoder is an **ordering** win (MRR +10–16% at blend weight 0.3) over
+  an already-recall-saturated base, costing ~540 ms/query — so rerank **stays
+  opt-in**, with the Bedrock config @ `w=0.3` documented as the recommended
+  precision setting. New `retrieve.rerank_region` config.
+
 - **Four new framework packs — Go / C# / PHP / Ruby routes (ENH-012).** Framework
   awareness now spans **11 packs** across six languages. Each rides a small new
   `_<lang>_ast` helper and is conservative (ADR-0004); detection uses import
