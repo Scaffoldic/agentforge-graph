@@ -4,6 +4,13 @@ The full vocabulary is locked at 0.1 — including the higher-level kinds
 whose producers ship later (feat-010/011/012) — so stores and queries
 handle every kind from day one and no schema migration is needed when a
 later producer lands. See ADR-0005.
+
+A few kinds were added post-0.1 (``RouteMount``/``PROVIDED_BY`` for
+ENH-011). This is migration-free by construction: every backend stores
+nodes/edges in a generic table keyed by a ``kind`` string column (Kuzu
+``CkgNode``/``CkgEdge``, schemaless SurrealDB, Neo4j relationship types),
+so an unrecognised kind round-trips and a new value needs no DDL. Adding a
+kind is additive — it never invalidates an existing index.
 """
 
 from __future__ import annotations
@@ -36,6 +43,7 @@ class NodeKind(StrEnum):
     SERVICE = "Service"  # feat-011
     SUMMARY = "Summary"  # feat-012
     PATTERN_TAG = "PatternTag"  # feat-012
+    ROUTE_MOUNT = "RouteMount"  # ENH-011 — a router mount (include_router/use/register_blueprint)
 
 
 class EdgeKind(StrEnum):
@@ -62,6 +70,7 @@ class EdgeKind(StrEnum):
     INJECTED_INTO = "INJECTED_INTO"
     HAS_FIELD = "HAS_FIELD"
     RELATES_TO = "RELATES_TO"
+    PROVIDED_BY = "PROVIDED_BY"  # ENH-011 — a DI Service grounded to its provider Function/Method
 
     # --- enrichment (feat-012) ---
     SUMMARIZES = "SUMMARIZES"

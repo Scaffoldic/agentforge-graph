@@ -66,7 +66,7 @@ class IncrementalIndexer:
             return IndexReport()
 
         # avoid an import cycle (pipeline imports nothing incremental)
-        from ..pipeline import IngestPipeline
+        from ..pipeline import IngestPipeline, _apply_framework_resolve
 
         removed = changes.removed_paths()
         touched = set(changes.touched_paths())
@@ -108,18 +108,13 @@ class IncrementalIndexer:
             )
         report.edges += imports + stats.refs_resolved + stats.inherits_resolved
 
-        # feat-011 pass-2: ORM RELATES_TO is globally idempotent (clear all +
-        # rebuild from the whole-repo model set), so a scoped refresh converges
-        # to the same edges a full re-index would produce.
+        # feat-011 / ENH-011 pass-2: ORM RELATES_TO + cross-file route-prefix
+        # composition + DI grounding are all globally idempotent (clear all +
+        # rebuild / recompute from the whole-repo node set), so a scoped refresh
+        # converges to the same graph a full re-index would produce.
         if self.frameworks is not None and self.frameworks.active:
-            resolved, unresolved = await self.frameworks.resolve(self.store.graph, self.commit)
-            if resolved:
-                report.relations_resolved = resolved
-                report.by_edge_kind["RELATES_TO"] = (
-                    report.by_edge_kind.get("RELATES_TO", 0) + resolved
-                )
-                report.edges += resolved
-            report.framework_unresolved += unresolved
+            fw = await self.frameworks.resolve(self.store.graph, self.commit)
+            _apply_framework_resolve(report, fw)
 
         # (5) dirty propagation: touched symbols + 1-hop neighbours of all dirty
         after_symbols = await self._symbols_in(sorted(touched))

@@ -5,6 +5,8 @@ worker thread as the language extractor (pipeline)."""
 
 from __future__ import annotations
 
+from pydantic import BaseModel
+
 from agentforge_graph.core import (
     Edge,
     EdgeKind,
@@ -16,8 +18,20 @@ from agentforge_graph.core import (
 )
 
 from .base import FrameworkFacts, FrameworkPack
+from .cross_file import resolve_cross_file
 
 _ALL = 10_000_000  # effectively unbounded query for v0.1 graph sizes
+
+
+class FrameworkResolveStats(BaseModel):
+    """What the framework pass-2 stitched this run (folded into the
+    IndexReport). Combines the per-pack ORM ``RELATES_TO`` stitch with the
+    generic cross-file route-prefix / DI grounding (ENH-011)."""
+
+    relations_resolved: int = 0  # ORM RELATES_TO edges
+    route_prefixes_composed: int = 0  # ENH-011 routes with a composed path_pattern
+    di_providers_grounded: int = 0  # ENH-011 PROVIDED_BY edges
+    unresolved: int = 0  # targets seen but ambiguous or external
 
 
 class FrameworkExtractor:
@@ -41,15 +55,19 @@ class FrameworkExtractor:
             merged.unresolved += facts.unresolved
         return merged
 
-    async def resolve(self, store: GraphStore, commit: str = "") -> tuple[int, int]:
-        """Run every active pack's cross-file pass-2 (ORM relationship/FK string
-        targets, …) and replace the previous generation of framework-resolved
-        edges. Globally idempotent: clears all ``RELATES_TO`` out of the current
-        framework nodes, then rebuilds from the whole-repo node set — so an
-        incremental resolve converges to the same graph as a full re-index
-        (feat-004). Returns ``(edges_resolved, targets_unresolved)``."""
+    async def resolve(self, store: GraphStore, commit: str = "") -> FrameworkResolveStats:
+        """Run the framework pass-2 and replace the previous generation of
+        framework-resolved facts. Globally idempotent — clears the prior
+        ``RELATES_TO``/``PROVIDED_BY`` generation and recomputes every route's
+        ``path_pattern`` from scratch, so an incremental resolve converges to the
+        same graph as a full re-index (feat-004). Two stages:
+
+        1. Per-pack ORM ``RELATES_TO`` (relationship/FK string targets).
+        2. Generic cross-file route-prefix composition + DI grounding (ENH-011,
+           ``cross_file``) — framework-agnostic, reads only the persisted graph.
+        """
         if not self._packs:
-            return 0, 0
+            return FrameworkResolveStats()
         models = (await store.query(GraphQuery(kinds=[NodeKind.DATA_MODEL], limit=_ALL))).nodes
         if models:
             await store.clear_outgoing([m.id for m in models], EdgeKind.RELATES_TO)
@@ -60,4 +78,11 @@ class FrameworkExtractor:
             edges.extend(await pack.resolve(store, commit))
         if edges:
             await store.add(edges)
-        return len(edges), max(0, pending - len(edges))
+
+        cf = await resolve_cross_file(store, commit)
+        return FrameworkResolveStats(
+            relations_resolved=len(edges),
+            route_prefixes_composed=cf.route_prefixes_composed,
+            di_providers_grounded=cf.di_providers_grounded,
+            unresolved=max(0, pending - len(edges)) + cf.unresolved,
+        )

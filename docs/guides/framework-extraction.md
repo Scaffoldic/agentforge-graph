@@ -70,9 +70,29 @@ frameworks:
   stitched in a globally-idempotent pass-2, so an incremental re-index converges
   to the full-index graph.
 
+## Cross-file resolution (ENH-011)
+
+Real apps split routers and providers across files. A globally-idempotent pass-2
+(`frameworks/cross_file.py`) stitches those compose-points using only the
+persisted graph (`IMPORTS` edges + node attrs), unique-match-only:
+
+- **Route-prefix composition** — `app.include_router(payments.router,
+  prefix="/api")` composes `/api` onto the included router's routes. The base
+  `path` stays as written; the composed URL lands in **`path_pattern`** (equal to
+  `path` for an unmounted route). `ckg routes` shows the composed path and
+  annotates the base.
+- **DI grounding** — a `Depends(get_db)` provider name resolves to the
+  `get_db` **function symbol** in the imported module, emitting a traversable
+  `PROVIDED_BY` edge (so "what provides this dependency" crosses files).
+
+Ambiguous or external targets are left unresolved and counted in
+`framework_unresolved`, never guessed. Operational detail + troubleshooting:
+[cross-file-framework-resolution.md](cross-file-framework-resolution.md).
+
 ## Not yet (residuals)
 
-Cross-file route-prefix composition (`include_router(prefix=…)` / `app.use('/p',
-router)` / Django `urls.py`), grounding DI provider names to their definitions,
-and more frameworks (Rails, Laravel, Gin, ASP.NET) — see
+Cross-file route prefixes + DI grounding ship for **FastAPI**; Flask
+`register_blueprint`, Express `app.use('/p', router)` and Django `urls.py` reuse
+the same pass-2 rail (per-pack pass-1 capture pending). More frameworks (Rails,
+Laravel, Gin, ASP.NET) — see
 [`docs/features/feat-011-framework-extractors.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/features/feat-011-framework-extractors.md).

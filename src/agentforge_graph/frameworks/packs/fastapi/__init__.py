@@ -6,9 +6,15 @@ defaulting to ``Depends(provider)`` / ``Security(provider)`` becomes a
 ``Service`` node (the provider) + an ``INJECTED_INTO`` edge to the consuming
 function. Both are intra-file (decorator/param and the function share a file, so
 the edge endpoints are in the file's ``FileSubgraph``). Class-based handlers /
-consumers resolve to their ``Class#method`` symbol. Cross-file ``include_router``
-prefix composition and grounding the provider name to its definition are
-follow-ups; a dynamic (non-literal) route path is counted as unresolved.
+consumers resolve to their ``Class#method`` symbol.
+
+ENH-011 adds the cross-file pass-1 facts: each route carries ``router_var`` (its
+``@app``/``@router`` object) and a ``path_pattern`` (initialised to the base
+path), and each ``app.include_router(x.router, prefix="/api")`` becomes a
+``RouteMount`` marker node. The generic pass-2 stitch
+(``frameworks.cross_file``) composes prefixes onto the included router's routes
+and grounds DI providers to their definition. A dynamic (non-literal) route path
+or router ref is counted as unresolved, never guessed.
 """
 
 from __future__ import annotations
@@ -31,18 +37,21 @@ from agentforge_graph.core import Node as GraphNode
 from agentforge_graph.frameworks.base import FrameworkFacts, FrameworkPack
 from agentforge_graph.frameworks.packs._python_ast import (
     callee_name,
+    dotted_name,
     dotted_tail,
     enclosing_class,
     first_positional_arg,
     first_string_in,
     member_descriptor,
     python_language,
+    string_kwarg,
     text,
 )
 
 _HERE = Path(__file__).parent
 _HTTP_METHODS = {"get", "post", "put", "delete", "patch", "options", "head"}
 _DI_CALLS = {"Depends", "Security"}  # FastAPI dependency markers
+_MOUNT_METHODS = {"include_router"}  # ENH-011 cross-file router mounts
 
 
 @cache
@@ -53,6 +62,11 @@ def _routes_query() -> str:
 @cache
 def _depends_query() -> str:
     return (_HERE / "depends.scm").read_text(encoding="utf-8")
+
+
+@cache
+def _include_query() -> str:
+    return (_HERE / "include.scm").read_text(encoding="utf-8")
 
 
 class FastAPIPack(FrameworkPack):
@@ -70,6 +84,7 @@ class FastAPIPack(FrameworkPack):
         facts = FrameworkFacts()
         self._extract_routes(root, src, repo, file, prov, facts)
         self._extract_depends(root, src, repo, file, prov, facts)
+        self._extract_mounts(root, src, repo, file, prov, facts)
         return facts
 
     def _extract_routes(
@@ -92,6 +107,8 @@ class FastAPIPack(FrameworkPack):
             method = text(method_caps[0], src).lower()
             if method not in _HTTP_METHODS:
                 continue  # @app.middleware / @app.on_event / etc. — not a route
+            app_caps = caps.get("app")
+            router_var = text(app_caps[0], src) if app_caps else ""
 
             # A route we recognise but can't pin down statically is counted,
             # not dropped: a dynamic (non-literal) path.
@@ -120,6 +137,12 @@ class FastAPIPack(FrameworkPack):
                     attrs={
                         "method": method_u,
                         "path": path,
+                        # path_pattern is the cross-file composed path (ENH-011);
+                        # pass-2 recomputes it from `path` + any router prefix.
+                        # Initialised to the base path so an unmounted route is
+                        # already correct and a backend without pass-2 still works.
+                        "path_pattern": path,
+                        "router_var": router_var,  # the @app/@router object name
                         "framework": self.name,
                         "handler": handler_id,
                     },
@@ -187,6 +210,62 @@ class FastAPIPack(FrameworkPack):
                             provenance=prov,
                         )
                     )
+
+    def _extract_mounts(
+        self,
+        root: TSNode,
+        src: bytes,
+        repo: str,
+        file: SourceFile,
+        prov: Provenance,
+        facts: FrameworkFacts,
+    ) -> None:
+        """ENH-011 pass-1: record each ``app.include_router(x.router,
+        prefix="/api")`` as a ``RouteMount`` marker node. The node is file-owned
+        (it rides this file's FileSubgraph) so it is cleared and re-emitted on
+        re-parse; pass-2 reads markers + ``IMPORTS`` edges to compose prefixes
+        onto the included router's routes. A dynamic mount (non-literal router
+        ref) is counted as unresolved, never guessed."""
+        query = Query(python_language(), _include_query())
+        seen: set[str] = set()
+        for _pattern, caps in QueryCursor(query).matches(root):
+            method_caps = caps.get("method")
+            args_caps = caps.get("args")
+            if not (method_caps and args_caps):
+                continue
+            if text(method_caps[0], src) not in _MOUNT_METHODS:
+                continue
+            mount_node = caps["mount"][0]
+            router_arg = first_positional_arg(mount_node, src)
+            router_ref = dotted_name(router_arg, src) if router_arg is not None else ""
+            if not router_ref:
+                facts.unresolved += 1  # dynamic / non-literal router — counted
+                continue
+            prefix = string_kwarg(args_caps[0], "prefix", src) or ""
+            line = mount_node.start_point[0] + 1
+            mount_id = SymbolID.for_symbol(
+                self.language_slug, repo, file.path, f"mount({router_ref}@{line})."
+            )
+            if mount_id in seen:
+                continue
+            seen.add(mount_id)
+            facts.nodes.append(
+                GraphNode(
+                    id=mount_id,
+                    kind=NodeKind.ROUTE_MOUNT,
+                    name=router_ref,
+                    span=(line, mount_node.end_point[0] + 1),
+                    attrs={
+                        "framework": self.name,
+                        "router_ref": router_ref,  # as written: "payments.router"
+                        # the included router's variable name in its own file —
+                        # the last segment, matched against routes' router_var.
+                        "router_var": router_ref.rsplit(".", 1)[-1],
+                        "prefix": prefix,
+                    },
+                    provenance=prov,
+                )
+            )
 
     def _depends_providers(self, params: TSNode, src: bytes) -> list[str]:
         """Provider names from ``= Depends(provider)`` / ``= Security(provider)``

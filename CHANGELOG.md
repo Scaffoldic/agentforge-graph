@@ -17,6 +17,24 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **Cross-file framework resolution — route prefixes + DI grounding (ENH-011).**
+  A globally-idempotent pass-2 (`frameworks/cross_file.py`) stitches the
+  compose-points real apps split across files, reading only the persisted graph
+  (`IMPORTS` edges + node attrs), unique-match-only (ADR-0004):
+  - `app.include_router(payments.router, prefix="/api")` composes `/api` onto the
+    included router's routes. The base `path` is preserved; the composed URL is a
+    new `path_pattern` attr (`RouteInfo.path_pattern`, shown by `ckg routes` and
+    returned by the `ckg_routes` MCP tool). New `RouteMount` node kind.
+  - `Depends(get_db)` grounds the provider *name* to the `get_db` function symbol
+    in its module via a new `PROVIDED_BY` edge (+ `Service.provider_symbol`).
+
+  Ships for **FastAPI**; Flask / Express / Django reuse the same framework-
+  agnostic pass-2 (per-pack pass-1 capture pending). New `RouteMount` /
+  `PROVIDED_BY` kinds are additive and migration-free (the stores key edges/nodes
+  by a `kind` string column). `IndexReport.route_prefixes_composed` /
+  `di_providers_grounded`; `incremental == full` preserved. New runbook:
+  `docs/guides/cross-file-framework-resolution.md`.
+
 - **`CITATION.cff`** — GitHub "Cite this repository" metadata.
 
 - **Consumer feature guides + a runnable example.** New `docs/guides/` for the
