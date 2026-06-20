@@ -17,6 +17,9 @@ edges an agent can traverse** (feat-011).
 | **NestJS** | TS | controller routes (`@Controller` + `@Get`/`@Post`/…) |
 | **Spring** | Java | controller routes (`@RestController` + `@GetMapping`/…) |
 | **Gin** | Go | routes (`r.GET('/x', handler)` — method-call, named handler → `HANDLED_BY`) |
+| **ASP.NET** | C# | controller routes (`[HttpGet("/x")]` attributes, `[controller]` token, `[Route]` base) |
+| **Laravel** | PHP | routes (`Route::get('/x', [C::class, 'm'])`) — controller grounded cross-file |
+| **Rails** | Ruby | routes (`routes.rb` explicit `get '/x' => 'c#a'` / `to:` / `root`) — controller grounded cross-file |
 
 **New nodes:** `Route`, `DataModel`, `Service`. **New edges:** `HANDLED_BY`
 (Route→handler), `HAS_FIELD` (DataModel→column), `RELATES_TO` (DataModel↔DataModel),
@@ -85,6 +88,10 @@ persisted graph (`IMPORTS` edges + node attrs), unique-match-only:
 - **DI grounding** — a `Depends(get_db)` provider name resolves to the
   `get_db` **function symbol** in the imported module, emitting a traversable
   `PROVIDED_BY` edge (so "what provides this dependency" crosses files).
+- **Route-handler grounding** — a route whose DSL names its handler by string
+  (Laravel `[C::class, 'm']` / `'C@m'`, Rails `'controller#action'`) records the
+  controller + action; pass-2 grounds them to the real `Class#method` symbol
+  anywhere in the repo (unique-match), emitting `HANDLED_BY` across files.
 
 Ambiguous or external targets are left unresolved and counted in
 `framework_unresolved`, never guessed. Operational detail + troubleshooting:
@@ -94,6 +101,8 @@ Ambiguous or external targets are left unresolved and counted in
 
 Cross-file route prefixes + DI grounding ship for **FastAPI**; Flask
 `register_blueprint`, Express `app.use('/p', router)` and Django `urls.py` reuse
-the same pass-2 rail (per-pack pass-1 capture pending). More frameworks (Rails,
-Laravel, Gin, ASP.NET) — see
+the same pass-2 rail (per-pack pass-1 capture pending). Of the ENH-012 packs,
+**routes** ship for Gin / ASP.NET / Laravel / Rails; their ORM models (EF Core,
+Eloquent, ActiveRecord), the ASP.NET minimal API, and the Rails resourceful DSL
+(`resources`) are follow-ups — see
 [`docs/features/feat-011-framework-extractors.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/features/feat-011-framework-extractors.md).
