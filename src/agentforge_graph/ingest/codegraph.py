@@ -217,10 +217,11 @@ class CodeGraph:
         exists (feat-004) — only the diff is re-extracted/re-resolved. ``full``
         (or a changed pack fingerprint / schema bump / ``ingest.incremental:
         false``) forces a clean rebuild."""
-        from agentforge_graph.config import IngestConfig, StoreConfig
+        from agentforge_graph.config import IngestConfig, StoreConfig, resolve_config
 
         from .incremental import ChangeDetector, IndexMeta
 
+        config = resolve_config(config, repo_path)  # discover agentforge.yaml app: / ckg.yaml
         store = await Store.open(repo_path, config)
         source, registry = _source_registry(repo_path, config, languages, include, exclude)
         repo = Path(repo_path).resolve().name
@@ -347,6 +348,9 @@ class CodeGraph:
         config: str | Path | None = None,
         languages: str | list[str] | None = None,
     ) -> CodeGraph:
+        from agentforge_graph.config import resolve_config
+
+        config = resolve_config(config, repo_path)  # discover agentforge.yaml app: / ckg.yaml
         return cls(await Store.open(repo_path, config), repo_path, config, languages)
 
     async def embed(self, embedder: object | None = None, only_dirty: bool = False) -> EmbedReport:

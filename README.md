@@ -207,10 +207,11 @@ Storage is **pluggable** behind two contracts — `GraphStore` and `VectorStore`
 ([`store/registry.py`](https://github.com/Scaffoldic/agentforge-graph/blob/main/src/agentforge_graph/store/registry.py)):
 
 ```yaml
-# ckg.yaml
-store:
-  graph:   { driver: kuzu }       # built-in
-  vectors: { driver: lancedb }    # built-in
+# agentforge.yaml  (engine config lives under app:)
+app:
+  store:
+    graph:   { driver: kuzu }       # built-in
+    vectors: { driver: lancedb }    # built-in
 ```
 
 Three server backends ship first-party as opt-in extras: **Neo4j** (graph),
@@ -225,7 +226,8 @@ it's `pip install + one config line`, no core change.
 ## Models — pick a provider, or bring your own
 
 Every model boundary is an **interface** resolved by a provider registry, so
-switching providers is a `ckg.yaml` line — not a code change:
+switching providers is a one-line config change (under `app:` in
+`agentforge.yaml`) — not a code change:
 
 | Interface | Ships first-party | Select with |
 |---|---|---|
@@ -268,12 +270,15 @@ ckg CLI / MCP server / Agent
 
 ## Configuration & install extras
 
-Two config files, on purpose:
+One config file: **`agentforge.yaml`**.
 
-- **`agentforge.yaml`** — the *framework's* config (agent model, budget, MCP). Strict.
-- **`ckg.yaml`** — *this engine's* config: `store`, `ingest`, `chunking`, `embed`,
-  `retrieve`, `repomap`, `serve`, `frameworks`, `knowledge`, `enrich`, `temporal`.
-  Lenient (unknown keys ignored), so a config written for a later feature still loads.
+- **Framework keys** at the top level (agent model, budget, MCP) — strict.
+- **Engine config** under the framework's **`app:`** passthrough: `store`,
+  `ingest`, `chunking`, `embed`, `retrieve`, `repomap`, `serve`, `frameworks`,
+  `knowledge`, `enrich`, `temporal`. The engine reads `app:` with plain pyyaml,
+  never importing the framework (ADR-0001), and is lenient (unknown keys ignored).
+- A **standalone `ckg.yaml`** (the same blocks at the top level) is still
+  supported for framework-free use; the engine auto-discovers either file.
 
 The base `pip install agentforge-graph` includes the deterministic engine
 (tree-sitter, kuzu, lancedb, networkx). Optional extras add providers/backends:

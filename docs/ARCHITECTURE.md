@@ -331,14 +331,16 @@ store on first call. This is the one place (with `enrich`) that imports
 
 ## 9. Configuration
 
-Two files, on purpose:
+One file: **`agentforge.yaml`**.
 
-- **`agentforge.yaml`** — the *framework's* config (strict validator; agent
-  model, budget, MCP module).
-- **`ckg.yaml`** — *this agent's* engine config (lenient, `extra=ignore`):
-  `store`, `ingest`, `chunking`, `embed`, `retrieve`, `repomap`, `serve`,
-  `frameworks`, `knowledge`, `enrich`. Each block is a typed `_Block` model with
-  `.load()`.
+- **Framework keys** at the top level (strict validator; agent model, budget,
+  MCP module).
+- **Engine config** under the framework's `app:` passthrough (lenient,
+  `extra=ignore`): `store`, `ingest`, `chunking`, `embed`, `retrieve`, `repomap`,
+  `serve`, `frameworks`, `knowledge`, `enrich`, `temporal`. Each block is a typed
+  `_Block` model with `.load()`; `config.resolve_config()` discovers the file and
+  `_read_block` reads from `app.<key>` (or a top-level standalone `ckg.yaml`),
+  using **plain pyyaml — no `agentforge` import** (ADR-0001).
 
 ---
 

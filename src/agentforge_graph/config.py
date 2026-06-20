@@ -1,11 +1,22 @@
-"""Typed reader for ``ckg.yaml`` — this agent's *own* engine config (NOT
-the framework's ``agentforge.yaml``, which has a strict validator).
+"""Typed reader for the engine config — read with plain ``pyyaml``, **never**
+importing ``agentforge`` (ADR-0001: the deterministic engine stays
+framework-free).
 
-Unlike the framework file, ours is intentionally lenient: unknown keys are
-ignored (``extra='ignore'``) so a config written for a later feature still
-loads for an earlier one. The ``store:`` (feat-003) and ``ingest:``
-(feat-002) blocks are modelled today; chunking/retrieve/… sections gain
-their own models as those features land.
+The engine config can live in two places, both supported transparently:
+
+- **``agentforge.yaml`` under an ``app:`` section** — the consolidated form,
+  riding the framework's strict config file via its sanctioned ``app:``
+  passthrough (agentforge-py ≥0.3). One file, and the app section also gets the
+  framework's ``${ENV}`` interpolation / ``agentforge config show --resolved``.
+- **a standalone ``ckg.yaml``** (top-level blocks) — the original form, still
+  supported for back-compat / framework-free use.
+
+When no path is given, the engine **discovers** one in the repo
+(``agentforge.yaml`` with an ``app:`` section first, else ``ckg.yaml``).
+
+Our reader is intentionally lenient: unknown keys are ignored
+(``extra='ignore'``) so a config written for a later feature still loads for an
+earlier one.
 """
 
 from __future__ import annotations
@@ -15,6 +26,31 @@ from typing import Any, ClassVar, Self
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, field_validator
+
+def _yaml_or_empty(path: Path) -> dict[str, Any]:
+    try:
+        data = yaml.safe_load(path.read_text()) or {}
+    except (OSError, yaml.YAMLError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def resolve_config(config: str | Path | None, repo_path: str | Path = ".") -> Path | None:
+    """The config file the engine should read: an explicit ``config`` path if
+    given, else the first discovered in ``repo_path`` — ``agentforge.yaml`` when
+    it carries an ``app:`` section, otherwise ``ckg.yaml`` (then a bare
+    ``agentforge.yaml``). ``None`` when nothing is found (built-in defaults)."""
+    if config is not None:
+        return Path(config)
+    root = Path(repo_path)
+    af = root / "agentforge.yaml"
+    if af.is_file() and isinstance(_yaml_or_empty(af).get("app"), dict):
+        return af  # framework file carries the engine's app: config
+    ckg = root / "ckg.yaml"
+    if ckg.is_file():
+        return ckg
+    return af if af.is_file() else None
+
 
 # Default directories excluded from ingestion (mirrors ckg.yaml's ingest.exclude).
 DEFAULT_EXCLUDES = [
@@ -26,23 +62,29 @@ DEFAULT_EXCLUDES = [
 ]
 
 
-def _read_block[T: _Block](model: type[T], key: str, ckg_yaml: str | Path | None) -> T:
-    """Parse one top-level block of ckg.yaml into ``model``. Missing file or
-    ``None`` → defaults; malformed YAML / block → ``StoreConfigError``."""
+def _read_block[T: _Block](model: type[T], key: str, config: str | Path | None) -> T:
+    """Parse one engine config block into ``model``. The block is read from the
+    ``app:`` section when the file carries one (``agentforge.yaml``), else from
+    the top level (``ckg.yaml``). Missing file / ``None`` → defaults; malformed
+    YAML / block → ``StoreConfigError``."""
     # Imported lazily to avoid an import cycle (store.facade imports this).
     from agentforge_graph.store.errors import StoreConfigError
 
-    if ckg_yaml is None:
+    if config is None:
         return model()
-    p = Path(ckg_yaml)
+    p = Path(config)
     if not p.exists():
         return model()
     try:
         data = yaml.safe_load(p.read_text()) or {}
     except yaml.YAMLError as exc:
         raise StoreConfigError(f"could not parse {p}: {exc}") from exc
+    # Engine config lives under `app:` in agentforge.yaml (the framework's
+    # sanctioned passthrough), or at the top level in a standalone ckg.yaml.
+    section = data["app"] if isinstance(data.get("app"), dict) else data
+    block = section.get(key) if isinstance(section, dict) else None
     try:
-        return model.model_validate(data.get(key) or {})
+        return model.model_validate(block or {})
     except ValidationError as exc:
         raise StoreConfigError(f"invalid {key} config in {p}: {exc}") from exc
 

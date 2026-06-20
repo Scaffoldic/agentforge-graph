@@ -35,10 +35,17 @@
   `agentforge add module` does **not** work here (it shells out to
   `pip`, absent in uv venvs) — declare modules in `pyproject.toml`
   and `uv sync` instead.
-- **Two config files, on purpose.** `agentforge.yaml` is framework
-  config (strict validator — no unknown keys). `ckg.yaml` is this
-  agent's own engine config (store/ingest/chunking/embed/retrieve/
-  serve), read by the `agentforge_graph` package.
+- **One config file: `agentforge.yaml`.** Framework keys at the top
+  level; this agent's engine config (store/ingest/chunking/embed/
+  retrieve/serve/…) under the framework's `app:` passthrough
+  (agentforge-py ≥0.3). The engine reads `app:` with **plain pyyaml,
+  no `agentforge` import** (ADR-0001) — `config.resolve_config()`
+  discovers `agentforge.yaml` (with `app:`) or a standalone `ckg.yaml`,
+  and `_read_block` reads from `app.<key>` or top-level. A standalone
+  `ckg.yaml` is still supported (framework-free use). *(History: we
+  used a separate `ckg.yaml` because 0.2.4's strict validator rejected
+  app keys — fixed upstream in 0.3.x via `app:`; see
+  `docs/framework/upgrade-0.2.4-to-0.3.x.md`.)*
 - **Framework learnings go in `docs/framework/`** — local-only,
   git-ignored. Log any framework bug/hack/workaround/missing-feature
   there as you hit it (baseline: agentforge-py 0.2.4).
