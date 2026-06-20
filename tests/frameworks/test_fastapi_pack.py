@@ -149,3 +149,57 @@ def test_no_routes_on_plain_file() -> None:
     )
     facts = FASTAPI_PACK.extract(sf, repo="fixture", commit="c0")
     assert facts.nodes == [] and facts.edges == [] and facts.unresolved == 0
+
+
+# --- ENH-011 pass-1: router_var, path_pattern, mount markers ----------------
+
+
+def test_routes_carry_router_var_and_path_pattern() -> None:
+    facts = FASTAPI_PACK.extract(
+        _src(
+            "from fastapi import APIRouter\n"
+            "router = APIRouter()\n"
+            '@router.get("/charge")\n'
+            "def charge():\n    return {}\n"
+        ),
+        repo="fixture",
+        commit="c0",
+    )
+    route = next(n for n in facts.nodes if n.kind is NodeKind.ROUTE)
+    assert route.attrs["router_var"] == "router"  # the @router object
+    # path_pattern starts equal to the base path (pass-2 may compose a prefix).
+    assert route.attrs["path"] == "/charge"
+    assert route.attrs["path_pattern"] == "/charge"
+
+
+def test_include_router_emits_mount_marker() -> None:
+    facts = FASTAPI_PACK.extract(
+        _src(
+            "from fastapi import FastAPI\n"
+            "from .payments import routes\n"
+            "app = FastAPI()\n"
+            'app.include_router(routes.router, prefix="/api")\n'
+        ),
+        repo="fixture",
+        commit="c0",
+    )
+    mount = next(n for n in facts.nodes if n.kind is NodeKind.ROUTE_MOUNT)
+    assert mount.attrs["router_ref"] == "routes.router"
+    assert mount.attrs["router_var"] == "router"  # the included router's var name
+    assert mount.attrs["prefix"] == "/api"
+
+
+def test_dynamic_mount_is_counted_not_guessed() -> None:
+    # a non-literal router ref (a subscript) can't be tied to a router var → it
+    # is counted as unresolved, never mis-resolved (ADR-0004).
+    facts = FASTAPI_PACK.extract(
+        _src(
+            "from fastapi import FastAPI\n"
+            "app = FastAPI()\n"
+            'app.include_router(registry[name], prefix="/api")\n'
+        ),
+        repo="fixture",
+        commit="c0",
+    )
+    assert [n for n in facts.nodes if n.kind is NodeKind.ROUTE_MOUNT] == []
+    assert facts.unresolved == 1
