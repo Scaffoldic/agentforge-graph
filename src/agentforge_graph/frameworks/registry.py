@@ -13,6 +13,7 @@ from .packs.flask import FLASK_PACK
 from .packs.gin import GIN_PACK
 from .packs.laravel import LARAVEL_PACK
 from .packs.nestjs import NESTJS_PACK
+from .packs.rails import RAILS_PACK
 from .packs.spring import SPRING_PACK
 from .packs.sqlalchemy import SQLALCHEMY_PACK
 
@@ -27,6 +28,7 @@ BUILTIN_FRAMEWORK_PACKS: list[FrameworkPack] = [
     GIN_PACK,
     ASPNET_PACK,
     LARAVEL_PACK,
+    RAILS_PACK,
 ]
 
 
