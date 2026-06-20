@@ -26,7 +26,11 @@ on a schema mismatch is **rebuild** (ADR-0006).
   the cross-encoder is an **ordering** win (MRR +10–16% at blend weight 0.3) over
   an already-recall-saturated base, costing ~540 ms/query — so rerank **stays
   opt-in**, with the Bedrock config @ `w=0.3` documented as the recommended
-  precision setting. New `retrieve.rerank_region` config.
+  precision setting. New `retrieve.rerank_region` config. A **rigorous follow-up
+  benchmark** (`scripts/rerank_benchmark.py`, objective docstring→code labels,
+  388 queries / 4 OSS repos) confirms base retrieval MRR 0.95 / recall@1 0.92 and
+  a statistically-significant rerank lift (ΔMRR +0.019, p<0.001) — surfaced in the
+  README's "Retrieval quality (measured)" section.
 
 - **Four new framework packs — Go / C# / PHP / Ruby routes (ENH-012).** Framework
   awareness now spans **11 packs** across six languages. Each rides a small new
