@@ -429,7 +429,9 @@ class CodeGraph:
             self._store,
             emb,
             rcfg,
-            reranker=reranker_from_config(rcfg.rerank, rcfg.rerank_weight, rcfg.rerank_model),
+            reranker=reranker_from_config(
+                rcfg.rerank, rcfg.rerank_weight, rcfg.rerank_model, rcfg.rerank_region
+            ),
         )
         return await retriever.retrieve(
             query=query,
