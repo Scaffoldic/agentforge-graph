@@ -71,12 +71,14 @@ Shipped the bearer-token gate + bind-safety (layers 1–2):
   check runs **before** the engine opens, so a misconfig fails fast.
 - **stdio** is untouched (no auth — the client owns the subprocess).
 
-**Implementation:** `agentforge-mcp` exposes no auth/middleware hook (see
-`docs/framework/2026-06-15-mcp-http-no-auth-hook.md`), but `from_http(runner=…)`
-lets us inject a runner. So the no-auth path stays 100% framework (default runner),
-and the **authed** path uses `serve/http_runner.py` — `CkgHttpRunner` mirrors the
-framework's HTTP wiring and wraps the Starlette app in a pure-ASGI
-`BearerAuthMiddleware`. CLI: `--auth-token` / `--allow-unauthenticated`.
+**Implementation (simplified in 0.4.0):** `agentforge-mcp` ≥0.3 exposes a
+`from_http(middleware=…)` seam, so the authed path passes a pure-ASGI
+`BearerAuthMiddleware` (`serve/http_runner.py`) as a Starlette `Middleware` and
+lets the framework build/serve the app — no runner reimplementation. The no-auth
+path stays 100% framework. CLI: `--auth-token` / `--allow-unauthenticated`.
+*(Originally we injected a custom `CkgHttpRunner` because 0.2.4 had no auth hook;
+dropped once the framework added `middleware=` — see
+`docs/framework/upgrade-0.2.4-to-0.3.x.md`.)*
 
 **Verified:** always-on unit tests cover the middleware (401 missing/wrong, 200
 correct, lifespan pass-through) + the bind-safety guard; a live HTTP test

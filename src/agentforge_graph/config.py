@@ -27,6 +27,7 @@ from typing import Any, ClassVar, Self
 import yaml
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
+
 def _yaml_or_empty(path: Path) -> dict[str, Any]:
     try:
         data = yaml.safe_load(path.read_text()) or {}
