@@ -17,6 +17,16 @@
 > so the decision is **keep opt-in** and document the recommended precision config
 > (`rerank: cross_encoder` + `rerank_model: bedrock:cohere.rerank-v3-5:0` +
 > `rerank_weight: 0.3`).
+>
+> **Rigorous follow-up** ([benchmark](../validation/rerank/benchmark.md),
+> `scripts/rerank_benchmark.py`): a CodeSearchNet-style objective benchmark
+> (docstring→code, auto-labelled from `DESCRIBES`, verified leakage-free) over
+> **388 queries across 4 OSS repos** confirms base retrieval is strong (MRR 0.952,
+> recall@1 0.915) and rerank is a **statistically significant** ordering gain
+> (ΔMRR +0.019, 95% CI [+0.008, +0.031], p<0.001; recall@1 +3.3 pts) at ~440 ms
+> p50 — decision unchanged, now evidence-backed. Surfaced in the README's
+> "Retrieval quality (measured)" section. (TS/JSDoc corpus had too few labels to
+> conclude — a follow-up.)
 
 ## Motivation
 

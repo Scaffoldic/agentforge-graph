@@ -153,13 +153,35 @@ agent = Agent(model="anthropic:claude-sonnet-4-6", tools=code_graph_tools("."))
 | Capability | What you get |
 |---|---|
 | **Typed code graph** | Files, classes, functions, methods with stable SCIP-style ids; `CONTAINS`/`IMPORTS`/`CALLS`/`INHERITS` edges. Conservative, no-guess resolution across 10 language packs. |
-| **Framework awareness** *(differentiator)* | `Route → HANDLED_BY → handler`, `DataModel → HAS_FIELD`/`RELATES_TO`, `Service → INJECTED_INTO` — across FastAPI, Flask, SQLAlchemy, Django, Express, NestJS, Spring. `ckg routes`/`models`/`services`. |
+| **Framework awareness** *(differentiator)* | `Route → HANDLED_BY → handler`, `DataModel → HAS_FIELD`/`RELATES_TO`, `Service → INJECTED_INTO` — across 11 packs: FastAPI, Flask, SQLAlchemy, Django, Express, NestJS, Spring, Gin, ASP.NET, Laravel, Rails. `ckg routes`/`models`/`services`. |
 | **Decisions ↔ code** *(differentiator)* | ADRs/docs ingested and linked to the code they `GOVERN`; doc prose embedded + searchable. |
 | **Temporal / git evolution** | Per-symbol history, churn, authorship; `changed-since`, `as-of` reconstruction. |
 | **Hybrid retrieval** | Vector entry → typed graph expansion. Connected context, not a flat list. |
 | **LLM enrichment** *(differentiator)* | Budgeted design-pattern tags + bottom-up module summaries — `llm`-provenance, opt-out-able. |
 | **Agent-native** | Read-only MCP (10 tools) or native AgentForge toolset; every response carries a staleness envelope. |
 | **Embedded-first** | Local Kuzu graph + LanceDB vectors under `.ckg/`. No server. Storage + models pluggable. |
+
+---
+
+## Retrieval quality (measured)
+
+Retrieval is the core agent-facing surface, so we measure it — not vibes. On an
+**objective** natural-language→code benchmark (each documented symbol's docstring
+is the query, that symbol is the gold answer; labels come straight from the
+graph's `DESCRIBES` edges, verified leakage-free), over **388 queries across 4
+real OSS repos** (click, httpx, flask, fastapi) with Bedrock `cohere.embed-v4`:
+
+| | base hybrid retrieval | + Bedrock cross-encoder rerank (w=0.3) |
+|---|---|---|
+| **MRR** | 0.952 | 0.971 |
+| **recall@1** | 0.915 | 0.948 |
+
+Base retrieval lands the right code at **rank ≈ 1** out of the box. The optional
+cross-encoder reranker (Bedrock Rerank — no torch) adds a small but
+**statistically significant** precision gain (ΔMRR +0.019, 95% CI [+0.008,
++0.031], p < 0.001 by paired bootstrap) for ~440 ms/query — so it's **opt-in**,
+for when top-1 precision is worth the latency. Full method + numbers:
+[`docs/validation/rerank/benchmark.md`](docs/validation/rerank/benchmark.md).
 
 ---
 
