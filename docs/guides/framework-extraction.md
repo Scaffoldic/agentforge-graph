@@ -16,6 +16,7 @@ edges an agent can traverse** (feat-011).
 | **Express** | JS/TS | routes (`app.get('/x', handler)`) |
 | **NestJS** | TS | controller routes (`@Controller` + `@Get`/`@Post`/…) |
 | **Spring** | Java | controller routes (`@RestController` + `@GetMapping`/…) |
+| **Gin** | Go | routes (`r.GET('/x', handler)` — method-call, named handler → `HANDLED_BY`) |
 
 **New nodes:** `Route`, `DataModel`, `Service`. **New edges:** `HANDLED_BY`
 (Route→handler), `HAS_FIELD` (DataModel→column), `RELATES_TO` (DataModel↔DataModel),
