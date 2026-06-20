@@ -1,5 +1,9 @@
 # Model providers — pick one, or bring your own
 
+> **TL;DR:** Choose the embedding + LLM providers (Bedrock by default;
+> OpenAI / OpenAI-compatible / Anthropic) — or bring your own via the registry.
+> Set in `ckg.yaml`'s `embed:` and `knowledge:` blocks.
+
 agentforge-graph calls a model in two places:
 
 | Role | What it does | Feature | Selected by |

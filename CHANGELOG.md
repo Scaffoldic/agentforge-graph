@@ -68,7 +68,7 @@ on a schema mismatch is **rebuild** (ADR-0006).
   `PROVIDED_BY` kinds are additive and migration-free (the stores key edges/nodes
   by a `kind` string column). `IndexReport.route_prefixes_composed` /
   `di_providers_grounded`; `incremental == full` preserved. New runbook:
-  `docs/guides/cross-file-framework-resolution.md`.
+  `docs/guides/04-cross-file-framework-resolution.md`.
 
 - **`CITATION.cff`** — GitHub "Cite this repository" metadata.
 

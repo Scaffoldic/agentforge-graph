@@ -95,7 +95,7 @@ adapters — non-AWS users are now batteries-included.
   to keep forced-tool + cost parity with the Bedrock path and reuse the shared
   `ClaudeJudge`/`ClaudeSummarizer` core.
 - Env-gated live tests `CKG_LIVE_ANTHROPIC` / `CKG_LIVE_OPENAI`; CI stays
-  model-free. Developer-facing guide: `docs/guides/model-providers.md`.
+  model-free. Developer-facing guide: `docs/guides/08-model-providers.md`.
 
 The last acceptance bullet (a non-AWS path end-to-end with a live adapter) is met.
 

@@ -73,6 +73,8 @@ and [`docs/features/TRACKER.md`](https://github.com/Scaffoldic/agentforge-graph/
 
 ## Quick start
 
+> **Prefer a guided walkthrough?** Follow **[01 — Getting started](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/01-getting-started.md)** (install → index → query → serve, ~10 min), or browse all [step-by-step guides](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/README.md).
+
 ```bash
 pip install agentforge-graph                # engine included (tree-sitter + kuzu + lancedb)
 
@@ -152,7 +154,7 @@ agent = Agent(model="anthropic:claude-sonnet-4-6", tools=code_graph_tools("."))
 ```
 
 → Full guide (tool schemas, client config, guardrails, staleness envelope):
-[`docs/guides/using-over-mcp.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/using-over-mcp.md).
+[`docs/guides/10-using-over-mcp.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/10-using-over-mcp.md).
 
 ---
 
@@ -218,7 +220,7 @@ Three server backends ship first-party as opt-in extras: **Neo4j** (graph),
 in CI). Anything else (SurrealDB aside, FalkorDB, …) is an **out-of-tree adapter**:
 implement the contract, pass the conformance suite, register an entry point — then
 it's `pip install + one config line`, no core change.
-→ [`docs/guides/storage-backends.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/storage-backends.md).
+→ [`docs/guides/09-storage-backends.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/09-storage-backends.md).
 
 ## Models — pick a provider, or bring your own
 
@@ -238,7 +240,7 @@ switching providers is a `ckg.yaml` line — not a code change:
 - **Fully offline?** `embed.driver: fake` + `enrich.provider: scripted`.
 
 CI uses the deterministic fakes, so **no model calls or cloud creds are needed to
-build or test**. → [`docs/guides/model-providers.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/model-providers.md).
+build or test**. → [`docs/guides/08-model-providers.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/08-model-providers.md).
 
 ---
 
@@ -306,7 +308,7 @@ This repo is built to be worked on **with** AI agents. Start here:
 | Doc | What it is |
 |---|---|
 | [`docs/ARCHITECTURE.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/ARCHITECTURE.md) | High-level architecture + every pipeline (ASCII) |
-| [`docs/guides/`](https://github.com/Scaffoldic/agentforge-graph/tree/main/docs/guides/) | Consumer guides: [indexing & retrieval](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/indexing-and-retrieval.md), [framework extraction](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/framework-extraction.md), [architecture decisions](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/architecture-decisions.md), [temporal/history](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/temporal-history.md), [enrichment](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/enrichment.md), [using over MCP](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/using-over-mcp.md), [model providers](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/model-providers.md), [storage backends](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/storage-backends.md) |
+| [**`docs/guides/`**](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/README.md) | **Step-by-step guides** (numbered learning path, each with a TL;DR). Start with **[01 — Getting started](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/01-getting-started.md)** (install → index → query → serve), then: [02 indexing & retrieval](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/02-indexing-and-retrieval.md) · [03 framework extraction](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/03-framework-extraction.md) · [04 cross-file resolution](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/04-cross-file-framework-resolution.md) · [05 architecture decisions](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/05-architecture-decisions.md) · [06 temporal/history](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/06-temporal-history.md) · [07 enrichment](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/07-enrichment.md) · [08 model providers](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/08-model-providers.md) · [09 storage backends](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/09-storage-backends.md) · [10 using over MCP](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/10-using-over-mcp.md) |
 | [`examples/`](https://github.com/Scaffoldic/agentforge-graph/tree/main/examples) | Runnable sample repos (index → routes/models/services/query) |
 | [`docs/adr/`](https://github.com/Scaffoldic/agentforge-graph/tree/main/docs/adr/) | 9 architecture decision records (the *why*) |
 | [`docs/features/`](https://github.com/Scaffoldic/agentforge-graph/tree/main/docs/features/) + [`TRACKER.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/features/TRACKER.md) | 12 feature specs + status board |

@@ -1,5 +1,9 @@
 # Architecture decisions — link ADRs & docs to the code they govern
 
+> **TL;DR:** Ingest your ADRs/docs as `Decision` nodes linked to the code they
+> `GOVERN`, so a search hit surfaces the rule *before* an agent breaks it.
+> `ckg decisions`.
+
 Agents edit code without knowing *why* it's shaped the way it is. agentforge-graph
 ingests your **ADRs and docs**, turns each into a `Decision` node, and links it to
 the code it `GOVERN`s — so a search hit on `payments/` surfaces *"ADR-0012

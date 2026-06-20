@@ -34,7 +34,7 @@ ckg map --budget 1000        # centrality-ranked orientation
 ```
 
 Add semantic search (needs an embedding provider — see
-[`docs/guides/model-providers.md`](../docs/guides/model-providers.md)):
+[`docs/guides/08-model-providers.md`](../docs/guides/08-model-providers.md)):
 
 ```bash
 pip install 'agentforge-graph[bedrock]'      # or [openai], or a local server

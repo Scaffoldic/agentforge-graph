@@ -1,9 +1,11 @@
 # Runbook — cross-file framework resolution (ENH-011)
 
-> **Goal:** understand, operate, and debug the pass-2 that composes router
-> prefixes across files and grounds DI providers to their definitions.
+> **TL;DR:** understand, operate, and debug the pass-2 that composes router
+> prefixes across files and grounds DI providers to their definitions — a route's
+> `path_pattern` gains its mount prefix, a `Depends(...)` provider gets a
+> `PROVIDED_BY` edge to its real symbol.
 > **Applies to:** FastAPI today; Flask / Express / Django reuse the same rail.
-> **Relates to:** [framework-extraction.md](framework-extraction.md),
+> **Relates to:** [framework-extraction.md](03-framework-extraction.md),
 > `docs/enhancements/ENH-011-cross-file-framework-resolution.md`.
 
 ## What it does

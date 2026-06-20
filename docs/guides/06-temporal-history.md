@@ -1,5 +1,9 @@
 # Temporal — git evolution, history, and time-travel
 
+> **TL;DR:** Record each symbol's git lifecycle — introduced / churn / authors —
+> and reconstruct the graph at an earlier commit. `ckg history <symbol>`,
+> `changed-since`, `--as-of`. Opt-in; off by default.
+
 Code isn't static. agentforge-graph can record each symbol's **lifecycle** from
 git history — when it was introduced, how often it churns, who touches it, and
 what the graph looked like at an earlier commit (feat-009). Opt-in; off by default.

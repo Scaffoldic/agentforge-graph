@@ -107,7 +107,7 @@ core change needed. **First-party built-ins already ship** for embeddings
 (`bedrock`, `openai`, `fake`) and enrichment (`bedrock`, `anthropic`, `scripted`);
 `embed.base_url` makes the `openai` driver work against any OpenAI-compatible
 local server. See the full guide:
-[`docs/guides/model-providers.md`](docs/guides/model-providers.md).
+[`docs/guides/08-model-providers.md`](docs/guides/08-model-providers.md).
 
 To add a **new** one out-of-tree:
 1. Implement `Embedder` (`embed/base.py`) and/or `PatternJudge` / `Summarizer`

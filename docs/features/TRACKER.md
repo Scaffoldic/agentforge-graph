@@ -150,8 +150,8 @@ consume it**. Workstreams (run mostly in parallel; not feature-numbered):
 | **W1** | **Multi-language validation** on real OSS repos | every *shipped* language pack validated on ≥1 real repo; runs + scores logged in `docs/validation/` | ✅ all 3 shipped packs: Python ([click](../validation/python-click.md)), TS ([zod](../validation/typescript-zod.md)), JS ([express+chalk](../validation/javascript-express-chalk.md)) |
 | **W2** | **Graph-knowledge quality** | measured parse coverage, resolution rates, impact correctness, retrieval/repo-map usefulness; gaps filed as BUG/ENH/KL | 🔨 click: parsing solid; BUG-004 fixed; **creds run — retrieval 4/4 NL questions correct, summaries accurate+honest, tags precise (0 false positives)** |
 | **W3** | **Remaining language packs** (feat-002 follow-ups) | all 10 languages ship | ✅ **10/10 shipped** (Py/TS/JS/Go/Ruby/PHP/Java/C#/C++/Rust); validated on real repos: cobra/thor/monolog/gson/njson/fmt/[serde_json](../validation/rust-serde-json.md) |
-| **W4** | **MCP consumption proven + documented** | a real agent answers real questions over the CKG tools unattended; guide shipped (`docs/guides/using-over-mcp.md` ✅) | ✅ **done** — `Agent` (Sonnet 4.6) dogfood on this repo: tool-chose + chained `ckg_search`/`ckg_impact`/`ckg_decisions`/`ckg_repo_map`/`ckg_symbol`, answered 3/3 correctly (languages, ADRs, impact), unattended (~$0.24). [run](../validation/w4-agent-dogfood.md) |
-| **W5** | **Storage backends** (ENH-004) | ✅ **done** — shipped Neo4j (graph) + pgvector (vectors) server backends behind the driver registry, each passing the unchanged conformance suite; verified in CI against live containers. Embedded Kuzu/LanceDB stays default. [Guide](../guides/storage-backends.md) | ✅ |
+| **W4** | **MCP consumption proven + documented** | a real agent answers real questions over the CKG tools unattended; guide shipped (`docs/guides/10-using-over-mcp.md` ✅) | ✅ **done** — `Agent` (Sonnet 4.6) dogfood on this repo: tool-chose + chained `ckg_search`/`ckg_impact`/`ckg_decisions`/`ckg_repo_map`/`ckg_symbol`, answered 3/3 correctly (languages, ADRs, impact), unattended (~$0.24). [run](../validation/w4-agent-dogfood.md) |
+| **W5** | **Storage backends** (ENH-004) | ✅ **done** — shipped Neo4j (graph) + pgvector (vectors) server backends behind the driver registry, each passing the unchanged conformance suite; verified in CI against live containers. Embedded Kuzu/LanceDB stays default. [Guide](../guides/09-storage-backends.md) | ✅ |
 | **W6** | **DX / packaging** | install/quickstart verified clean-room; version bump 0.0.0→0.1.0, CHANGELOG, tag | 🔨 **prep done** — version → 0.1.0, `CHANGELOG.md` written, wheel builds with all 21 `.scm`, clean-room `pip install [engine]` → `ckg index` works. **Tag `v0.1.0` held** pending a final validation pass (user's call) |
 
 Findings feed `docs/{bugs,enhancements,known-limitations}/`; the campaign home and
@@ -269,7 +269,7 @@ follows the workspace pipeline's scaffold step.
   against live Neo4j 5 + Postgres/pgvector — locally **and in CI** (new
   `server-backends` job, public service containers, no secrets) — plus an
   end-to-end `index→embed→query` against both. Embedded Kuzu/LanceDB stays the
-  zero-config default. Guide: `docs/guides/storage-backends.md`.
+  zero-config default. Guide: `docs/guides/09-storage-backends.md`.
 - **2026-06-15** — **W3 complete: all 10 language packs ship** (Go/Ruby/PHP/Java/
   C#/C++/Rust added to Py/TS/JS), each validated on a real OSS repo. See the W3 row.
 - **2026-06-15** — **Go language pack shipped (W3, first directory-package lang).**
@@ -365,7 +365,7 @@ follows the workspace pipeline's scaffold step.
   Anthropic API judge/summarizer + OpenAI/local embeddings (PR #20), so non-AWS
   users get a live path from config alone. Added the **[Road to 0.1](#road-to-01--production-hardening)**
   hardening plan (W1–W6), the validation campaign home (`docs/validation/`), and
-  the MCP/in-process consumption guide (`docs/guides/using-over-mcp.md`). Next:
+  the MCP/in-process consumption guide (`docs/guides/10-using-over-mcp.md`). Next:
   W1 — validate graph knowledge on real OSS repos across the languages we support.
 - **2026-06-12** — **v0.1 MVP COMPLETE.** feat-007 shipped; feat-008 (MCP
   server & tool API) implemented and in PR: six read-only tools

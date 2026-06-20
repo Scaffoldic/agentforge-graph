@@ -13,7 +13,7 @@ we tag 0.1.
 
 1. **Run the full pipeline** on a target OSS repo:
    `ckg index → embed → enrich → map/query/impact/routes/decisions`, then drive it
-   through an agent over MCP (`docs/guides/using-over-mcp.md`).
+   through an agent over MCP (`docs/guides/10-using-over-mcp.md`).
 2. **Score the graph knowledge** against ground truth (below).
 3. **File every gap** as a `docs/bugs/BUG-NNN`, `docs/enhancements/ENH-NNN`, or
    `docs/known-limitations/KL-NNN` — and link it from the run's findings.
