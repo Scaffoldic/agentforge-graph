@@ -25,6 +25,14 @@ ckg index .                         # repo → typed graph in seconds (no creds,
 ckg serve-mcp --repo .              # → 10 read-only tools for your agent
 ```
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Scaffoldic/agentforge-graph/main/docs/assets/demo.gif"
+       alt="ckg indexes a FastAPI + SQLAlchemy app and surfaces its routes, ORM models, and dependency-injection graph"
+       width="820">
+  <br>
+  <em>Index a FastAPI + SQLAlchemy app → its routes, ORM models (with relations), and DI graph — no creds, no server.</em>
+</p>
+
 ---
 
 ## What you get out of the box
