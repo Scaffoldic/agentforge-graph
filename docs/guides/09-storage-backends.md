@@ -1,5 +1,10 @@
 # Storage backends — embedded by default, server when you need it
 
+> **TL;DR:** Embedded Kuzu + LanceDB by default (zero setup, under `.ckg/`).
+> Switch to Neo4j / pgvector / SurrealDB via `ckg.yaml`'s `store:` block + the
+> matching extra (`[neo4j]` / `[pgvector]` / `[surrealdb]`) — same commands, same
+> conformance suite.
+
 agentforge-graph is **embedded-first** (ADR-0006): with no configuration it writes
 an index under `.ckg/` in your repo (Kuzu for the graph, LanceDB for vectors).
 Zero setup, nothing to run, perfect for a single developer or CI.

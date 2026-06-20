@@ -1,5 +1,10 @@
 # Framework extraction — routes, ORM models, DI as graph edges
 
+> **TL;DR:** Routes, ORM models, and DI are extracted as graph edges
+> (`HANDLED_BY` / `HAS_FIELD` / `RELATES_TO` / `INJECTED_INTO`) across 11 packs
+> (FastAPI · Flask · SQLAlchemy · Django · Express · NestJS · Spring · Gin ·
+> ASP.NET · Laravel · Rails). `ckg routes` / `ckg models` / `ckg services`.
+
 A plain symbol graph shows calls and imports. A web app's *real* architecture —
 `POST /payments` → handler → `Payment` model — is wired through decorators, ORM
 metaclasses, and DI containers. **agentforge-graph extracts that wiring as graph
@@ -95,7 +100,7 @@ persisted graph (`IMPORTS` edges + node attrs), unique-match-only:
 
 Ambiguous or external targets are left unresolved and counted in
 `framework_unresolved`, never guessed. Operational detail + troubleshooting:
-[cross-file-framework-resolution.md](cross-file-framework-resolution.md).
+[cross-file-framework-resolution.md](04-cross-file-framework-resolution.md).
 
 ## Not yet (residuals)
 

@@ -351,7 +351,7 @@ Two files, on purpose:
   the direct Anthropic API, OpenAI / local OpenAI-compatible embeddings, or an
   out-of-tree entry point. Adding a provider is a one-class change + an entry
   point; the orchestration/budget/heuristics are fully unit-tested. See
-  [`guides/model-providers.md`](guides/model-providers.md).
+  [`guides/08-model-providers.md`](guides/08-model-providers.md).
 - **Provenance discipline.** `parsed` < `resolved` < `manual`, and `llm` is
   second-class with a confidence + rationale. Retrieval can exclude all
   `llm`-derived facts wholesale (`include_llm_facts=False`).

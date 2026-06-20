@@ -1,5 +1,9 @@
 # Indexing & retrieval — index → embed → query
 
+> **TL;DR:** `ckg index . --embed` parses + embeds the repo; `ckg query "..."`
+> returns **connected** context (the symbol + its callers + the decision that
+> governs it), not a flat list — vector entry → typed graph expansion.
+
 The core loop: parse a repo into a typed graph, embed it for semantic search, and
 ask questions that return **connected** context (the symbol, its callers, its
 governing decision) — not a flat list of files.
@@ -33,7 +37,7 @@ ckg embed .
 
 AST-aware chunks → vectors. Incremental: only changed chunks re-embed (skipped by
 content hash). Pick/realize a provider per
-[`docs/guides/model-providers.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/model-providers.md);
+[`docs/guides/08-model-providers.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/08-model-providers.md);
 `embed.driver: fake` gives a fully offline path.
 
 ## 3. Query — hybrid retrieval
@@ -72,6 +76,6 @@ embed:
 
 Everything above is also available read-only over **MCP (10 tools)** or as an
 in-process AgentForge toolset — see
-[`docs/guides/using-over-mcp.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/using-over-mcp.md).
+[`docs/guides/10-using-over-mcp.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/10-using-over-mcp.md).
 Every response carries a **staleness envelope** (indexed commit + whether the
 working tree moved), so an agent knows if the graph is behind `HEAD`.

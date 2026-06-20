@@ -85,7 +85,7 @@ passwords come from `$CKG_NEO4J_PASSWORD` / `$CKG_PGVECTOR_DSN`.
 Postgres/pgvector — locally and **in CI** via a dedicated `server-backends` job
 with public service containers (no secrets). End-to-end `ckg index → embed →
 query` confirmed against Neo4j + pgvector together. Embedded Kuzu/LanceDB stays
-the zero-config default. Guide: `docs/guides/storage-backends.md`. Coverage held
+the zero-config default. Guide: `docs/guides/09-storage-backends.md`. Coverage held
 ≥90% (server adapters covered by the live job; main gate at ~94%).
 
 ## Notes / alternatives

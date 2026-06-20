@@ -12,7 +12,7 @@
 > **Implemented (FastAPI):** generic pass-2 `frameworks/cross_file.py` —
 > route-prefix composition (`RouteMount` markers + `path_pattern`) and DI
 > grounding (`PROVIDED_BY`). Runbook:
-> [`docs/guides/cross-file-framework-resolution.md`](../guides/cross-file-framework-resolution.md).
+> [`docs/guides/04-cross-file-framework-resolution.md`](../guides/04-cross-file-framework-resolution.md).
 > Remaining: Flask/Express/Django pass-1 capture, nested-mount fixed-point.
 
 ## Motivation

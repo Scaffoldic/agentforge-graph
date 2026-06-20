@@ -1,5 +1,10 @@
 # Using the CKG from an agent (MCP) or in-process
 
+> **TL;DR:** Serve the graph over **10 read-only tools** — an MCP server
+> (`ckg serve-mcp`, stdio or HTTP) for external clients like Claude Code, or the
+> in-process AgentForge toolset for framework agents. Every response carries a
+> staleness envelope.
+
 agentforge-graph exposes a repo's Code Knowledge Graph to **any agent or
 developer** two ways, over the **same 10 read-only tools** and the same engine:
 
@@ -170,5 +175,5 @@ Clamping is **explicit** — never silent. When a limit bites, the envelope says
 4. take a returned `symbol_id` → `ckg_impact` ("what breaks if I change this")
    or `ckg_explain` ("what is this, and what governs it").
 
-See also: [`model-providers.md`](model-providers.md) (which models power
+See also: [`model-providers.md`](08-model-providers.md) (which models power
 `ckg_search`/`ckg_explain`) and the feat-008 spec for the tool contract.

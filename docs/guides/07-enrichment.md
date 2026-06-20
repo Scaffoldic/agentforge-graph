@@ -1,5 +1,9 @@
 # LLM enrichment — design-pattern tags & module summaries
 
+> **TL;DR:** Add LLM-derived design-pattern tags and bottom-up module summaries —
+> budgeted, every fact carrying `llm` provenance + a confidence. `ckg enrich`
+> (Bedrock Claude by default; `--budget-usd` caps spend).
+
 Beyond parsed structure, agentforge-graph can add a layer of **LLM-derived
 meaning**: design-pattern tags (*"this class is a Repository"*) and bottom-up
 module summaries — every fact carrying `llm` provenance, a confidence, and a
@@ -52,4 +56,4 @@ Set `enrich.provider: scripted` for a deterministic, credential-free path — th
 what CI uses, so **no model calls or cloud creds are needed to build or test**.
 Pick a provider (AWS Bedrock, the direct Anthropic API, or a local
 OpenAI-compatible server) per
-[`docs/guides/model-providers.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/model-providers.md).
+[`docs/guides/08-model-providers.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/08-model-providers.md).

@@ -27,7 +27,7 @@ wide-open HTTP surface.
 - `MCPServer.from_http(host, port)` runs a Starlette app under uvicorn, mounted at
   `/mcp`, **stateless, no auth** (`serve/server.py` → framework
   `agentforge-mcp`). Defaults bind `127.0.0.1`.
-- Mitigation today (documented in `docs/guides/using-over-mcp.md`): bind
+- Mitigation today (documented in `docs/guides/10-using-over-mcp.md`): bind
   localhost; for remote, front it with a reverse proxy doing TLS + authN. There is
   no in-process control.
 
@@ -90,4 +90,4 @@ unauthenticated and pass-through for the right token. 463 passed, 93% cov. Layer
   **simple** secure deployment not *require* extra infrastructure.
 - Keep it off by default so the localhost dev loop (the common case) needs no
   token. See [feat-008](../features/feat-008-mcp-server-and-tool-api.md) and the
-  consumption guide [`using-over-mcp.md`](../guides/using-over-mcp.md).
+  consumption guide [`using-over-mcp.md`](../guides/10-using-over-mcp.md).
