@@ -1,0 +1,56 @@
+# ENH-013 rerank eval — golden set over the agentforge-graph repo itself.
+# Each case: a natural-language query + the source file(s) whose chunk/symbol a
+# human judges relevant. Matched on a substring of the node id (which embeds the
+# repo-relative path), so a path fragment identifies the answer robustly.
+#
+# Corpus note: self-eval is acceptable here because the metric of interest is the
+# *delta* (base vs reranked order) over a fixed candidate pool, not absolute recall.
+
+- q: how are vector hits and graph neighbours combined into a result
+  relevant: ["retrieve/retriever.py"]
+- q: where is the cross-encoder rerank blend score computed
+  relevant: ["retrieve/rerank.py"]
+- q: how does AWS Bedrock text embedding work
+  relevant: ["embed/bedrock.py"]
+- q: stable deterministic human-readable node identity scheme
+  relevant: ["core/symbols.py"]
+- q: base class a framework pack implements to extract routes
+  relevant: ["frameworks/base.py"]
+- q: compose router prefixes across files include_router
+  relevant: ["frameworks/cross_file.py"]
+- q: re-index only the files that changed incrementally
+  relevant: ["ingest/incremental/indexer.py"]
+- q: kuzu graph store with a generic node and edge table
+  relevant: ["store/kuzu_store.py"]
+- q: surrealdb backend storing graph and vectors in one server
+  relevant: ["store/surreal_store.py"]
+- q: parse architecture decision records into the graph
+  relevant: ["knowledge/", "adr"]
+- q: backfill git commit history into the temporal layer
+  relevant: ["temporal/backfill.py"]
+- q: MCP tools exposed to agents over stdio
+  relevant: ["serve/"]
+- q: configuration block for retrieval tuning knobs
+  relevant: ["config.py"]
+- q: ground a route handler to its controller method in another file
+  relevant: ["frameworks/cross_file.py"]
+- q: extract Gin routes from Go method calls
+  relevant: ["frameworks/packs/gin"]
+- q: SQLAlchemy ORM data model and column extraction
+  relevant: ["frameworks/packs/sqlalchemy"]
+- q: rank the most important public API symbols for a repo map
+  relevant: ["repomap/"]
+- q: pluggable embedding provider registry choose a driver
+  relevant: ["embed/registry.py"]
+- q: dependency injection provider grounding into a Service node
+  relevant: ["frameworks/cross_file.py"]
+- q: lexical subtoken overlap reranker for symbol-naming queries
+  relevant: ["retrieve/rerank.py"]
+- q: import resolution turning import statements into edges
+  relevant: ["ingest/resolver.py"]
+- q: cosine vector search over the lance store
+  relevant: ["store/lance_store.py"]
+- q: detect which frameworks a repository uses
+  relevant: ["frameworks/detect.py"]
+- q: chunk source code for embedding
+  relevant: ["chunk", "ingest/"]

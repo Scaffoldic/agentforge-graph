@@ -132,7 +132,11 @@ class RetrieveConfig(_Block):
     # (the `rerank` extra; lazy-loaded). Both opt-in (measure, don't blind-flip).
     rerank: str = "off"
     rerank_weight: float = 0.5  # final = (1-w)*base + w*signal (overlap | σ(cross))
-    rerank_model: str = ""  # cross_encoder model id (empty = a small ms-marco default)
+    # cross_encoder model id (empty = a small ms-marco default). A `bedrock:<id>`
+    # value selects the Bedrock Rerank API (e.g. `bedrock:cohere.rerank-v3-5:0`) —
+    # no torch, uses the AWS creds the embedder already uses (ENH-013).
+    rerank_model: str = ""
+    rerank_region: str = "us-east-1"  # AWS region for a `bedrock:` rerank model
     edge_weights: dict[str, float] = Field(default_factory=_default_edge_weights)
     # feat-010: scale ADR/doc (`source_type: doc`) vector hits so code outranks
     # equally-similar prose by default, mitigating doc-volume dilution. Neutralised

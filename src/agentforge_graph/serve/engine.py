@@ -68,7 +68,9 @@ class _Engine:
                 cg.store,
                 embedder,
                 rcfg,
-                reranker=reranker_from_config(rcfg.rerank, rcfg.rerank_weight, rcfg.rerank_model),
+                reranker=reranker_from_config(
+                    rcfg.rerank, rcfg.rerank_weight, rcfg.rerank_model, rcfg.rerank_region
+                ),
             )
         return self._retriever
 

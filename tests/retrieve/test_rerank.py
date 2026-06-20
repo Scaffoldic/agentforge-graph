@@ -97,6 +97,64 @@ def test_sentence_transformer_scorer_missing_dep(monkeypatch: pytest.MonkeyPatch
         SentenceTransformerScorer().score("q", ["t"])
 
 
+# --- ENH-013: Bedrock-native rerank ----------------------------------------
+
+
+class _FakeBedrockClient:
+    """A fake bedrock-agent-runtime client: returns results sorted by relevance
+    (mimicking the real API) — high for candidates mentioning 'parse'."""
+
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def rerank(self, **kwargs: object) -> dict[str, object]:
+        self.calls.append(kwargs)
+        sources = kwargs["sources"]
+        scored = []
+        for i, s in enumerate(sources):  # type: ignore[arg-type]
+            text = s["inlineDocumentSource"]["textDocument"]["text"]  # type: ignore[index]
+            scored.append({"index": i, "relevanceScore": 0.9 if "parse" in text else 0.1})
+        scored.sort(key=lambda r: -r["relevanceScore"])  # API returns sorted
+        return {"results": scored}
+
+
+def test_bedrock_scorer_maps_relevance_to_logit_in_input_order() -> None:
+    from agentforge_graph.retrieve.rerank import BedrockRerankScorer
+
+    client = _FakeBedrockClient()
+    scorer = BedrockRerankScorer(model="cohere.rerank-v3-5:0", region="us-east-1", client=client)
+    out = scorer.score("parse an object", ["formatting helpers", "def _parse(x): ..."])
+    # logits returned in INPUT order, not the API's sorted order
+    assert out[0] < 0 < out[1]  # σ(out[1]) ≈ 0.9, σ(out[0]) ≈ 0.1
+    # the request used the Rerank model ARN + one query + two inline sources
+    cfg = client.calls[0]["rerankingConfiguration"]
+    arn = cfg["bedrockRerankingConfiguration"]["modelConfiguration"]["modelArn"]  # type: ignore[index]
+    assert arn.endswith("cohere.rerank-v3-5:0")
+    assert scorer.score("q", []) == []  # empty → no API call
+
+
+async def test_bedrock_reranker_promotes_relevant_candidate() -> None:
+    from agentforge_graph.retrieve.rerank import BedrockRerankScorer
+
+    scorer = BedrockRerankScorer(client=_FakeBedrockClient())
+    a = _item("a", "chunk1", 0.50, code="formatting helpers and stream shims")
+    b = _item("b", "chunk2", 0.45, code="class ZodObject { _parse(input) {} }")
+    out = await CrossEncoderReranker(scorer, weight=0.5).rerank("parse an object", [a, b])
+    assert out[0].id == "b"
+
+
+def test_resolve_bedrock_rerank_is_lazy() -> None:
+    # a `bedrock:` model selects the Bedrock scorer without importing boto3
+    from agentforge_graph.retrieve.rerank import BedrockRerankScorer
+
+    rr = reranker_from_config(
+        "cross_encoder", weight=0.5, model="bedrock:cohere.rerank-v3-5:0", region="us-east-1"
+    )
+    assert isinstance(rr, CrossEncoderReranker)
+    assert isinstance(rr._scorer, BedrockRerankScorer)
+    assert rr._scorer._model == "cohere.rerank-v3-5:0" and rr._scorer._region == "us-east-1"
+
+
 async def test_lexical_promotes_the_token_match() -> None:
     # two chunks: A has a slightly higher cosine but no term overlap; B mentions
     # the queried symbol. The lexical blend should surface B.

@@ -234,17 +234,85 @@ class SentenceTransformerScorer:
         return [float(s) for s in model.predict([(query, t) for t in texts])]  # type: ignore[attr-defined]
 
 
-def reranker_from_config(rerank: str, weight: float = 0.5, model: str = "") -> Reranker:
+# Bedrock-native rerank model, selected via ``rerank_model: bedrock:<id>``.
+_BEDROCK_PREFIX = "bedrock:"
+DEFAULT_BEDROCK_RERANK = "cohere.rerank-v3-5:0"
+_MAX_QUERY_CHARS = 2000
+
+
+class BedrockRerankScorer:
+    """A ``CrossScorer`` backed by the AWS Bedrock **Rerank API** (Cohere Rerank
+    3.5 / Amazon Rerank). Bedrock returns a relevance probability in ``[0, 1]``;
+    we return its **logit**, so :class:`CrossEncoderReranker`'s ``σ`` recovers the
+    probability and the existing blend is reused unchanged. Bedrock-first, like
+    the embedder/enricher — no torch. boto3 is imported lazily (the ``bedrock``
+    extra), so importing this module never requires it; the client is injectable
+    for tests."""
+
+    def __init__(
+        self,
+        model: str = DEFAULT_BEDROCK_RERANK,
+        region: str = "us-east-1",
+        client: object | None = None,
+    ) -> None:
+        self._model = model
+        self._region = region
+        self._client = client
+
+    def _bedrock(self) -> object:
+        if self._client is None:
+            import boto3
+
+            self._client = boto3.client("bedrock-agent-runtime", region_name=self._region)
+        return self._client
+
+    def score(self, query: str, texts: list[str]) -> list[float]:
+        if not texts:
+            return []
+        model_arn = f"arn:aws:bedrock:{self._region}::foundation-model/{self._model}"
+        resp = self._bedrock().rerank(  # type: ignore[attr-defined]
+            queries=[{"type": "TEXT", "textQuery": {"text": query[:_MAX_QUERY_CHARS]}}],
+            sources=[
+                {
+                    "type": "INLINE",
+                    "inlineDocumentSource": {"type": "TEXT", "textDocument": {"text": t}},
+                }
+                for t in texts
+            ],
+            rerankingConfiguration={
+                "type": "BEDROCK_RERANKING_MODEL",
+                "bedrockRerankingConfiguration": {
+                    "numberOfResults": len(texts),
+                    "modelConfiguration": {"modelArn": model_arn},
+                },
+            },
+        )
+        # Bedrock returns results sorted by relevance with the original index;
+        # restore input order and map probability -> logit (clamped).
+        scores = [0.0] * len(texts)
+        for r in resp["results"]:
+            p = min(max(float(r["relevanceScore"]), 1e-6), 1.0 - 1e-6)
+            scores[int(r["index"])] = math.log(p / (1.0 - p))
+        return scores
+
+
+def reranker_from_config(
+    rerank: str, weight: float = 0.5, model: str = "", region: str = "us-east-1"
+) -> Reranker:
     """Resolve the ``retrieve.rerank`` config value to a reranker.
     ``off``/empty → identity; ``lexical`` → :class:`LexicalReranker`;
-    ``cross_encoder`` → :class:`CrossEncoderReranker` over a lazily-loaded
-    sentence-transformers model (``model`` overrides the default)."""
+    ``cross_encoder`` → :class:`CrossEncoderReranker` over either a Bedrock rerank
+    model (``rerank_model: bedrock:<id>``) or a lazily-loaded sentence-transformers
+    model (any other ``model`` value)."""
     ref = (rerank or "off").strip()
     if ref in ("", "off"):
         return NoopReranker()
     if ref == "lexical":
         return LexicalReranker(weight)
     if ref == "cross_encoder":
+        if model.startswith(_BEDROCK_PREFIX):
+            bedrock_model = model[len(_BEDROCK_PREFIX) :] or DEFAULT_BEDROCK_RERANK
+            return CrossEncoderReranker(BedrockRerankScorer(bedrock_model, region), weight)
         return CrossEncoderReranker(
             SentenceTransformerScorer(model or DEFAULT_CROSS_ENCODER), weight
         )
