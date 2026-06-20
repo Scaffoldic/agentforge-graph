@@ -475,6 +475,9 @@ class CodeGraph:
             RouteInfo(
                 method=str(n.attrs.get("method", "")),
                 path=str(n.attrs.get("path", "")),
+                # ENH-011: the cross-file composed path; fall back to the base
+                # path for routes indexed before path_pattern existed.
+                path_pattern=str(n.attrs.get("path_pattern") or n.attrs.get("path", "")),
                 framework=str(n.attrs.get("framework", "")),
                 handler=str(n.attrs.get("handler", "")),
                 file=SymbolID.parse(n.id).path,
@@ -482,7 +485,7 @@ class CodeGraph:
             )
             for n in nodes
         ]
-        routes.sort(key=lambda r: (r.path, r.method))
+        routes.sort(key=lambda r: (r.path_pattern, r.method))
         return routes
 
     async def models(self) -> list[ModelInfo]:

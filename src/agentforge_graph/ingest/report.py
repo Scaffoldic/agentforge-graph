@@ -20,7 +20,8 @@ class RouteInfo(BaseModel):
     routes`` / the ``ckg_routes`` tool."""
 
     method: str
-    path: str
+    path: str  # the base path as written at the decorator
+    path_pattern: str = ""  # ENH-011: cross-file composed path (== path when unmounted)
     framework: str
     handler: str  # handler symbol id (HANDLED_BY target)
     file: str
@@ -75,6 +76,8 @@ class IndexReport(BaseModel):
     models_extracted: int = 0  # feat-011: ORM DataModel nodes emitted
     services_extracted: int = 0  # feat-011: DI Service nodes emitted
     relations_resolved: int = 0  # feat-011: RELATES_TO edges from ORM relationship/FK targets
+    route_prefixes_composed: int = 0  # ENH-011: routes whose path_pattern gained a prefix
+    di_providers_grounded: int = 0  # ENH-011: PROVIDED_BY edges (Service -> provider)
     framework_unresolved: int = 0  # framework registrations seen but not extractable
     decisions_indexed: int = 0  # feat-010: ADR Decision nodes
     governs_resolved: int = 0  # GOVERNS edges from unambiguous ADR mentions

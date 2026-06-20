@@ -102,7 +102,14 @@ class _Engine:
         if method:
             items = [r for r in items if str(r["method"]).upper() == method.upper()]
         if path:
-            items = [r for r in items if str(r["path"]).startswith(path)]
+            # ENH-011: match the cross-file composed path or the base path, so a
+            # query by the real URL ("/api/users") finds a prefixed route.
+            items = [
+                r
+                for r in items
+                if str(r.get("path_pattern") or r["path"]).startswith(path)
+                or str(r["path"]).startswith(path)
+            ]
         return {
             "routes": items,
             "count": len(items),

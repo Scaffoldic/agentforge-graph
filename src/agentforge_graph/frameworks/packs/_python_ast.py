@@ -60,6 +60,37 @@ def dotted_tail(node: TSNode, src: bytes) -> str:
     return ""
 
 
+def dotted_name(node: TSNode, src: bytes) -> str:
+    """Full dotted path of an identifier/attribute — ``payments.router`` for
+    ``payments.router``, ``router`` for the bare name, ``a.b.c`` for nested
+    attributes. "" for anything else (subscripts, calls, …)."""
+    if node.type == "identifier":
+        return text(node, src)
+    if node.type == "attribute":
+        obj = node.child_by_field_name("object")
+        attr = node.child_by_field_name("attribute")
+        head = dotted_name(obj, src) if obj is not None else ""
+        tail = text(attr, src) if attr is not None else ""
+        if head and tail:
+            return f"{head}.{tail}"
+        return tail
+    return ""
+
+
+def string_kwarg(args: TSNode, name: str, src: bytes) -> str | None:
+    """The string value of a ``name="..."`` keyword argument (e.g. FastAPI's
+    ``prefix="/api"``), stripped; None when absent or non-literal."""
+    for arg in args.named_children:
+        if arg.type != "keyword_argument":
+            continue
+        key = arg.child_by_field_name("name")
+        value = arg.child_by_field_name("value")
+        if key is None or text(key, src) != name or value is None or value.type != "string":
+            continue
+        return strip_quotes(text(value, src))
+    return None
+
+
 def base_classes(class_node: TSNode, src: bytes) -> list[str]:
     """The dotted-tail names of a class's base classes: ``["Model"]`` for
     ``class User(models.Model)``, ``["TimestampedModel"]`` for a subclass."""

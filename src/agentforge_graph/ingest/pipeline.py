@@ -14,12 +14,34 @@ import asyncio
 
 from agentforge_graph.core import FileSubgraph, GraphStore, SourceFile
 from agentforge_graph.frameworks import FrameworkExtractor
+from agentforge_graph.frameworks.extractor import FrameworkResolveStats
 
 from .extractor import TreeSitterExtractor
 from .pack import LanguagePack, PackRegistry
 from .report import IndexReport
 from .resolver import ImportResolver
 from .source import RepoSource, read_go_module
+
+
+def _apply_framework_resolve(report: IndexReport, fw: FrameworkResolveStats) -> None:
+    """Fold a framework pass-2 result (ORM RELATES_TO + ENH-011 cross-file
+    route-prefix / DI grounding) into the report. Shared by the full pipeline
+    and the incremental indexer so both report identically."""
+    if fw.relations_resolved:
+        report.relations_resolved = fw.relations_resolved
+        report.by_edge_kind["RELATES_TO"] = (
+            report.by_edge_kind.get("RELATES_TO", 0) + fw.relations_resolved
+        )
+        report.edges += fw.relations_resolved
+    if fw.route_prefixes_composed:
+        report.route_prefixes_composed = fw.route_prefixes_composed
+    if fw.di_providers_grounded:
+        report.di_providers_grounded = fw.di_providers_grounded
+        report.by_edge_kind["PROVIDED_BY"] = (
+            report.by_edge_kind.get("PROVIDED_BY", 0) + fw.di_providers_grounded
+        )
+        report.edges += fw.di_providers_grounded
+    report.framework_unresolved += fw.unresolved
 
 
 def _extract_one(
@@ -120,15 +142,9 @@ class IngestPipeline:
             )
         report.edges += imports + stats.refs_resolved + stats.inherits_resolved
 
-        # feat-011 pass-2: stitch ORM relationship/FK string targets into
-        # RELATES_TO edges (and future router-prefix composition).
+        # feat-011 / ENH-011 pass-2: ORM RELATES_TO + cross-file route-prefix
+        # composition and DI grounding.
         if self.frameworks is not None and self.frameworks.active:
-            resolved, unresolved = await self.frameworks.resolve(store, self.commit)
-            if resolved:
-                report.relations_resolved = resolved
-                report.by_edge_kind["RELATES_TO"] = (
-                    report.by_edge_kind.get("RELATES_TO", 0) + resolved
-                )
-                report.edges += resolved
-            report.framework_unresolved += unresolved
+            fw = await self.frameworks.resolve(store, self.commit)
+            _apply_framework_resolve(report, fw)
         return report

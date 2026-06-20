@@ -241,7 +241,11 @@ async def _routes(args: argparse.Namespace) -> int:
         width = max(len(r.method) for r in routes)
         for r in routes:
             handler = r.handler.rsplit(" ", 1)[-1] if r.handler else "?"
-            print(f"{r.method:<{width}}  {r.path}  →  {handler}  ({r.file}:{r.line})")
+            # ENH-011: show the cross-file composed path; annotate the base path
+            # when a router prefix was applied so the mount is visible.
+            path = r.path_pattern or r.path
+            mounted = f"  [base {r.path}]" if r.path_pattern and r.path_pattern != r.path else ""
+            print(f"{r.method:<{width}}  {path}  →  {handler}  ({r.file}:{r.line}){mounted}")
     finally:
         await cg.close()
     return 0
