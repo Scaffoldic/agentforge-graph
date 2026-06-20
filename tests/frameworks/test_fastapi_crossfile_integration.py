@@ -47,9 +47,7 @@ async def test_router_prefix_composed_onto_included_routes(
 
 async def test_mount_marker_recorded(app_graph: tuple[CodeGraph, Path]) -> None:
     cg, _ = app_graph
-    mounts = (
-        await cg.store.graph.query(GraphQuery(kinds=[NodeKind.ROUTE_MOUNT], limit=100))
-    ).nodes
+    mounts = (await cg.store.graph.query(GraphQuery(kinds=[NodeKind.ROUTE_MOUNT], limit=100))).nodes
     assert len(mounts) == 1
     m = mounts[0]
     assert m.attrs["router_ref"] == "routes.router"
