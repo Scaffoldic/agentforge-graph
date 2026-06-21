@@ -37,7 +37,8 @@ def _clean_read_only_env() -> None:
 def _stage(tmp_path: Path) -> tuple[Path, Path]:
     """Copy the demo into tmp, point every service at a central store."""
     ws = tmp_path / "acme"
-    shutil.copytree(_EXAMPLES, ws)
+    # ignore any local index/config artifacts so the fixture is pristine
+    shutil.copytree(_EXAMPLES, ws, ignore=shutil.ignore_patterns(".ckg", "ckg.yaml"))
     central = tmp_path / "central"
     for s in _SERVICES:
         (ws / s / "ckg.yaml").write_text(f"store:\n  central_root: {central}\n")

@@ -19,6 +19,11 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Changed
 
+- **README refreshed for the three setups + a new demo GIF.** Punchlines now cover
+  scaling from one repo to a federated **workspace** (cross-service tracing) on a
+  **central** hosted index; a new `docs/assets/setups.gif` (rendered by
+  `scripts/render-setups-gif.sh`) shows all three — single repo → central store →
+  workspace `services-map`/`trace` — creds-free.
 - **Getting-started guides reorganised by setup.** The single end-to-end guide is
   now a hub that branches into three clearly-named, step-by-step walkthroughs —
   [a single repo](docs/guides/getting-started/1-single-repo.md),
