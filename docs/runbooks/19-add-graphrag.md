@@ -81,4 +81,10 @@ modules:
 <!-- agentforge:end-managed -->
 
 <!-- agentforge:custom -->
+### agentforge-graph note
+
+This project **is** a GraphRAG engine for code: `ckg query` / `ckg_search`
+retrieve by vector then expand the typed code graph (`CALLS`/`IMPORTS`/`GOVERNS`/
+…) so a hit returns with its callers, handlers and governing decisions — not a
+flat list. See [indexing & retrieval](../guides/02-indexing-and-retrieval.md).
 <!-- agentforge:end-custom -->
