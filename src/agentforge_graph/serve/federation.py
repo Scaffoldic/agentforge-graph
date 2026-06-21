@@ -15,11 +15,32 @@ pinpoint tool with more than one member, raises asking which service.
 
 from __future__ import annotations
 
+import json
 import re
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+
+import yaml
 
 from .engine import TOOL_API_VERSION, _Engine
 from .workspace import WorkspaceConfig
+
+_HTTP_METHODS = {"get", "post", "put", "delete", "patch", "options", "head"}
+# OpenAPI / Swagger spec files looked for at a member's repo root (ENH-020).
+_OPENAPI_NAMES = ("openapi.json", "openapi.yaml", "openapi.yml", "swagger.json", "swagger.yaml")
+
+
+@dataclass(frozen=True)
+class _RouteMatcher:
+    """A route a service call can match against — from a framework extraction or
+    an OpenAPI spec, normalised to one shape."""
+
+    method: str
+    regex: re.Pattern[str]
+    path: str
+    handler: str
+    source: str  # "framework" | "openapi"
 
 
 class MemberNotFound(ValueError):
@@ -74,28 +95,25 @@ class FederatedEngine:
         member graphs are separate stores. Unique-match-only (ADR-0004): a call
         that matches routes in several services is left unresolved, never guessed.
         """
-        routes: dict[str, list[tuple[str, re.Pattern[str], Any]]] = {}
+        routes: dict[str, list[_RouteMatcher]] = {}
         calls: dict[str, list[Any]] = {}
         for name, eng in self.members.items():
-            cg = await eng.code_graph()
-            routes[name] = [
-                (r.method, _compile_route(r.path_pattern or r.path), r) for r in await cg.routes()
-            ]
-            calls[name] = await cg.service_calls()
+            routes[name] = await self._member_routes(eng)
+            calls[name] = await (await eng.code_graph()).service_calls()
 
         edges: list[dict[str, Any]] = []
         unresolved: list[dict[str, Any]] = []
         for caller, call_list in calls.items():
             for c in call_list:
                 matches = [
-                    (provider, r)
+                    (provider, rm)
                     for provider, rlist in routes.items()
                     if provider != caller  # cross-service only
-                    for (method, rx, r) in rlist
-                    if method == c.method and rx.match(c.path)
+                    for rm in rlist
+                    if rm.method == c.method and rm.regex.match(c.path)
                 ]
                 if len(matches) == 1:
-                    provider, r = matches[0]
+                    provider, rm = matches[0]
                     edges.append(
                         {
                             "from_service": caller,
@@ -104,8 +122,9 @@ class FederatedEngine:
                             "call_path": c.path,
                             "url": c.url,
                             "caller": f"{c.file}:{c.line}",
-                            "route_path": r.path_pattern or r.path,
-                            "handler": r.handler,
+                            "route_path": rm.path,
+                            "handler": rm.handler,
+                            "via": rm.source,  # framework | openapi
                         }
                     )
                 else:
@@ -127,6 +146,30 @@ class FederatedEngine:
             "services": sorted(self.members),
             "tool_api_version": TOOL_API_VERSION,
         }
+
+    async def _member_routes(self, eng: _Engine) -> list[_RouteMatcher]:
+        """A member's routes for matching: framework-extracted routes first, then
+        OpenAPI-declared routes that fill gaps. Deduped by (method, param-agnostic
+        path) so a framework route and its spec twin don't make every call
+        ambiguous — and so contract-first services (spec only, no detected
+        framework) are still matched."""
+        seen: set[tuple[str, str]] = set()
+        out: list[_RouteMatcher] = []
+        cg = await eng.code_graph()
+        for r in await cg.routes():
+            path = r.path_pattern or r.path
+            key = (r.method, _normalize_template(path))
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(_RouteMatcher(r.method, _compile_route(path), path, r.handler, "framework"))
+        for method, path, op_id in _openapi_routes(Path(eng.repo_path)):
+            key = (method, _normalize_template(path))
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(_RouteMatcher(method, _compile_route(path), path, op_id, "openapi"))
+        return out
 
     async def trace(
         self, service: str, depth: int = 10, direction: str = "downstream"
@@ -177,6 +220,53 @@ class FederatedEngine:
     async def close(self) -> None:
         for eng in self.members.values():
             await eng.close()
+
+
+def _normalize_template(path: str) -> str:
+    """A path template with every parameter segment collapsed to ``{}`` — so
+    ``/v1/orders/{oid}``, ``/v1/orders/:id`` and ``/v1/orders/{id}`` compare equal
+    (used to dedupe a framework route against its OpenAPI twin)."""
+    segs = []
+    for seg in path.strip("/").split("/"):
+        is_param = (
+            (seg.startswith("{") and seg.endswith("}"))
+            or seg.startswith(":")
+            or (seg.startswith("<") and seg.endswith(">"))
+        )
+        segs.append("{}" if is_param else seg)
+    return "/" + "/".join(segs)
+
+
+def _openapi_routes(repo_path: Path) -> list[tuple[str, str, str]]:
+    """`(METHOD, path, operationId)` for every operation in a member's OpenAPI /
+    Swagger spec (the first one found at the repo root), or ``[]`` when there is
+    none or it can't be parsed. Anchors the route side to the declared contract —
+    authoritative paths, and coverage for contract-first services with no detected
+    framework (ENH-020 C-full precision upgrade)."""
+    spec = None
+    for name in _OPENAPI_NAMES:
+        f = repo_path / name
+        if f.is_file():
+            try:
+                spec = yaml.safe_load(f.read_text())  # YAML is a JSON superset
+            except (yaml.YAMLError, json.JSONDecodeError, OSError):
+                return []
+            break
+    if not isinstance(spec, dict):
+        return []
+    paths = spec.get("paths")
+    if not isinstance(paths, dict):
+        return []
+    out: list[tuple[str, str, str]] = []
+    for path, ops in paths.items():
+        if not isinstance(path, str) or not isinstance(ops, dict):
+            continue
+        for method, op in ops.items():
+            if method.lower() not in _HTTP_METHODS:
+                continue
+            op_id = op.get("operationId", "") if isinstance(op, dict) else ""
+            out.append((method.upper(), path, str(op_id)))
+    return out
 
 
 def _compile_route(pattern: str) -> re.Pattern[str]:
