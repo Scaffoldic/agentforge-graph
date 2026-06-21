@@ -471,6 +471,7 @@ async def _serve_mcp(args: argparse.Namespace) -> int:
         refresh_on_call=args.refresh_on_call,
         auth_token=auth_token,
         allow_unauthenticated=args.allow_unauthenticated,
+        workspace=args.workspace,  # ENH-020: federate over a workspace manifest
     )
     return 0
 
@@ -657,6 +658,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["stdio", "http"],
         default=None,
         help="MCP transport (default: stdio, or serve.transport in ckg.yaml)",
+    )
+    srv.add_argument(
+        "--workspace",
+        default=None,
+        help="ENH-020: serve a workspace.yaml of members from one federated endpoint "
+        "(survey tools fan across all; pinpoint tools take a `service`)",
     )
     srv.add_argument("--host", default=None, help="http transport bind host (default: 127.0.0.1)")
     srv.add_argument("--port", type=int, default=None, help="http transport port (default: 8765)")

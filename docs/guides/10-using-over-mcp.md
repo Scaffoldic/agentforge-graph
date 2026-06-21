@@ -70,6 +70,40 @@ claude mcp add ckg -- ckg serve-mcp --repo /abs/path/to/repo
 
 The client owns the process lifetime; scoped to one repo.
 
+### Federated — one endpoint for many services (ENH-020)
+
+For a microservices org, serve **all** the services from a single endpoint with a
+`workspace.yaml` listing the members:
+
+```yaml
+# workspace.yaml
+workspace: acme-platform
+members:
+  - name: gateway
+    repo: ./gateway
+  - name: orders
+    repo: ./services/orders
+  - name: payments
+    repo: ./services/payments
+```
+
+```bash
+ckg index ./gateway && ckg index ./services/orders && ckg index ./services/payments
+ckg serve-mcp --workspace workspace.yaml          # one federated endpoint
+```
+
+- **Survey tools** (`ckg_search`, `ckg_routes`, `ckg_decisions`, `ckg_status`)
+  **fan across every member** and tag each result with its `service`, so one
+  `ckg_search` answers across the whole org (with a per-service freshness
+  envelope).
+- **Pinpoint tools** (`ckg_symbol`, `ckg_impact`, `ckg_neighbors`, `ckg_explain`,
+  `ckg_history`, `ckg_repo_map`) take a `service` to target one member (a symbol
+  id belongs to one repo); they ask which `service` if it's ambiguous.
+
+Cross-service request tracing (drawing edges between a client call in one service
+and the route it hits in another) is the next phase — see
+[`THEME-org-central-knowledge`](../enhancements/THEME-org-central-knowledge.md).
+
 ### http — a long-running server clients reach by URL
 
 ```bash
