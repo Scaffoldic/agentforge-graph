@@ -14,6 +14,9 @@ htmlcov/
 # Local-only framework learnings (issues, hacks, upgrade notes)
 docs/framework/
 
+# Local-only roadmap + release/verification notes (not published)
+docs/roadmap/
+
 # AI-assistant per-session working state (local-only, not published)
 .claude/state/
 
