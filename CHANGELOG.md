@@ -10,6 +10,13 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **`ckg_trace` — walk a request across services** (ENH-020 C-full). From a
+  starting service, trace the cross-service call graph `downstream` (what it
+  calls — data flow) or `upstream` (who calls it — blast radius), to a depth.
+  Returns the reachable hops (with hop numbers) and the services reached; cycles
+  terminate. Turns the `ckg_services_map` edges into the answer to *"what does
+  this service depend on / which services break if I change it"* — impact
+  analysis that spans service boundaries. Federation-only tool.
 - **Cross-service call graph** (ENH-020, C-full increment 2). The federated MCP
   server now draws **who-calls-whom across services**: it matches each member's
   outbound `ServiceCall` to a `Route` in *another* member by `(method, path)` —

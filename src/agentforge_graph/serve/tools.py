@@ -405,6 +405,47 @@ class CkgHistory(_CkgTool):
         return json.dumps(await eng.history(kwargs["symbol_id"]), indent=2)
 
 
+class TraceInput(BaseModel):
+    service: str = Field(description="the workspace member to trace from")
+    direction: str = Field(
+        default="downstream",
+        description="downstream (services this one calls — data flow) | "
+        "upstream (services that call this one — blast radius)",
+    )
+    depth: int = Field(default=10, description="max hops to follow (capped at 50)")
+
+
+class CkgTrace(_CkgTool):
+    name: ClassVar[str] = "ckg_trace"
+    description: ClassVar[str] = (
+        "Trace a request across services: from a starting service, walk the cross-service "
+        "call graph `downstream` (what it calls — data flow) or `upstream` (who calls it — "
+        "blast radius). Answers 'what does this service depend on' / 'which services break if "
+        "I change this one'. Requires a federated workspace (serve-mcp --workspace)."
+    )
+    input_schema: ClassVar[type[BaseModel]] = TraceInput
+
+    async def run(self, **kwargs: Any) -> str:
+        fn = getattr(self._engine, "trace", None)
+        if fn is None:
+            return json.dumps(
+                {
+                    "error": "ckg_trace needs a federated workspace "
+                    "(serve-mcp --workspace workspace.yaml)",
+                    "tool_api_version": TOOL_API_VERSION,
+                }
+            )
+        try:
+            result = await fn(
+                kwargs["service"],
+                int(kwargs.get("depth", 10)),
+                kwargs.get("direction", "downstream"),
+            )
+        except (MemberNotFound, ValueError) as e:
+            return json.dumps({"error": str(e), "tool_api_version": TOOL_API_VERSION})
+        return json.dumps(result, indent=2)
+
+
 class CkgServicesMap(_CkgTool):
     name: ClassVar[str] = "ckg_services_map"
     description: ClassVar[str] = (
