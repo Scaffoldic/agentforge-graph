@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:c52053398767 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:c52053398767 -->
 # 11 — Add safety guardrails
 
 > **Goal:** layer input validation, output redaction, and tool-

@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:e036df7d4cf3 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:e036df7d4cf3 -->
 # 14 — Deploy your agent
 
 > **Goal:** get the agent running somewhere durable (container,

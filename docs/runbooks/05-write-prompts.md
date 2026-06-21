@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:248e76f52c90 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:248e76f52c90 -->
 # 05 — Write prompts
 
 > **Goal:** author a system prompt that produces consistent

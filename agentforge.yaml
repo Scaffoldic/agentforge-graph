@@ -1,4 +1,3 @@
-# AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:3f971e1f7bac
 # NOTE: customized for agentforge-graph. One config file: the framework keys
 # below, plus this agent's own engine config under the `app:` passthrough
 # (agentforge-py >=0.3 — the strict validator accepts a free-form `app:` section).

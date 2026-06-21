@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:81034a5ee4c2 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:81034a5ee4c2 -->
 # 15 — Upgrade your agent
 
 > **Goal:** pull the latest framework changes into this project

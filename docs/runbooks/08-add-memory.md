@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:34357485fbb0 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:34357485fbb0 -->
 # 08 — Add memory / persistence
 
 > **Goal:** swap the default in-memory store for a durable

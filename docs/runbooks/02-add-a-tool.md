@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:54e75ed0aa46 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:54e75ed0aa46 -->
 # 02 — Add a tool
 
 > **Goal:** make a new capability available to your agent's

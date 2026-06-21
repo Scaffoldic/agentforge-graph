@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:81af251a9a4c -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:81af251a9a4c -->
 # 06 — Test your agent
 
 > **Goal:** unit-test your agent without hitting a real LLM or

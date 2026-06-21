@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:e2cf5067d2fb -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:e2cf5067d2fb -->
 # 16 — Configuration reference
 
 > **Goal:** find the canonical shape of every `agentforge.yaml`

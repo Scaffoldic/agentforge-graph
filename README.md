@@ -1,4 +1,3 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:c474ab3012ec -->
 <!-- NOTE: customized for agentforge-graph (forked from the scaffold README). -->
 # agentforge-graph
 

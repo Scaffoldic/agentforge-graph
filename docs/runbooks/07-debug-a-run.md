@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:336052b797bc -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:336052b797bc -->
 # 07 — Debug a run
 
 > **Goal:** reproduce a failed run locally and step through what

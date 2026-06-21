@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:abe78f8b53fe -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:abe78f8b53fe -->
 # 04 — Pick a reasoning strategy
 
 > **Goal:** choose the right `ReasoningStrategy` for your task.

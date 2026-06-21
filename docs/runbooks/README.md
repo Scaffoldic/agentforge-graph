@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:baeef86ba55c -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:baeef86ba55c -->
 # agentforge-graph — runbook index
 
 This directory carries the AgentForge runbooks for
