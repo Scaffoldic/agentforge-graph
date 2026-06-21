@@ -19,7 +19,7 @@ One file per enhancement: `ENH-NNN-short-slug.md`. Keep this index current.
 | [ENH-008](ENH-008-typescript-symbol-completeness.md) | Broaden TS/JS symbol extraction (interfaces/enums/types/arrow-consts) | Med–High | M | ingest.packs | done |
 | [ENH-009](ENH-009-retrieval-precision-dense-codebases.md) | Sharpen retrieval precision on dense / comment-sparse codebases (rerank/anchoring) | High | M | retrieve | partial (opt-in lexical rerank) |
 | ENH-010..013 | SurrealDB · cross-file resolution · more packs · rerank measurement (shipped in 0.4.0 — see each spec file) | — | — | — | done |
-| [ENH-017](ENH-017-surface-framework-upgrade-drift.md) | Make `agentforge upgrade` safe (fork/custom data-loss bug) + surface upgrade drift | Med–High | S–M | framework / upstream | proposed (upstream; issue drafted) |
+| [ENH-017](ENH-017-surface-framework-upgrade-drift.md) | Make `agentforge upgrade` safe (fork/custom data-loss bug) + surface upgrade drift | Med–High | S–M | framework / upstream | filed upstream (agentforge-py#114, #115) |
 | [ENH-018](ENH-018-store-location-and-central-hosting.md) | Store-location choice (in-repo vs. central) + read-only consumers | High | S–M | config/store | in progress (central_root done; read-only + server namespacing next) |
 | [ENH-019](ENH-019-serve-mcp-workdir-autodiscovery.md) | `serve-mcp` working-directory auto-discovery (zero-config consumption) | Medium | S | cli/serve | done |
 | [ENH-020](ENH-020-federated-multi-repo-mcp.md) | Federated multi-repo MCP + cross-service contract edges | High | L | serve/frameworks | done (C-lite federation + C-full: service map, ckg_trace, Python/JS clients incl. instances+base_url, OpenAPI anchoring; only gRPC/proto deferred) |

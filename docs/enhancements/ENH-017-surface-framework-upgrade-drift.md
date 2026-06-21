@@ -5,7 +5,7 @@
 | **ID** | ENH-017 |
 | **Value/Impact** | Med–High (every AgentForge consumer; one part is a **data-loss bug**) |
 | **Effort** | S–M (upstream) |
-| **Status** | proposed — **upstream recommendation** (file here, then post to `agentforge-py`) |
+| **Status** | **filed upstream** — [agentforge-py#114](https://github.com/Scaffoldic/agentforge-py/issues/114) (Part A, the bug) + [agentforge-py#115](https://github.com/Scaffoldic/agentforge-py/issues/115) (Part B, drift surfacing) |
 | **Area** | framework / upstream (`agentforge-py`) — the `upgrade` / `fork` commands |
 | **Relates to** | the local `docs/framework/` workaround log; ENH-005, the config consolidation |
 
