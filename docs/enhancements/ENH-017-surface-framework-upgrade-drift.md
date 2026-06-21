@@ -1,13 +1,18 @@
-# ENH-017: surface framework-upgrade drift (so consumers can clean workarounds)
+# ENH-017: make `agentforge upgrade` safe + surface upgrade drift
 
 | Field | Value |
 |---|---|
 | **ID** | ENH-017 |
-| **Value/Impact** | Medium (developer-experience for every AgentForge consumer) |
+| **Value/Impact** | Med–High (every AgentForge consumer; one part is a **data-loss bug**) |
 | **Effort** | S–M (upstream) |
 | **Status** | proposed — **upstream recommendation** (file here, then post to `agentforge-py`) |
-| **Area** | framework / upstream (`agentforge-py`) |
+| **Area** | framework / upstream (`agentforge-py`) — the `upgrade` / `fork` commands |
 | **Relates to** | the local `docs/framework/` workaround log; ENH-005, the config consolidation |
+
+> **Two parts.** **(A)** A confirmed **`agentforge upgrade` data-loss bug** —
+> it clobbers forked files and `agentforge:custom` sections (details below). **(B)**
+> The original request: no signal tells a consumer *which workarounds a version
+> bump made removable*. (A) is the urgent one.
 
 > This is a recommendation **for the framework**, staged in our repo first (per
 > the team's process) before posting upstream to
@@ -31,6 +36,35 @@ Concretely, the 0.2.4 → 0.3.x bump silently fixed two things we'd worked aroun
 Both shipped in 0.3.x, but **we only discovered them by manually re-reading the
 source** — not from any upgrade signal. A consumer without that discipline keeps
 dead workarounds (and accumulates "drift") indefinitely.
+
+## Part A — `agentforge upgrade` clobbers forked files + custom sections (confirmed bug)
+
+Reproduced on the 0.2.4 → 0.3.1 template upgrade (this repo, 2026-06-21):
+
+1. `agentforge fork AGENTS.md` reported *"forked … future upgrades will skip it."*
+2. `agentforge upgrade` then **re-injected `AGENTS.md` from the template anyway**
+   (its log: *"re-injected 27 shared scaffold files"*), **overwriting the whole
+   file — including its `agentforge:custom` block**, whose content the docs/README
+   explicitly promise *"survives `agentforge upgrade`."*
+3. Same for the managed runbooks (`docs/runbooks/*`): their `agentforge:custom`
+   sections were wiped.
+
+Net effect: a consumer who has followed the documented pattern (put project notes
+in the custom section; `fork` files you own) **silently loses that content** on
+upgrade. We only caught it by diffing; an unattended upgrade would have shipped
+the loss. The data we had to hand-recover: `AGENTS.md`'s project-invariants
+section + three runbook notes.
+
+**Root cause (apparent):** the "shared scaffold re-injection" pass runs
+*independently of* the per-file managed/forked/custom logic — it rewrites whole
+files rather than three-way-merging the managed region and preserving
+`fork` + `agentforge:custom`.
+
+**Fix (upstream):** the re-injection pass must honor (a) **fork status** — never
+touch a forked file — and (b) **`agentforge:custom` blocks** — always preserve
+them verbatim, even when the managed region is replaced. A `--dry-run` that lists
+*per-file* what will change (it currently prints only a one-line summary) would
+also have surfaced this before any write.
 
 ## Current behavior
 
@@ -64,3 +98,43 @@ dead workarounds (and accumulates "drift") indefinitely.
   `docs/framework/upgrade-0.2.4-to-0.3.x.md` for the worked example). The gap is
   the **framework-side signal** that tells us *when* to revisit.
 - This is low-risk and additive for the framework; (1) is essentially free.
+- Part A is **not** additive — it's a correctness fix — but it's contained to the
+  `upgrade` re-injection pass.
+
+## Draft upstream issue (ready to post to `Scaffoldic/agentforge-py`)
+
+> **Title:** `agentforge upgrade` overwrites forked files and `agentforge:custom`
+> sections (data loss)
+>
+> **Body:**
+>
+> **Severity:** data loss — silent on an unattended upgrade.
+>
+> **Repro** (template `minimal`, framework 0.2.4 → 0.3.1):
+> 1. Customize a managed file's `<!-- agentforge:custom -->` block (e.g.
+>    `AGENTS.md`, a `docs/runbooks/*.md`).
+> 2. `agentforge fork AGENTS.md` → *"forked … future upgrades will skip it."*
+> 3. `agentforge upgrade`.
+>
+> **Expected:** the forked file is skipped; for still-managed files, the managed
+> region is three-way-merged and the `agentforge:custom` block is preserved
+> verbatim (as the runbook README promises: *"survives `agentforge upgrade`"*).
+>
+> **Actual:** `upgrade` logs *"re-injected N shared scaffold files"* and rewrites
+> `AGENTS.md` (and the runbooks) **wholesale** — ignoring the fork and **erasing
+> the `agentforge:custom` content**.
+>
+> **Likely cause:** the shared-scaffold re-injection pass runs independently of
+> the per-file managed/forked/custom resolution and writes whole files.
+>
+> **Asks:**
+> 1. Re-injection must respect **fork status** (never write a forked file).
+> 2. Re-injection must preserve **`agentforge:custom`** blocks even when replacing
+>    the managed region.
+> 3. `agentforge upgrade --dry-run` should list **per-file** changes (it prints
+>    only a one-line summary today), so this is visible before any write.
+>
+> **Related (same command, lower priority):** there's no "what changed that
+> affects me" surface after a bump (e.g. a `closes #NN`-tagged CHANGELOG or
+> `agentforge upgrade --notes <from>..<to>`), so consumers can't tell which of
+> their filed workarounds a release made removable. See Part B.
