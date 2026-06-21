@@ -10,6 +10,12 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **JS/TS cross-service calls (fetch / axios)** (ENH-020 C-full). A new
+  `jshttpclient` pack (spanning `.js` + `.ts`) captures `fetch("…")`,
+  `axios.get("…")` / `axios.post("…")` and `axios("…")` as `ServiceCall` nodes —
+  `fetch`'s method read from a literal `{ method: "POST" }` option, default GET.
+  So a JS/TS frontend or BFF now appears as a caller in the cross-service map /
+  `ckg_services_map` / `ckg_trace`, not just Python services.
 - **HTTP client coverage: instance clients + `base_url`** (ENH-020 C-full). The
   `httpclient` pack now also captures calls through a client *instance* —
   `s = requests.Session(); s.get(…)` and `c = httpx.Client(base_url="http://orders");
