@@ -10,6 +10,15 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **Cross-service call graph** (ENH-020, C-full increment 2). The federated MCP
+  server now draws **who-calls-whom across services**: it matches each member's
+  outbound `ServiceCall` to a `Route` in *another* member by `(method, path)` —
+  with path-parameter awareness (`{id}` / `:id` / `<id>`) — and exposes the org
+  call graph via a new `ckg_services_map` tool (`from_service → to_service`,
+  method, path, handler, plus `unresolved` calls). Computed live because member
+  graphs are separate stores; unique-match-only (ADR-0004) — an ambiguous call is
+  reported, never guessed. This completes the microservices payoff: an agent can
+  see the whole org's service topology from one endpoint.
 - **Outbound HTTP client calls are captured** (ENH-020, C-full increment 1).
   A new `httpclient` framework pack records module-qualified `requests.get("…")`
   / `httpx.post("…")` calls as `ServiceCall` graph nodes (method + URL + path),

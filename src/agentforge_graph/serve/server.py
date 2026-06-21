@@ -22,7 +22,7 @@ from agentforge_mcp import MCPServer
 from .engine import EngineProvider, _Engine
 from .federation import FederatedEngine
 from .http_runner import BearerAuthMiddleware, is_loopback
-from .tools import ALL_TOOLS
+from .tools import ALL_TOOLS, CkgServicesMap
 from .workspace import WorkspaceConfig
 
 Transport = Literal["stdio", "http"]
@@ -42,9 +42,12 @@ def code_graph_tools(repo_path: str | Path = ".", config: str | Path | None = No
 
 def federated_tools(workspace: str | Path) -> list[Tool]:
     """The CKG toolset over a **workspace** of members (ENH-020). Survey tools
-    fan across every member; pinpoint tools take a ``service`` to pick one. One
+    fan across every member; pinpoint tools take a ``service`` to pick one; plus
+    the federation-only ``ckg_services_map`` (cross-service call graph). One
     endpoint for the whole org."""
-    return _tools_for(FederatedEngine.from_workspace(WorkspaceConfig.load(workspace)))
+    fed = FederatedEngine.from_workspace(WorkspaceConfig.load(workspace))
+    # ckg_services_map is appended only here — single-repo tool set stays v1.
+    return [*_tools_for(fed), CkgServicesMap(fed)]
 
 
 def build_mcp_server(

@@ -22,7 +22,7 @@ One file per enhancement: `ENH-NNN-short-slug.md`. Keep this index current.
 | [ENH-017](ENH-017-surface-framework-upgrade-drift.md) | Surface framework-upgrade drift so consumers can clean workarounds | Med | S–M | framework / upstream | proposed (upstream) |
 | [ENH-018](ENH-018-store-location-and-central-hosting.md) | Store-location choice (in-repo vs. central) + read-only consumers | High | S–M | config/store | in progress (central_root done; read-only + server namespacing next) |
 | [ENH-019](ENH-019-serve-mcp-workdir-autodiscovery.md) | `serve-mcp` working-directory auto-discovery (zero-config consumption) | Medium | S | cli/serve | done |
-| [ENH-020](ENH-020-federated-multi-repo-mcp.md) | Federated multi-repo MCP + cross-service contract edges | High | L | serve/frameworks | in progress (C-lite federation done; C-full contract edges next) |
+| [ENH-020](ENH-020-federated-multi-repo-mcp.md) | Federated multi-repo MCP + cross-service contract edges | High | L | serve/frameworks | mostly done (C-lite federation + C-full HTTP-match service map; follow-ups: OpenAPI/proto anchoring, ckg_trace, more client libs) |
 
 ## Themes
 
