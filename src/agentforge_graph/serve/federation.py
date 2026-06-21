@@ -15,7 +15,10 @@ pinpoint tool with more than one member, raises asking which service.
 
 from __future__ import annotations
 
-from .engine import _Engine
+import re
+from typing import Any
+
+from .engine import TOOL_API_VERSION, _Engine
 from .workspace import WorkspaceConfig
 
 
@@ -64,6 +67,85 @@ class FederatedEngine:
             f"{', '.join(sorted(self.members))}>"
         )
 
+    async def service_map(self) -> dict[str, Any]:
+        """The org's cross-service call graph (ENH-020 C-full): match each
+        member's outbound ``ServiceCall`` to a ``Route`` in **another** member by
+        ``(method, path)`` and return the resolved edges. Computed live because
+        member graphs are separate stores. Unique-match-only (ADR-0004): a call
+        that matches routes in several services is left unresolved, never guessed.
+        """
+        routes: dict[str, list[tuple[str, re.Pattern[str], Any]]] = {}
+        calls: dict[str, list[Any]] = {}
+        for name, eng in self.members.items():
+            cg = await eng.code_graph()
+            routes[name] = [
+                (r.method, _compile_route(r.path_pattern or r.path), r) for r in await cg.routes()
+            ]
+            calls[name] = await cg.service_calls()
+
+        edges: list[dict[str, Any]] = []
+        unresolved: list[dict[str, Any]] = []
+        for caller, call_list in calls.items():
+            for c in call_list:
+                matches = [
+                    (provider, r)
+                    for provider, rlist in routes.items()
+                    if provider != caller  # cross-service only
+                    for (method, rx, r) in rlist
+                    if method == c.method and rx.match(c.path)
+                ]
+                if len(matches) == 1:
+                    provider, r = matches[0]
+                    edges.append(
+                        {
+                            "from_service": caller,
+                            "to_service": provider,
+                            "method": c.method,
+                            "call_path": c.path,
+                            "url": c.url,
+                            "caller": f"{c.file}:{c.line}",
+                            "route_path": r.path_pattern or r.path,
+                            "handler": r.handler,
+                        }
+                    )
+                else:
+                    unresolved.append(
+                        {
+                            "from_service": caller,
+                            "method": c.method,
+                            "path": c.path,
+                            "reason": "ambiguous (matches several services)"
+                            if matches
+                            else "no matching route in any service",
+                        }
+                    )
+        edges.sort(key=lambda e: (e["from_service"], e["to_service"], e["call_path"]))
+        return {
+            "edges": edges,
+            "edge_count": len(edges),
+            "unresolved": unresolved,
+            "services": sorted(self.members),
+            "tool_api_version": TOOL_API_VERSION,
+        }
+
     async def close(self) -> None:
         for eng in self.members.values():
             await eng.close()
+
+
+def _compile_route(pattern: str) -> re.Pattern[str]:
+    """A route path pattern → a regex matching concrete call paths. Path
+    parameters in any framework dialect — ``{id}`` (FastAPI), ``:id`` (Express),
+    ``<id>`` (Flask/Django) — match a single path segment."""
+    body = pattern.strip("/")
+    if not body:
+        return re.compile("^/?$")
+    segs = []
+    for seg in body.split("/"):
+        is_param = (
+            (seg.startswith("{") and seg.endswith("}"))
+            or seg.startswith(":")
+            or (seg.startswith("<") and seg.endswith(">"))
+        )
+        segs.append(r"[^/]+" if is_param else re.escape(seg))
+    return re.compile("^/" + "/".join(segs) + "/?$")

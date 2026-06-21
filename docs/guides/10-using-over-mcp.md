@@ -100,9 +100,15 @@ ckg serve-mcp --workspace workspace.yaml          # one federated endpoint
   `ckg_history`, `ckg_repo_map`) take a `service` to target one member (a symbol
   id belongs to one repo); they ask which `service` if it's ambiguous.
 
-Cross-service request tracing (drawing edges between a client call in one service
-and the route it hits in another) is the next phase — see
-[`THEME-org-central-knowledge`](../enhancements/THEME-org-central-knowledge.md).
+- **Cross-service call graph** — `ckg_services_map` shows **who calls whom**
+  across the org: each service's outbound HTTP client calls (`requests`/`httpx`)
+  matched to the route they hit in another service (path-parameter aware), as
+  `from_service → to_service` edges with the handler, plus any `unresolved`
+  calls. So an agent can ask *"if I change `/v1/orders`, which services call it?"*
+  across the whole org from one endpoint.
+
+Deeper contract anchoring (OpenAPI/proto) and a `ckg_trace` walk are follow-ups —
+see [`THEME-org-central-knowledge`](../enhancements/THEME-org-central-knowledge.md).
 
 ### http — a long-running server clients reach by URL
 

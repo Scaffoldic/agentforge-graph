@@ -405,6 +405,31 @@ class CkgHistory(_CkgTool):
         return json.dumps(await eng.history(kwargs["symbol_id"]), indent=2)
 
 
+class CkgServicesMap(_CkgTool):
+    name: ClassVar[str] = "ckg_services_map"
+    description: ClassVar[str] = (
+        "Show the org's CROSS-SERVICE call graph: which service calls which, matched "
+        "by outbound HTTP client call (requests/httpx) to the route it hits in another "
+        "service. Returns `edges` (from_service → to_service, method, path, handler) plus "
+        "`unresolved` calls. Requires a federated workspace (serve-mcp --workspace)."
+    )
+    input_schema: ClassVar[type[BaseModel]] = EmptyInput
+
+    async def run(self, **kwargs: Any) -> str:
+        fn = getattr(self._engine, "service_map", None)
+        if fn is None:
+            return json.dumps(
+                {
+                    "error": "ckg_services_map needs a federated workspace "
+                    "(serve-mcp --workspace workspace.yaml)",
+                    "tool_api_version": TOOL_API_VERSION,
+                }
+            )
+        return json.dumps(await fn(), indent=2)
+
+
+# The locked v1 tool set (single-repo). ``ckg_services_map`` is federation-only
+# and appended by ``federated_tools`` (ENH-020), so a single repo is unchanged.
 ALL_TOOLS = [
     CkgRepoMap,
     CkgSearch,
