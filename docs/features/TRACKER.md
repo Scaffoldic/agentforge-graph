@@ -136,7 +136,7 @@ ride alongside, not on, this chain.
 | **0.2** ✅ RELEASED | Keep it fresh cheaply (+ temporal layer 009, reranker seam ENH-009, resolver completeness) | 004, 009 | Re-index cost proportional to the diff; point-in-time history/as-of queries; intra-type calls resolve across all 10 packs |
 | **0.3** ✅ feature-complete (unreleased) | History + decisions | 009 (in 0.2), 010 | Point-in-time queries **done (0.2)**; ADRs/docs/docstrings/commits govern+describe code as graph edges **done (010)** — ready to cut |
 | **0.4** ✅ RELEASED | Framework & semantic knowledge | 011, 012 (+ ENH-010..013) | Routes/ORM/DI edges; module summaries + design-pattern tags; SurrealDB backend; cross-file resolution; 11 packs; measured rerank |
-| **0.5** | **Org-level central knowledge** — CKG as a shared, org-wide code brain for devs + agents | ENH-018, ENH-019, ENH-020 | Knowledge hostable centrally + consumed read-only; zero-config repo discovery; **one federated MCP endpoint** across services with cross-service contract edges — see [theme](../enhancements/THEME-org-central-knowledge.md) |
+| **0.5** ✅ feature-complete (cut in prep) | **Org-level central knowledge** — CKG as a shared, org-wide code brain for devs + agents | ENH-018, ENH-019, ENH-020 | Knowledge hostable centrally + consumed read-only; zero-config repo discovery; **one federated MCP endpoint** across services with cross-service tracing — see [theme](../enhancements/THEME-org-central-knowledge.md) |
 
 ---
 
@@ -148,12 +148,13 @@ knowledge, served to developers and agents." See the
 
 | Order | ENH | Title | Effort | Depends on | Status |
 |---|---|---|---|---|---|
-| 1 | [ENH-018](../enhancements/ENH-018-store-location-and-central-hosting.md) | Store-location choice (in-repo vs. central) + read-only consumers | S–M | — | proposed |
-| 1 | [ENH-019](../enhancements/ENH-019-serve-mcp-workdir-autodiscovery.md) | `serve-mcp` working-directory auto-discovery | S | — | proposed |
-| 2 | [ENH-020](../enhancements/ENH-020-federated-multi-repo-mcp.md) | Federated multi-repo MCP + cross-service contract edges | L (phased) | 018, 019 | proposed |
+| 1 | [ENH-018](../enhancements/ENH-018-store-location-and-central-hosting.md) | Store-location choice (in-repo vs. central) + read-only consumers | S–M | — | ✅ done (0.5) |
+| 1 | [ENH-019](../enhancements/ENH-019-serve-mcp-workdir-autodiscovery.md) | `serve-mcp` working-directory auto-discovery | S | — | ✅ done (0.5) |
+| 2 | [ENH-020](../enhancements/ENH-020-federated-multi-repo-mcp.md) | Federated multi-repo MCP + cross-service tracing | L (phased) | 018, 019 | ✅ done (0.5; C-lite + C-full); gRPC capture deferred |
 
-ENH-018 and ENH-019 are independent and small (ship either first); ENH-020 builds
-on both and is phased **C-lite** (federation) → **C-full** (contract edges).
+All shipped in **0.5**: central hosting + read-only (ENH-018), cwd discovery
+(ENH-019), federation + `ckg_services_map` / `ckg_trace` + Python/JS client
+capture + OpenAPI anchoring (ENH-020), plus `ckg services-map` / `ckg trace` CLI.
 
 ---
 

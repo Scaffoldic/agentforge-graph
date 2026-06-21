@@ -8,6 +8,14 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-06-21
+
+The **org-level central knowledge** release — take CKG from "indexes my one repo"
+to "is my org's shared code brain": host the index **centrally** and consume it
+**read-only**, serve a multi-repo **workspace** from one federated MCP endpoint,
+and **trace requests across services** (HTTP client → route, matched by path or
+OpenAPI contract). (Also: the scaffold template was upgraded to AgentForge 0.3.1.)
+
 ### Added
 
 - **`ckg services-map` and `ckg trace` CLI commands** (ENH-020). The cross-service
@@ -16,25 +24,6 @@ on a schema mismatch is **rebuild** (ADR-0006).
   (with handler + `via`), and `ckg trace <service> --workspace …
   [--direction downstream|upstream] [--depth N]` walks the graph (data flow /
   blast radius). See the org topology from a terminal, not just an agent.
-
-### Changed
-
-- **README refreshed for the three setups + a new demo GIF.** Punchlines now cover
-  scaling from one repo to a federated **workspace** (cross-service tracing) on a
-  **central** hosted index; a new `docs/assets/setups.gif` (rendered by
-  `scripts/render-setups-gif.sh`) shows all three — single repo → central store →
-  workspace `services-map`/`trace` — creds-free.
-- **Getting-started guides reorganised by setup.** The single end-to-end guide is
-  now a hub that branches into three clearly-named, step-by-step walkthroughs —
-  [a single repo](docs/guides/getting-started/1-single-repo.md),
-  [a workspace](docs/guides/getting-started/2-workspace.md) (microservices /
-  federation), and [a central store](docs/guides/getting-started/3-central-store.md)
-  (org-level hosted index + read-only) — matching the three ways CKG is run. The
-  10 topic guides are unchanged; `01-getting-started.md` stays as the hub so
-  existing links resolve. README + guides index updated.
-
-### Added
-
 - **Microservices demo + end-to-end test** for the org-central features. A
   bundled `examples/microservices` workspace (web→gateway→orders→payments,
   spanning JS `fetch`, Python `httpx`/`requests`, and a contract-first OpenAPI
@@ -125,6 +114,20 @@ on a schema mismatch is **rebuild** (ADR-0006).
   `--path` / `--repo` always wins; when discovery climbs above the cwd the
   resolved root is announced on stderr. First rung of the org-central-knowledge
   theme (zero-config consumption).
+
+### Changed
+
+- **Getting-started guides reorganised by setup** into three step-by-step
+  walkthroughs — [single repo](docs/guides/getting-started/1-single-repo.md),
+  [workspace](docs/guides/getting-started/2-workspace.md), and
+  [central store](docs/guides/getting-started/3-central-store.md) — under a hub
+  (`01-getting-started.md`, kept so existing links resolve). The 10 topic guides
+  are unchanged.
+- **README refreshed for the three setups** with a new `docs/assets/setups.gif`
+  (single repo → central store → workspace `services-map` / `trace`), rendered by
+  `scripts/render-setups-gif.sh`.
+- **Scaffold template upgraded to AgentForge 0.3.1** (`agentforge upgrade`); the
+  files we own are forked so future upgrades skip them.
 
 ## [0.4.0] — 2026-06-20
 
