@@ -31,6 +31,21 @@ class RouteInfo(BaseModel):
         return self.model_dump()
 
 
+class ServiceCallInfo(BaseModel):
+    """One outbound HTTP client call (ENH-020 C-full), for
+    ``CodeGraph.service_calls`` — the caller side of a cross-service edge."""
+
+    method: str
+    url: str  # the literal URL as written
+    path: str  # the path component, for cross-service route matching
+    framework: str  # the client library (requests / httpx)
+    file: str
+    line: int
+
+    def to_dict(self) -> dict[str, object]:
+        return self.model_dump()
+
+
 class ModelInfo(BaseModel):
     """One extracted ORM data model (feat-011), for ``CodeGraph.models`` /
     ``ckg models``."""

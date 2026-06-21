@@ -324,6 +324,21 @@ async def _routes(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _service_calls(args: argparse.Namespace) -> int:
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        calls = await cg.service_calls()
+        if not calls:
+            print("(no outbound HTTP client calls found)")
+            return 0
+        width = max(len(c.method) for c in calls)
+        for c in calls:
+            print(f"{c.method:<{width}}  {c.path}  ({c.framework}, {c.url})  ({c.file}:{c.line})")
+    finally:
+        await cg.close()
+    return 0
+
+
 async def _models(args: argparse.Namespace) -> int:
     cg = await CodeGraph.open(repo_path=args.path, config=args.config)
     try:
@@ -608,6 +623,13 @@ def build_parser() -> argparse.ArgumentParser:
     _add_repo_arg(md)
     md.add_argument("--config", default=None, help="path to ckg.yaml")
     md.set_defaults(func=_models)
+
+    sc = sub.add_parser(
+        "service-calls", help="list outbound HTTP client calls (ENH-020 cross-service)"
+    )
+    _add_repo_arg(sc)
+    sc.add_argument("--config", default=None, help="path to ckg.yaml")
+    sc.set_defaults(func=_service_calls)
 
     sv = sub.add_parser("services", help="list DI-provided services and their injection sites")
     _add_repo_arg(sv)

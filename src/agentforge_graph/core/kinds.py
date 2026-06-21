@@ -44,6 +44,7 @@ class NodeKind(StrEnum):
     SUMMARY = "Summary"  # feat-012
     PATTERN_TAG = "PatternTag"  # feat-012
     ROUTE_MOUNT = "RouteMount"  # ENH-011 — a router mount (include_router/use/register_blueprint)
+    SERVICE_CALL = "ServiceCall"  # ENH-020 C-full — an outbound HTTP client call (cross-service)
 
 
 class EdgeKind(StrEnum):

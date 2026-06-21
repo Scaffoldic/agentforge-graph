@@ -17,7 +17,7 @@ from agentforge_graph.store import Store, resolve_root
 from .pack import PackRegistry
 from .packs import BUILTIN_PACKS, builtin_registry
 from .pipeline import IngestPipeline
-from .report import IndexReport, ModelInfo, RouteInfo, ServiceInfo
+from .report import IndexReport, ModelInfo, RouteInfo, ServiceCallInfo, ServiceInfo
 from .source import RepoSource
 
 if TYPE_CHECKING:
@@ -493,6 +493,31 @@ class CodeGraph:
         ]
         routes.sort(key=lambda r: (r.path_pattern, r.method))
         return routes
+
+    async def service_calls(self) -> list[ServiceCallInfo]:
+        """Every outbound HTTP client call (ENH-020 C-full): method, URL, path,
+        client library and source location, sorted by (path, method). The caller
+        side of a cross-service edge — matched to routes at federation time."""
+        from agentforge_graph.core import GraphQuery, NodeKind, SymbolID
+
+        nodes = (
+            await self._store.graph.query(
+                GraphQuery(kinds=[NodeKind.SERVICE_CALL], limit=10_000_000)
+            )
+        ).nodes
+        calls = [
+            ServiceCallInfo(
+                method=str(n.attrs.get("method", "")),
+                url=str(n.attrs.get("url", "")),
+                path=str(n.attrs.get("path", "")),
+                framework=str(n.attrs.get("framework", "")),
+                file=SymbolID.parse(n.id).path,
+                line=n.span[0] if n.span else 0,
+            )
+            for n in nodes
+        ]
+        calls.sort(key=lambda c: (c.path, c.method))
+        return calls
 
     async def models(self) -> list[ModelInfo]:
         """Every extracted ORM data model (feat-011): table, framework, mapped
