@@ -76,4 +76,19 @@ agentforge add module mcp
 <!-- agentforge:end-managed -->
 
 <!-- agentforge:custom -->
+### agentforge-graph note
+
+You don't have to build the server — agentforge-graph **is** one. Expose the Code
+Knowledge Graph over MCP (stdio or HTTP):
+
+```bash
+ckg serve-mcp --repo /path/to/repo            # 10 read-only tools
+ckg serve-mcp --workspace workspace.yaml      # federate many services (ENH-020)
+ckg serve-mcp                                 # no --repo: serves the repo you're in (ENH-019)
+```
+
+The federated endpoint adds cross-service tools (`ckg_services_map`, `ckg_trace`).
+Full reference: [using over MCP](../guides/10-using-over-mcp.md); setup
+walkthroughs: [single repo](../guides/getting-started/1-single-repo.md) ·
+[workspace](../guides/getting-started/2-workspace.md).
 <!-- agentforge:end-custom -->

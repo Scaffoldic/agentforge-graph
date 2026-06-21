@@ -70,4 +70,19 @@ agent = Agent(model="...", tools=[fetch_weather])
 <!-- agentforge:end-managed -->
 
 <!-- agentforge:custom -->
+### agentforge-graph note
+
+This project **ships** a ready toolset — the read-only Code Knowledge Graph
+tools. Bind them straight into an agent (same `Tool` instances `ckg serve-mcp`
+exposes — runbook 09):
+
+```python
+from agentforge import Agent
+from agentforge_graph.serve import code_graph_tools
+
+agent = Agent(tools=code_graph_tools("/path/to/repo"))  # ckg_search, ckg_impact, …
+```
+
+For many repos at once use `federated_tools(workspace)` — see the
+[workspace guide](../guides/getting-started/2-workspace.md).
 <!-- agentforge:end-custom -->
