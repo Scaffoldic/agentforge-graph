@@ -8,6 +8,15 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+### Added
+
+- **`ckg services-map` and `ckg trace` CLI commands** (ENH-020). The cross-service
+  call graph and request tracing — previously MCP-only — are now on the command
+  line: `ckg services-map --workspace workspace.yaml` prints `from → to` edges
+  (with handler + `via`), and `ckg trace <service> --workspace …
+  [--direction downstream|upstream] [--depth N]` walks the graph (data flow /
+  blast radius). See the org topology from a terminal, not just an agent.
+
 ### Changed
 
 - **Getting-started guides reorganised by setup.** The single end-to-end guide is
