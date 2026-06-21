@@ -111,3 +111,20 @@ async def test_trace_data_flow_and_blast_radius(tmp_path: Path) -> None:
 
     upstream = json.loads(await tools["ckg_trace"].run(service="payments", direction="upstream"))
     assert upstream["reached"] == ["gateway", "orders", "web"]  # blast radius
+
+
+def test_cli_services_map_and_trace(tmp_path: Path, capsys) -> None:
+    ws, _ = _stage(tmp_path)
+    for s in _SERVICES:
+        assert main(["index", str(ws / s)]) == 0
+    wf = str(ws / "workspace.yaml")
+
+    assert main(["services-map", "--workspace", wf]) == 0
+    out = capsys.readouterr().out
+    assert "web → gateway" in out
+    assert "orders → payments" in out and "via=openapi" in out
+
+    assert main(["trace", "web", "--workspace", wf]) == 0
+    assert "reached: gateway, orders, payments" in capsys.readouterr().out
+
+    assert main(["trace", "nope", "--workspace", wf]) == 2  # unknown service → clean exit

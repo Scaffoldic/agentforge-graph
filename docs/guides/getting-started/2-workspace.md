@@ -89,11 +89,17 @@ one repo): `ckg_symbol`, `ckg_impact`, `ckg_neighbors`, `ckg_explain`,
 ```bash
 cd examples/microservices
 for s in web gateway orders payments; do ckg index "$s"; done
-ckg serve-mcp --workspace workspace.yaml
+
+# inspect the cross-service graph from the terminal (no agent needed):
+ckg services-map --workspace workspace.yaml
+ckg trace web --workspace workspace.yaml                       # downstream (data flow)
+ckg trace payments --workspace workspace.yaml --direction upstream   # blast radius
+
+# …or serve it to an agent:
+ckg serve-mcp --workspace workspace.yaml                       # ckg_services_map / ckg_trace
 ```
 
-Then ask your agent to *use `ckg_services_map`* and *`ckg_trace` upstream from
-`payments`*. Expected call graph:
+Expected call graph:
 
 ```
 web ──fetch──▶ gateway ──httpx──▶ orders ──requests──▶ payments   (matched via OpenAPI)

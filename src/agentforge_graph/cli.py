@@ -491,6 +491,57 @@ async def _serve_mcp(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _services_map(args: argparse.Namespace) -> int:
+    # ENH-020: the cross-service call graph over a workspace, from the CLI.
+    from agentforge_graph.serve.federation import FederatedEngine
+    from agentforge_graph.serve.workspace import WorkspaceConfig
+
+    fed = FederatedEngine.from_workspace(WorkspaceConfig.load(args.workspace))
+    try:
+        m = await fed.service_map()
+    finally:
+        await fed.close()
+    if not m["edges"]:
+        print("(no cross-service calls resolved)")
+    else:
+        width = max(len(e["from_service"]) for e in m["edges"])
+        for e in m["edges"]:
+            print(
+                f"{e['from_service']:>{width}} → {e['to_service']:<10} {e['method']:<5} "
+                f"{e['route_path']}  (handler={e['handler'] or '-'}, via={e['via']})"
+            )
+    if m["unresolved"]:
+        print(f"\nunresolved ({len(m['unresolved'])}):")
+        for u in m["unresolved"]:
+            print(f"  {u['from_service']}  {u['method']} {u['path']}  — {u['reason']}")
+    return 0
+
+
+async def _trace(args: argparse.Namespace) -> int:
+    # ENH-020: walk the cross-service graph from a service (downstream/upstream).
+    from agentforge_graph.serve.federation import FederatedEngine
+    from agentforge_graph.serve.workspace import WorkspaceConfig
+
+    fed = FederatedEngine.from_workspace(WorkspaceConfig.load(args.workspace))
+    try:
+        try:
+            t = await fed.trace(args.service, depth=args.depth, direction=args.direction)
+        except ValueError as e:  # unknown service / bad direction
+            print(f"ckg: {e}", file=sys.stderr)
+            return 2
+    finally:
+        await fed.close()
+    arrow = "←" if args.direction == "upstream" else "→"
+    print(f"trace {args.direction} from {t['start']}:")
+    for h in t["hops"]:
+        print(
+            f"  [{h['hop']}] {h['from_service']} {arrow} {h['to_service']}  "
+            f"{h['method']} {h['route_path']}"
+        )
+    print(f"reached: {', '.join(t['reached']) or '(none)'}")
+    return 0
+
+
 async def _map(args: argparse.Namespace) -> int:
     cg = await CodeGraph.open(repo_path=args.path, config=args.config)
     try:
@@ -705,6 +756,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="(0.1: no-op) refresh the index on tool calls",
     )
     srv.set_defaults(func=_serve_mcp)
+
+    smap = sub.add_parser(
+        "services-map", help="cross-service call graph over a workspace (ENH-020)"
+    )
+    smap.add_argument("--workspace", required=True, help="path to workspace.yaml")
+    smap.set_defaults(func=_services_map)
+
+    tr = sub.add_parser("trace", help="trace a request across services in a workspace (ENH-020)")
+    tr.add_argument("service", help="the workspace member to trace from")
+    tr.add_argument("--workspace", required=True, help="path to workspace.yaml")
+    tr.add_argument(
+        "--direction",
+        choices=["downstream", "upstream"],
+        default="downstream",
+        help="downstream (what it calls — data flow) | upstream (who calls it — blast radius)",
+    )
+    tr.add_argument("--depth", type=int, default=10, help="max hops (default: 10)")
+    tr.set_defaults(func=_trace)
 
     # ENH-018: every subcommand accepts --read-only (assert consume-only for this
     # invocation; write verbs then refuse). The durable form is store.read_only.
