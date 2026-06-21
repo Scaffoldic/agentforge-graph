@@ -6,10 +6,12 @@
 [![Python](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://pypi.org/project/agentforge-graph/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](https://github.com/Scaffoldic/agentforge-graph/blob/main/LICENSE)
 
-> **Turn any repo into a knowledge graph your coding agent can actually reason
-> over.** Symbols, calls, imports, **API routes, ORM models, dependency
-> injection, architecture decisions, git history, LLM summaries** — one typed,
-> provenance-tracked graph, served over **MCP** in a single command.
+> **Turn any repo — or your whole org — into a knowledge graph your coding agent
+> can actually reason over.** Symbols, calls, imports, **API routes, ORM models,
+> dependency injection, architecture decisions, git history, LLM summaries** — one
+> typed, provenance-tracked graph, served over **MCP** in a single command. Scale
+> it from one repo to a **federated workspace** with **cross-service tracing**, on
+> a **central** index hosted for the team.
 
 Plain code-graph tools answer *"what is connected."* Agents also need *"what is
 this **for**, what decision governs it, what's the API surface, which tables does
@@ -61,12 +63,46 @@ ckg serve-mcp --repo .              # → 10 read-only tools for your agent
 - 🧠 **LLM enrichment, budgeted & opt-in** — design-pattern tags (*"this class is a
   Repository,"* with confidence + rationale) and bottom-up module summaries, all
   `llm`-provenance. **CI needs no model calls or cloud creds.**
+- 🏢 **Scales from one repo to a whole org** — host the index **centrally** (shared
+  dir or SurrealDB/Neo4j), built once and consumed **read-only** by many; serve a
+  multi-repo **workspace** from one federated MCP endpoint; and **trace requests
+  across services** — `ckg services-map` / `ckg trace` draw the cross-service call
+  graph (HTTP client → route, matched by path or OpenAPI contract).
 
 **Status: 0.3.3 — all 12 planned features shipped.** Published on
 [PyPI](https://pypi.org/project/agentforge-graph/). Each language pack validated on
 a real OSS repo with a creds-enabled embed/retrieval/enrich run; a real agent
 answers questions over the tools unattended. See the [`CHANGELOG`](https://github.com/Scaffoldic/agentforge-graph/blob/main/CHANGELOG.md)
 and [`docs/features/TRACKER.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/features/TRACKER.md).
+
+---
+
+## Run it three ways — one repo, a workspace, or a central store
+
+```bash
+# 1) a single repo — a typed graph in seconds
+ckg index . && ckg routes .
+
+# 2) a central store — host the index outside the repo, consume read-only
+#    (set store.central_root in ckg.yaml; built once by CI, read by many)
+ckg status . --read-only
+
+# 3) a workspace — the cross-service call graph across services
+ckg services-map --workspace workspace.yaml      # who calls whom (HTTP → route)
+ckg trace payments --workspace workspace.yaml --direction upstream   # blast radius
+```
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Scaffoldic/agentforge-graph/main/docs/assets/setups.gif"
+       alt="ckg run three ways: a single repo (index + routes), a central store (hosted + read-only), and a workspace (cross-service call graph + trace)"
+       width="820">
+  <br>
+  <em>Single repo → central store → workspace — the cross-service call graph and blast-radius trace, all creds-free.</em>
+</p>
+
+→ pick your path: **[a single repo](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/getting-started/1-single-repo.md)** ·
+**[a workspace](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/getting-started/2-workspace.md)** ·
+**[a central store](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/getting-started/3-central-store.md)**.
 
 ---
 
