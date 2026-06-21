@@ -10,6 +10,14 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **OpenAPI contract anchoring for the cross-service map** (ENH-020 C-full). When
+  a member ships an OpenAPI/Swagger spec (`openapi.{json,yaml,yml}` /
+  `swagger.{json,yaml}` at the repo root), `service_map` now matches calls against
+  the **declared contract** too — giving authoritative paths, the `operationId` as
+  the handler, and coverage for **contract-first services with no detected
+  framework**. A framework route and its spec twin are deduped (param-agnostic) so
+  they never make a call ambiguous; each edge reports its `via` (`framework` |
+  `openapi`). Precision + coverage upgrade over URL-string matching alone.
 - **JS/TS cross-service calls (fetch / axios)** (ENH-020 C-full). A new
   `jshttpclient` pack (spanning `.js` + `.ts`) captures `fetch("…")`,
   `axios.get("…")` / `axios.post("…")` and `axios("…")` as `ServiceCall` nodes —

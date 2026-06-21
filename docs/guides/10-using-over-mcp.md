@@ -111,7 +111,11 @@ ckg serve-mcp --workspace workspace.yaml          # one federated endpoint
   blast radius): *"trace everything `gateway` reaches"* or *"which services break
   if I change `payments`."*
 
-Deeper contract anchoring (OpenAPI/proto) is a follow-up — see
+Matching covers `requests`/`httpx` (incl. session/`base_url` client instances) and
+JS/TS `fetch`/`axios`, and **anchors to a service's OpenAPI spec** when present
+(`openapi.{json,yaml}` at the repo root) — authoritative paths plus coverage for
+contract-first services with no detected framework. gRPC/proto is a remaining
+follow-up — see
 [`THEME-org-central-knowledge`](../enhancements/THEME-org-central-knowledge.md).
 
 ### http — a long-running server clients reach by URL
