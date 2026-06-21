@@ -10,6 +10,17 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **Federated MCP over a workspace** (ENH-020, C-lite). `ckg serve-mcp
+  --workspace workspace.yaml` serves **many member repos/services from one
+  endpoint**. The **survey tools** (`ckg_search`, `ckg_routes`, `ckg_decisions`,
+  `ckg_status`) fan across every member and tag each result with its `service`
+  (with a per-service staleness envelope); the **pinpoint tools** (`ckg_symbol`,
+  `ckg_impact`, `ckg_neighbors`, `ckg_explain`, `ckg_history`, `ckg_repo_map`)
+  take a `service` to target one member. A single repo is unchanged (no
+  `services` envelope). This is the microservices payoff of the
+  org-central-knowledge theme — one code brain for the whole org. (Cross-service
+  *contract edges* — tracing a request across services — are the next phase,
+  C-full.) Also fixes the MCP `_Engine` to honor `store.central_root` (ENH-018).
 - **Read-only consumers** (ENH-018). `store.read_only: true` (or `--read-only` /
   `$CKG_READ_ONLY`) makes a store consume-only: the write verbs (`index`,
   `embed`, `enrich`) refuse with a clear message and a non-zero exit, and opening

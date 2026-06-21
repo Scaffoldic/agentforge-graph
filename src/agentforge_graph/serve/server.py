@@ -19,20 +19,32 @@ from typing import Literal
 from agentforge_core.contracts.tool import Tool
 from agentforge_mcp import MCPServer
 
-from .engine import _Engine
+from .engine import EngineProvider, _Engine
+from .federation import FederatedEngine
 from .http_runner import BearerAuthMiddleware, is_loopback
 from .tools import ALL_TOOLS
+from .workspace import WorkspaceConfig
 
 Transport = Literal["stdio", "http"]
+
+
+def _tools_for(engine: EngineProvider) -> list[Tool]:
+    # ALL_TOOLS holds concrete Tool subclasses; mypy joins them to the abstract
+    # base and can't see that, hence the abstract ignore.
+    return [tool_cls(engine) for tool_cls in ALL_TOOLS]  # type: ignore[abstract]
 
 
 def code_graph_tools(repo_path: str | Path = ".", config: str | Path | None = None) -> list[Tool]:
     """The CKG toolset as native AgentForge ``Tool`` instances, sharing one
     lazily-opened engine. Pass straight to ``Agent(tools=code_graph_tools("."))``."""
-    engine = _Engine(repo_path, config)
-    # ALL_TOOLS holds concrete Tool subclasses; mypy joins them to the abstract
-    # base and can't see that, hence the abstract ignore.
-    return [tool_cls(engine) for tool_cls in ALL_TOOLS]  # type: ignore[abstract]
+    return _tools_for(_Engine(repo_path, config))
+
+
+def federated_tools(workspace: str | Path) -> list[Tool]:
+    """The CKG toolset over a **workspace** of members (ENH-020). Survey tools
+    fan across every member; pinpoint tools take a ``service`` to pick one. One
+    endpoint for the whole org."""
+    return _tools_for(FederatedEngine.from_workspace(WorkspaceConfig.load(workspace)))
 
 
 def build_mcp_server(
@@ -45,6 +57,7 @@ def build_mcp_server(
     refresh_on_call: bool = False,
     auth_token: str = "",
     allow_unauthenticated: bool = False,
+    workspace: str | Path | None = None,
 ) -> MCPServer:
     """Build (but don't serve) the MCP server with the CKG tools, over the
     chosen ``transport`` (``stdio`` default, or ``http`` at ``host:port``).
@@ -68,7 +81,9 @@ def build_mcp_server(
             "--allow-unauthenticated to bind it open on purpose"
         )
         raise ValueError(msg)
-    tools = code_graph_tools(repo_path, config)
+    # ENH-020: a workspace serves many members from one endpoint (federated);
+    # otherwise the single repo.
+    tools = federated_tools(workspace) if workspace else code_graph_tools(repo_path, config)
     allowed = tuple(t.name for t in tools)
     if transport == "stdio":
         # no auth: the client owns the subprocess (stdin/stdout).
@@ -100,6 +115,7 @@ async def serve_mcp(
     refresh_on_call: bool = False,
     auth_token: str = "",
     allow_unauthenticated: bool = False,
+    workspace: str | Path | None = None,
 ) -> None:
     """Run the CKG MCP server (blocks until stopped). ``transport='http'`` serves
     streamable-HTTP at ``http://{host}:{port}/mcp``; the default ``stdio`` serves
@@ -114,4 +130,5 @@ async def serve_mcp(
         refresh_on_call=refresh_on_call,
         auth_token=auth_token,
         allow_unauthenticated=allow_unauthenticated,
+        workspace=workspace,
     ).serve()

@@ -18,34 +18,46 @@ from pydantic import BaseModel, Field
 from agentforge_graph.chunking import estimate_tokens
 from agentforge_graph.core import EdgeKind, GraphQuery
 
-from .engine import TOOL_API_VERSION, _Engine
+from .engine import TOOL_API_VERSION, EngineProvider, _Engine
+from .federation import AmbiguousMember, MemberNotFound
 
 
-class RepoMapInput(BaseModel):
+class _Fed(BaseModel):
+    """Shared input field for federated serving (ENH-020). Inert for a single
+    repo; over a workspace it targets one member by name (survey tools fan over
+    all members when omitted; pinpoint tools require it when several exist)."""
+
+    service: str = Field(
+        default="",
+        description="federated: target one workspace member by name (omit to fan / auto-select)",
+    )
+
+
+class RepoMapInput(_Fed):
     budget_tokens: int = Field(default=2000, description="token budget for the map")
     focus: list[str] = Field(
         default_factory=list, description="paths or symbol ids to rank the map around"
     )
 
 
-class SearchInput(BaseModel):
+class SearchInput(_Fed):
     query: str = Field(description="natural-language question about the code")
     k: int = Field(default=8, description="number of vector hits (clamped to serve.max_k)")
     mode: str = Field(default="context", description="context | similar | definition | impact")
 
 
-class SymbolInput(BaseModel):
+class SymbolInput(_Fed):
     symbol_id: str = Field(default="", description="exact symbol id, if known")
     name: str = Field(default="", description="symbol name (use with path) when id is unknown")
     path: str = Field(default="", description="file path for a name lookup")
 
 
-class ImpactInput(BaseModel):
+class ImpactInput(_Fed):
     symbol_id: str = Field(description="symbol whose reverse dependencies to trace")
     depth: int = Field(default=1, description="hops (clamped to serve.max_depth)")
 
 
-class NeighborsInput(BaseModel):
+class NeighborsInput(_Fed):
     symbol_id: str = Field(description="symbol id")
     edge_kinds: list[str] = Field(
         default_factory=list, description="edge kinds to follow (e.g. CALLS, CONTAINS); default all"
@@ -53,45 +65,95 @@ class NeighborsInput(BaseModel):
     depth: int = Field(default=1, description="hops (clamped to serve.max_depth)")
 
 
-class RoutesInput(BaseModel):
+class RoutesInput(_Fed):
     method: str = Field(default="", description="filter by HTTP method, e.g. GET (optional)")
     path: str = Field(default="", description="filter by path prefix, e.g. /users (optional)")
 
 
-class DecisionsInput(BaseModel):
+class DecisionsInput(_Fed):
     scope: str = Field(default="", description="restrict to decisions governing a path prefix")
     status: str = Field(default="", description="filter by status, e.g. accepted (optional)")
 
 
-class ExplainInput(BaseModel):
+class ExplainInput(_Fed):
     symbol_id: str = Field(description="exact symbol id to explain")
 
 
-class HistoryInput(BaseModel):
+class HistoryInput(_Fed):
     symbol_id: str = Field(description="exact symbol id whose git history to report")
 
 
-class EmptyInput(BaseModel):
+class EmptyInput(_Fed):
     pass
 
 
 class _CkgTool(Tool):
     capabilities: ClassVar[frozenset[str]] = frozenset()
 
-    def __init__(self, engine: _Engine) -> None:
+    def __init__(self, engine: EngineProvider) -> None:
         self._engine = engine
 
-    async def _pack_json(self, pack: Any) -> str:
+    async def _pack_json(self, engine: _Engine, pack: Any) -> str:
         data = pack.to_dict()
-        data.update(await self._engine.staleness())
+        data.update(await engine.staleness())
         data["tool_api_version"] = TOOL_API_VERSION
-        cap = self._engine.serve.response_token_cap
+        cap = engine.serve.response_token_cap
         truncated = False
         while len(data.get("items", [])) > 1 and estimate_tokens(json.dumps(data)) > cap:
             data["items"].pop()
             truncated = True
         if truncated:
             data.setdefault("notes", []).append("response truncated to fit response_token_cap")
+        data["truncated"] = truncated
+        return json.dumps(data, indent=2)
+
+    # --- ENH-020 federation helpers ---------------------------------------
+
+    def _is_single(self, targets: list[tuple[str, _Engine]]) -> bool:
+        """True for a non-federated engine — preserve the legacy output shape."""
+        return len(targets) == 1 and targets[0][0] == ""
+
+    def _resolve_one(self, kwargs: dict[str, Any]) -> tuple[_Engine | None, str | None]:
+        """Pick the single member a pinpoint tool targets, or a JSON error string
+        when the ``service`` is unknown / ambiguous (ENH-020)."""
+        try:
+            return self._engine.one(kwargs.get("service", "")), None
+        except (MemberNotFound, AmbiguousMember) as e:
+            return None, json.dumps({"error": str(e), "tool_api_version": TOOL_API_VERSION})
+
+    def _resolve_targets(
+        self, kwargs: dict[str, Any]
+    ) -> tuple[list[tuple[str, _Engine]] | None, str | None]:
+        """The members a survey tool fans across, or a JSON error string when the
+        named ``service`` is unknown (ENH-020)."""
+        try:
+            return self._engine.targets(kwargs.get("service", "")), None
+        except MemberNotFound as e:
+            return None, json.dumps({"error": str(e), "tool_api_version": TOOL_API_VERSION})
+
+    def _merge(self, key: str, parts: list[tuple[str, dict[str, Any]]], cap: int) -> str:
+        """Fan-merge per-member result dicts: concatenate their ``key`` list with
+        each item tagged by ``service``, fold staleness into a per-service map,
+        and re-truncate to ``cap`` (ENH-020)."""
+        items: list[dict[str, Any]] = []
+        services: dict[str, Any] = {}
+        for name, d in parts:
+            for it in d.get(key, []):
+                items.append({**it, "service": name})
+            services[name] = {
+                "indexed_commit": d.get("indexed_commit", ""),
+                "dirty": d.get("dirty", False),
+            }
+        data: dict[str, Any] = {
+            key: items,
+            "count": len(items),
+            "services": services,
+            "tool_api_version": TOOL_API_VERSION,
+        }
+        truncated = False
+        while len(data[key]) > 1 and estimate_tokens(json.dumps(data)) > cap:
+            data[key].pop()
+            truncated = True
         data["truncated"] = truncated
         return json.dumps(data, indent=2)
 
@@ -107,8 +169,11 @@ class CkgRepoMap(_CkgTool):
     input_schema: ClassVar[type[BaseModel]] = RepoMapInput
 
     async def run(self, **kwargs: Any) -> str:
-        repomap = await self._engine.repomap()
-        budget = min(int(kwargs.get("budget_tokens", 2000)), self._engine.serve.response_token_cap)
+        eng, err = self._resolve_one(kwargs)
+        if eng is None:
+            return err or ""
+        repomap = await eng.repomap()
+        budget = min(int(kwargs.get("budget_tokens", 2000)), eng.serve.response_token_cap)
         text = await repomap.render(budget_tokens=budget, focus=kwargs.get("focus") or None)
         return text or "(empty repo map)"
 
@@ -125,12 +190,22 @@ class CkgSearch(_CkgTool):
     input_schema: ClassVar[type[BaseModel]] = SearchInput
 
     async def run(self, **kwargs: Any) -> str:
-        retriever = await self._engine.retriever()
-        k = min(int(kwargs.get("k", 8)), self._engine.serve.max_k)
-        pack = await retriever.retrieve(
-            query=kwargs["query"], k=k, mode=kwargs.get("mode", "context")
-        )
-        return await self._pack_json(pack)
+        targets, err = self._resolve_targets(kwargs)
+        if targets is None:
+            return err or ""
+
+        async def one(eng: _Engine) -> str:
+            retriever = await eng.retriever()
+            k = min(int(kwargs.get("k", 8)), eng.serve.max_k)
+            pack = await retriever.retrieve(
+                query=kwargs["query"], k=k, mode=kwargs.get("mode", "context")
+            )
+            return await self._pack_json(eng, pack)
+
+        if self._is_single(targets):
+            return await one(targets[0][1])
+        parts = [(name, json.loads(await one(eng))) for name, eng in targets]
+        return self._merge("items", parts, targets[0][1].serve.response_token_cap)
 
 
 class CkgSymbol(_CkgTool):
@@ -144,19 +219,22 @@ class CkgSymbol(_CkgTool):
     input_schema: ClassVar[type[BaseModel]] = SymbolInput
 
     async def run(self, **kwargs: Any) -> str:
+        eng, err = self._resolve_one(kwargs)
+        if eng is None:
+            return err or ""
         symbol_id = kwargs.get("symbol_id", "")
         if not symbol_id:
-            cg = await self._engine.code_graph()
+            cg = await eng.code_graph()
             res = await cg.store.graph.query(
                 GraphQuery(name=kwargs.get("name") or None, path_prefix=kwargs.get("path") or None)
             )
             symbol_id = res.nodes[0].id if res.nodes else ""
         if not symbol_id:
             return json.dumps({"error": "symbol not found", "tool_api_version": TOOL_API_VERSION})
-        retriever = await self._engine.retriever()
-        depth = min(1, self._engine.serve.max_depth)
+        retriever = await eng.retriever()
+        depth = min(1, eng.serve.max_depth)
         pack = await retriever.retrieve(symbol=symbol_id, mode="definition", depth=depth)
-        return await self._pack_json(pack)
+        return await self._pack_json(eng, pack)
 
 
 class CkgImpact(_CkgTool):
@@ -168,10 +246,13 @@ class CkgImpact(_CkgTool):
     input_schema: ClassVar[type[BaseModel]] = ImpactInput
 
     async def run(self, **kwargs: Any) -> str:
-        retriever = await self._engine.retriever()
-        depth = min(int(kwargs.get("depth", 1)), self._engine.serve.max_depth)
+        eng, err = self._resolve_one(kwargs)
+        if eng is None:
+            return err or ""
+        retriever = await eng.retriever()
+        depth = min(int(kwargs.get("depth", 1)), eng.serve.max_depth)
         pack = await retriever.retrieve(symbol=kwargs["symbol_id"], mode="impact", depth=depth)
-        return await self._pack_json(pack)
+        return await self._pack_json(eng, pack)
 
 
 class CkgNeighbors(_CkgTool):
@@ -183,9 +264,12 @@ class CkgNeighbors(_CkgTool):
     input_schema: ClassVar[type[BaseModel]] = NeighborsInput
 
     async def run(self, **kwargs: Any) -> str:
-        cg = await self._engine.code_graph()
+        eng, err = self._resolve_one(kwargs)
+        if eng is None:
+            return err or ""
+        cg = await eng.code_graph()
         kinds = [EdgeKind(k) for k in kwargs.get("edge_kinds", [])] or None
-        depth = min(int(kwargs.get("depth", 1)), self._engine.serve.max_depth)
+        depth = min(int(kwargs.get("depth", 1)), eng.serve.max_depth)
         start = kwargs["symbol_id"]
         seen: set[tuple[str, str, str]] = set()
         edges: list[dict[str, str]] = []
@@ -211,7 +295,7 @@ class CkgNeighbors(_CkgTool):
                         visited.add(other)
                         nxt.add(other)
             frontier = nxt
-        envelope = await self._engine.staleness()
+        envelope = await eng.staleness()
         return json.dumps(
             {"symbol_id": start, "edges": edges, **envelope, "tool_api_version": TOOL_API_VERSION},
             indent=2,
@@ -228,7 +312,13 @@ class CkgStatus(_CkgTool):
     input_schema: ClassVar[type[BaseModel]] = EmptyInput
 
     async def run(self, **kwargs: Any) -> str:
-        return json.dumps(await self._engine.status(), indent=2)
+        targets, err = self._resolve_targets(kwargs)
+        if targets is None:
+            return err or ""
+        if self._is_single(targets):
+            return json.dumps(await targets[0][1].status(), indent=2)
+        services = {name: await eng.status() for name, eng in targets}
+        return json.dumps({"services": services, "tool_api_version": TOOL_API_VERSION}, indent=2)
 
 
 class CkgRoutes(_CkgTool):
@@ -242,10 +332,17 @@ class CkgRoutes(_CkgTool):
     input_schema: ClassVar[type[BaseModel]] = RoutesInput
 
     async def run(self, **kwargs: Any) -> str:
-        data = await self._engine.routes(
-            method=kwargs.get("method", ""), path=kwargs.get("path", "")
-        )
-        return json.dumps(data, indent=2)
+        targets, err = self._resolve_targets(kwargs)
+        if targets is None:
+            return err or ""
+
+        async def one(eng: _Engine) -> dict[str, Any]:
+            return await eng.routes(method=kwargs.get("method", ""), path=kwargs.get("path", ""))
+
+        if self._is_single(targets):
+            return json.dumps(await one(targets[0][1]), indent=2)
+        parts = [(name, await one(eng)) for name, eng in targets]
+        return self._merge("routes", parts, targets[0][1].serve.response_token_cap)
 
 
 class CkgDecisions(_CkgTool):
@@ -259,10 +356,19 @@ class CkgDecisions(_CkgTool):
     input_schema: ClassVar[type[BaseModel]] = DecisionsInput
 
     async def run(self, **kwargs: Any) -> str:
-        data = await self._engine.decisions(
-            scope=kwargs.get("scope", ""), status=kwargs.get("status", "")
-        )
-        return json.dumps(data, indent=2)
+        targets, err = self._resolve_targets(kwargs)
+        if targets is None:
+            return err or ""
+
+        async def one(eng: _Engine) -> dict[str, Any]:
+            return await eng.decisions(
+                scope=kwargs.get("scope", ""), status=kwargs.get("status", "")
+            )
+
+        if self._is_single(targets):
+            return json.dumps(await one(targets[0][1]), indent=2)
+        parts = [(name, await one(eng)) for name, eng in targets]
+        return self._merge("decisions", parts, targets[0][1].serve.response_token_cap)
 
 
 class CkgExplain(_CkgTool):
@@ -276,7 +382,10 @@ class CkgExplain(_CkgTool):
     input_schema: ClassVar[type[BaseModel]] = ExplainInput
 
     async def run(self, **kwargs: Any) -> str:
-        return json.dumps(await self._engine.explain(kwargs["symbol_id"]), indent=2)
+        eng, err = self._resolve_one(kwargs)
+        if eng is None:
+            return err or ""
+        return json.dumps(await eng.explain(kwargs["symbol_id"]), indent=2)
 
 
 class CkgHistory(_CkgTool):
@@ -290,7 +399,10 @@ class CkgHistory(_CkgTool):
     input_schema: ClassVar[type[BaseModel]] = HistoryInput
 
     async def run(self, **kwargs: Any) -> str:
-        return json.dumps(await self._engine.history(kwargs["symbol_id"]), indent=2)
+        eng, err = self._resolve_one(kwargs)
+        if eng is None:
+            return err or ""
+        return json.dumps(await eng.history(kwargs["symbol_id"]), indent=2)
 
 
 ALL_TOOLS = [

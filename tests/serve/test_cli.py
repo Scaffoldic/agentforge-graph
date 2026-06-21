@@ -20,6 +20,7 @@ def _stub_serve(seen: dict[str, object]) -> object:
         refresh_on_call: bool = False,
         auth_token: str = "",
         allow_unauthenticated: bool = False,
+        workspace: object = None,
     ) -> None:
         seen.update(
             repo=repo_path,
@@ -29,6 +30,7 @@ def _stub_serve(seen: dict[str, object]) -> object:
             refresh=refresh_on_call,
             auth_token=auth_token,
             allow_unauthenticated=allow_unauthenticated,
+            workspace=workspace,
         )
 
     return fake_serve

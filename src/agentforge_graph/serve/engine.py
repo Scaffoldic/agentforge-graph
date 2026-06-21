@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from agentforge_graph.config import (
     EmbedConfig,
@@ -27,6 +27,17 @@ from agentforge_graph.retrieve import Retriever
 
 TOOL_API_VERSION = "1.0"
 _ALL = 10_000_000
+
+
+class EngineProvider(Protocol):
+    """What the tools need from their engine — a single ``_Engine`` or a
+    ``FederatedEngine`` over many members (ENH-020). ``targets`` returns the
+    engines a survey tool fans across (tagged by service); ``one`` returns the
+    single engine a pinpoint tool operates on."""
+
+    def targets(self, service: str = "") -> list[tuple[str, _Engine]]: ...
+
+    def one(self, service: str = "") -> _Engine: ...
 
 
 def _git_head(repo_path: str | Path) -> str:
@@ -53,6 +64,17 @@ class _Engine:
         self._cg: CodeGraph | None = None
         self._retriever: Retriever | None = None
         self._repomap: RepoMap | None = None
+
+    def targets(self, service: str = "") -> list[tuple[str, _Engine]]:
+        """The engine(s) a federation-aware tool should fan across (ENH-020).
+        A single engine is its own sole target, tagged with the empty service so
+        callers preserve the non-federated output shape; ``service`` is ignored."""
+        return [("", self)]
+
+    def one(self, service: str = "") -> _Engine:
+        """The single engine a pinpoint tool operates on; ``service`` is ignored
+        for a non-federated engine (ENH-020)."""
+        return self
 
     async def code_graph(self) -> CodeGraph:
         if self._cg is None:
@@ -83,11 +105,15 @@ class _Engine:
             self._repomap = RepoMap(cg.store, RepoMapConfig.load(self.config))
         return self._repomap
 
+    def _store_root(self) -> Path:
+        from agentforge_graph.store import resolve_root
+
+        return resolve_root(self.repo_path, StoreConfig.load(self.config))
+
     def _meta(self) -> Any:
         from agentforge_graph.ingest.incremental import IndexMeta
 
-        root = Path(self.repo_path) / StoreConfig.load(self.config).path
-        return IndexMeta.load(root)
+        return IndexMeta.load(self._store_root())
 
     async def staleness(self) -> dict[str, Any]:
         """Cheap envelope: the indexed commit + dirty flag, read from the
@@ -198,7 +224,7 @@ class _Engine:
         by_kind: dict[str, int] = {}
         for n in nodes:
             by_kind[n.kind.value] = by_kind.get(n.kind.value, 0) + 1
-        store_root = Path(self.repo_path) / StoreConfig.load(self.config).path
+        store_root = self._store_root()
         return {
             "indexed_commit": meta.indexed_commit,
             "head_commit": head,

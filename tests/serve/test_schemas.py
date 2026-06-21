@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from agentforge_graph.serve import code_graph_tools
 
-# (properties, required) per tool — the v1 contract.
+# (properties, required) per tool — the v1 contract. Every tool also carries the
+# optional ENH-020 ``service`` field (federated member selector; inert for a
+# single repo), added uniformly below.
 _EXPECTED: dict[str, tuple[set[str], set[str]]] = {
     "ckg_repo_map": ({"budget_tokens", "focus"}, set()),
     "ckg_search": ({"query", "k", "mode"}, {"query"}),
@@ -17,6 +19,8 @@ _EXPECTED: dict[str, tuple[set[str], set[str]]] = {
     "ckg_explain": ({"symbol_id"}, {"symbol_id"}),
     "ckg_history": ({"symbol_id"}, {"symbol_id"}),  # feat-009 chunk 3
 }
+# ENH-020: the federated member selector is present on every tool, never required.
+_EXPECTED = {name: (props | {"service"}, required) for name, (props, required) in _EXPECTED.items()}
 
 
 def test_tool_set_is_exactly_v1() -> None:

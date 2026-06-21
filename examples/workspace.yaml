@@ -1,0 +1,21 @@
+# Example workspace manifest (ENH-020) — serve many services from one MCP
+# endpoint. Index each member first (`ckg index <repo>`), then:
+#
+#   ckg serve-mcp --workspace examples/workspace.yaml
+#
+# Survey tools (ckg_search / ckg_routes / ckg_decisions / ckg_status) fan across
+# every member and tag results with their `service`. Pinpoint tools
+# (ckg_symbol / ckg_impact / ckg_neighbors / ckg_explain / ckg_history /
+# ckg_repo_map) take a `service` to pick one member. Member `repo` paths are
+# resolved relative to this file's directory.
+
+workspace: acme-platform
+
+members:
+  - name: gateway
+    repo: ./gateway
+  - name: orders
+    repo: ./services/orders
+  - name: payments
+    repo: ./services/payments
+    config: ./services/payments/ckg.yaml   # optional per-member config override
