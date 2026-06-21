@@ -35,9 +35,7 @@ class FederatedEngine:
 
     @classmethod
     def from_workspace(cls, ws: WorkspaceConfig) -> FederatedEngine:
-        members = {
-            m.name: _Engine(str(ws.member_repo(m)), ws.member_config(m)) for m in ws.members
-        }
+        members = {m.name: _Engine(str(ws.member_repo(m)), ws.member_config(m)) for m in ws.members}
         return cls(members)
 
     def _require(self, service: str) -> _Engine:

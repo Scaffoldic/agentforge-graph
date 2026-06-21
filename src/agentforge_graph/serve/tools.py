@@ -318,9 +318,7 @@ class CkgStatus(_CkgTool):
         if self._is_single(targets):
             return json.dumps(await targets[0][1].status(), indent=2)
         services = {name: await eng.status() for name, eng in targets}
-        return json.dumps(
-            {"services": services, "tool_api_version": TOOL_API_VERSION}, indent=2
-        )
+        return json.dumps({"services": services, "tool_api_version": TOOL_API_VERSION}, indent=2)
 
 
 class CkgRoutes(_CkgTool):
