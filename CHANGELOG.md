@@ -10,6 +10,13 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **Read-only consumers** (ENH-018). `store.read_only: true` (or `--read-only` /
+  `$CKG_READ_ONLY`) makes a store consume-only: the write verbs (`index`,
+  `embed`, `enrich`) refuse with a clear message and a non-zero exit, and opening
+  a *missing* index errors instead of silently creating one. Read verbs
+  (`query`, `map`, `routes`, `serve-mcp`, …) work normally. This is what lets a
+  team host one central index (built by CI) and hand it to many developers and
+  agents without risk of accidental mutation.
 - **Host the index outside the repo with `store.central_root`** (ENH-018).
   By default the index stays in the gitignored `.ckg/` inside the repo (the
   laptop story, unchanged). Set `store.central_root: /shared/ckg` and each repo's

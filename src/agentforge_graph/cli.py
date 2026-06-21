@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -85,6 +86,30 @@ def _resolve_repo_path(args: argparse.Namespace) -> None:
         print(f"ckg: using repo root {discovered} (discovered from {cwd})", file=sys.stderr)
 
 
+def _is_read_only(args: argparse.Namespace) -> bool:
+    """Whether the resolved store is consume-only (ENH-018) — from
+    ``store.read_only`` in config or the ``--read-only`` flag / ``$CKG_READ_ONLY``
+    (already bridged to the env in :func:`main`)."""
+    from agentforge_graph.config import StoreConfig, resolve_config
+    from agentforge_graph.store import is_read_only
+
+    return is_read_only(StoreConfig.load(resolve_config(args.config, args.path)))
+
+
+def _refuse_write_if_read_only(args: argparse.Namespace) -> bool:
+    """Print an error and return True when a write verb is run against a
+    read-only store; the caller then exits non-zero (ENH-018)."""
+    if _is_read_only(args):
+        print(
+            "ckg: refusing to write — the store is read-only "
+            "(store.read_only / --read-only / $CKG_READ_ONLY). "
+            "This index is consume-only; build it where it is writable.",
+            file=sys.stderr,
+        )
+        return True
+    return False
+
+
 def _format_report(report: IndexReport) -> str:
     lines = [
         f"indexed {report.files_indexed} files: {report.nodes} nodes, {report.edges} edges",
@@ -150,6 +175,8 @@ def _format_backfill(rep: Any) -> str:
 
 
 async def _index(args: argparse.Namespace) -> int:
+    if _refuse_write_if_read_only(args):
+        return 2
     cg = await CodeGraph.index(
         repo_path=args.path,
         languages=args.lang or None,
@@ -267,6 +294,8 @@ async def _changed_since(args: argparse.Namespace) -> int:
 
 
 async def _embed(args: argparse.Namespace) -> int:
+    if _refuse_write_if_read_only(args):
+        return 2
     cg = await CodeGraph.open(repo_path=args.path, config=args.config, languages=args.lang or None)
     try:
         print(_format_embed(await cg.embed()))
@@ -350,6 +379,8 @@ async def _decisions(args: argparse.Namespace) -> int:
 
 
 async def _enrich(args: argparse.Namespace) -> int:
+    if _refuse_write_if_read_only(args):
+        return 2
     cg = await CodeGraph.open(repo_path=args.path, config=args.config)
     do_summaries = args.summaries or args.all
     do_decisions = args.decisions or args.all
@@ -645,11 +676,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="(0.1: no-op) refresh the index on tool calls",
     )
     srv.set_defaults(func=_serve_mcp)
+
+    # ENH-018: every subcommand accepts --read-only (assert consume-only for this
+    # invocation; write verbs then refuse). The durable form is store.read_only.
+    for p in sub.choices.values():
+        p.add_argument(
+            "--read-only",
+            action="store_true",
+            help="treat the index as consume-only (write verbs refuse); "
+            "also via store.read_only / $CKG_READ_ONLY",
+        )
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     _resolve_repo_path(args)
+    # ENH-018: bridge --read-only to the env so the store layer (which never sees
+    # argparse) honors it uniformly alongside store.read_only.
+    if getattr(args, "read_only", False):
+        os.environ["CKG_READ_ONLY"] = "1"
     exit_code: int = asyncio.run(args.func(args))
     return exit_code

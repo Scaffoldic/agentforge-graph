@@ -60,6 +60,20 @@ location (with `(central)` when hosting is on). An **absolute** `store.path` sti
 works for a single relocated repo; `central_root` is the multi-repo, no-collision
 way.
 
+**Build once, consume many — read-only consumers.** When a team/CI builds the
+central index, hand it to developers and agents **consume-only** so nobody
+mutates it by accident:
+
+```yaml
+store:
+  read_only: true        # or pass --read-only, or set $CKG_READ_ONLY=1
+```
+
+A read-only store **refuses** the write verbs (`index`/`embed`/`enrich`) with a
+clear error, and opening a *missing* index errors rather than creating one;
+`query`/`map`/`routes`/`serve-mcp` work normally. Build where it's writable
+(CI/owning team), consume read-only everywhere else.
+
 > This is the first rung of hosting CKG as **org-level central knowledge** —
 > see [`docs/enhancements/THEME-org-central-knowledge.md`](../enhancements/THEME-org-central-knowledge.md).
 

@@ -17,6 +17,7 @@ Stdlib-only, no ``agentforge`` import (ADR-0001).
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -80,3 +81,16 @@ def resolve_root(repo_path: str | Path, cfg: StoreConfig) -> Path:
     if cfg.central_root:
         return Path(cfg.central_root).expanduser() / repo_key(repo_path)
     return Path(repo_path) / cfg.path
+
+
+def is_read_only(cfg: StoreConfig) -> bool:
+    """Whether the store should be treated as consume-only (ENH-018).
+
+    True when ``store.read_only`` is set in config (the durable, deployment-level
+    switch) or when ``$CKG_READ_ONLY`` is truthy (set per-invocation by the
+    ``--read-only`` CLI flag). Write verbs refuse, and opening a missing index
+    errors instead of creating one.
+    """
+    if cfg.read_only:
+        return True
+    return os.environ.get("CKG_READ_ONLY", "").strip().lower() in ("1", "true", "yes", "on")
