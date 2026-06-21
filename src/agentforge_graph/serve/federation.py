@@ -128,6 +128,52 @@ class FederatedEngine:
             "tool_api_version": TOOL_API_VERSION,
         }
 
+    async def trace(
+        self, service: str, depth: int = 10, direction: str = "downstream"
+    ) -> dict[str, Any]:
+        """Walk the cross-service call graph from ``service`` (ENH-020 C-full):
+        ``downstream`` follows the services it calls (data flow), ``upstream``
+        follows the services that call it (blast radius), to ``depth`` hops.
+        Returns the reachable hops (each annotated with its hop number) and the
+        set of services reached. Cycles terminate (a service is expanded once).
+        """
+        self._require(service)
+        if direction not in ("downstream", "upstream"):
+            raise ValueError(f"direction must be 'downstream' or 'upstream', got {direction!r}")
+        edges = (await self.service_map())["edges"]
+        upstream = direction == "upstream"
+        adj: dict[str, list[dict[str, Any]]] = {}
+        for e in edges:
+            adj.setdefault(e["to_service"] if upstream else e["from_service"], []).append(e)
+
+        visited = {service}
+        frontier = [service]
+        seen_edge: set[tuple[str, str, str, str]] = set()
+        hops: list[dict[str, Any]] = []
+        hop_no = 0
+        while frontier and hop_no < min(depth, 50):
+            hop_no += 1
+            nxt: list[str] = []
+            for s in frontier:
+                for e in adj.get(s, []):
+                    key = (e["from_service"], e["to_service"], e["method"], e["call_path"])
+                    if key not in seen_edge:
+                        seen_edge.add(key)
+                        hops.append({**e, "hop": hop_no})
+                    target = e["from_service"] if upstream else e["to_service"]
+                    if target not in visited:
+                        visited.add(target)
+                        nxt.append(target)
+            frontier = nxt
+        return {
+            "start": service,
+            "direction": direction,
+            "reached": sorted(visited - {service}),
+            "hops": hops,
+            "hop_count": len(hops),
+            "tool_api_version": TOOL_API_VERSION,
+        }
+
     async def close(self) -> None:
         for eng in self.members.values():
             await eng.close()

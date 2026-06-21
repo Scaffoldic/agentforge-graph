@@ -106,9 +106,13 @@ ckg serve-mcp --workspace workspace.yaml          # one federated endpoint
   `from_service → to_service` edges with the handler, plus any `unresolved`
   calls. So an agent can ask *"if I change `/v1/orders`, which services call it?"*
   across the whole org from one endpoint.
+- **Trace a request across services** — `ckg_trace` walks that graph from a
+  service `downstream` (what it calls — data flow) or `upstream` (who calls it —
+  blast radius): *"trace everything `gateway` reaches"* or *"which services break
+  if I change `payments`."*
 
-Deeper contract anchoring (OpenAPI/proto) and a `ckg_trace` walk are follow-ups —
-see [`THEME-org-central-knowledge`](../enhancements/THEME-org-central-knowledge.md).
+Deeper contract anchoring (OpenAPI/proto) is a follow-up — see
+[`THEME-org-central-knowledge`](../enhancements/THEME-org-central-knowledge.md).
 
 ### http — a long-running server clients reach by URL
 
