@@ -119,6 +119,10 @@ class StoreConfig(_Block):
     # live under ``central_root/<repo_key>`` instead of ``repo_path/path`` — so a
     # team/CI can build once and serve many, with no cross-repo collision.
     central_root: str | None = None
+    # ENH-018: treat the index as consume-only. Write verbs (index/embed/enrich)
+    # refuse, and opening a missing index errors rather than creating one. The
+    # durable form of the per-invocation ``--read-only`` flag / ``$CKG_READ_ONLY``.
+    read_only: bool = False
     graph: GraphCfg = Field(default_factory=GraphCfg)
     vectors: VectorCfg = Field(default_factory=VectorCfg)
 

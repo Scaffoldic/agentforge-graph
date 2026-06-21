@@ -15,8 +15,8 @@ from pathlib import Path
 from agentforge_graph.config import StoreConfig
 from agentforge_graph.core import EdgeKind, GraphStore, Node, QueryResult, ScoredRef, VectorStore
 
-from .errors import SchemaVersionError
-from .location import resolve_root
+from .errors import SchemaVersionError, StoreError
+from .location import is_read_only, resolve_root
 from .registry import graph_driver, vector_driver
 
 # Store-level on-disk layout version. Bumped when the .ckg/ layout changes;
@@ -43,7 +43,9 @@ class Store:
         config = resolve_config(config, repo_path)
         cfg = StoreConfig.load(config)
         root = resolve_root(repo_path, cfg)  # ENH-018: in-repo .ckg or central subdir
-        _check_or_init_meta(root)  # fail-at-startup on schema mismatch
+        # ENH-018: a read-only consumer never creates an index — it errors on a
+        # missing one and only schema-checks an existing one.
+        _check_or_init_meta(root, read_only=is_read_only(cfg))
         graph_cls = graph_driver(cfg.graph.driver)
         vector_cls = vector_driver(cfg.vectors.driver)
         # Embedded drivers use the path under .ckg/; server drivers (ENH-004)
@@ -77,8 +79,7 @@ class Store:
         await self.vectors.close()
 
 
-def _check_or_init_meta(root: Path) -> None:
-    root.mkdir(parents=True, exist_ok=True)
+def _check_or_init_meta(root: Path, read_only: bool = False) -> None:
     meta = root / "meta.json"
     if meta.exists():
         data = json.loads(meta.read_text())
@@ -88,7 +89,13 @@ def _check_or_init_meta(root: Path) -> None:
                 f"index at {root} is schema v{on_disk}, this build expects "
                 f"v{STORE_SCHEMA_VERSION}; rebuild the index (0.x policy)"
             )
-    else:
-        meta.write_text(
-            json.dumps({"schema_version": STORE_SCHEMA_VERSION, "indexed_commit": ""}, indent=2)
+        return
+    if read_only:
+        raise StoreError(
+            f"no index at {root} — the store is read-only (nothing to read). "
+            "Build the index where it is writable, then point consumers here."
         )
+    root.mkdir(parents=True, exist_ok=True)
+    meta.write_text(
+        json.dumps({"schema_version": STORE_SCHEMA_VERSION, "indexed_commit": ""}, indent=2)
+    )
