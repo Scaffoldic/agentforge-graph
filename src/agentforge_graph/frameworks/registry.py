@@ -11,6 +11,7 @@ from .packs.express import EXPRESS_PACK
 from .packs.fastapi import FASTAPI_PACK
 from .packs.flask import FLASK_PACK
 from .packs.gin import GIN_PACK
+from .packs.httpclient import HTTPCLIENT_PACK
 from .packs.laravel import LARAVEL_PACK
 from .packs.nestjs import NESTJS_PACK
 from .packs.rails import RAILS_PACK
@@ -29,6 +30,7 @@ BUILTIN_FRAMEWORK_PACKS: list[FrameworkPack] = [
     ASPNET_PACK,
     LARAVEL_PACK,
     RAILS_PACK,
+    HTTPCLIENT_PACK,  # ENH-020 C-full: outbound HTTP client calls (cross-service)
 ]
 
 

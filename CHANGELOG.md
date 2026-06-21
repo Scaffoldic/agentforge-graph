@@ -10,6 +10,15 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **Outbound HTTP client calls are captured** (ENH-020, C-full increment 1).
+  A new `httpclient` framework pack records module-qualified `requests.get("…")`
+  / `httpx.post("…")` calls as `ServiceCall` graph nodes (method + URL + path),
+  riding the caller file's subgraph like routes. Surfaced via
+  `CodeGraph.service_calls()` and `ckg service-calls`. Conservative (ADR-0004):
+  literal URLs only; dynamic URLs / client-instance calls are counted, not
+  guessed. This is the **caller side** of a cross-service edge — at federation
+  time these match `Route` nodes in other services (the next increment:
+  `ckg_services_map` / `ckg_trace`).
 - **Federated MCP over a workspace** (ENH-020, C-lite). `ckg serve-mcp
   --workspace workspace.yaml` serves **many member repos/services from one
   endpoint**. The **survey tools** (`ckg_search`, `ckg_routes`, `ckg_decisions`,

@@ -11,6 +11,7 @@ from agentforge_graph.frameworks.packs.django import DJANGO_PACK
 from agentforge_graph.frameworks.packs.express import EXPRESS_PACK
 from agentforge_graph.frameworks.packs.fastapi import FASTAPI_PACK
 from agentforge_graph.frameworks.packs.flask import FLASK_PACK
+from agentforge_graph.frameworks.packs.httpclient import HTTPCLIENT_PACK
 from agentforge_graph.frameworks.packs.nestjs import NESTJS_PACK
 from agentforge_graph.frameworks.packs.spring import SPRING_PACK
 from agentforge_graph.frameworks.packs.sqlalchemy import SQLALCHEMY_PACK
@@ -38,6 +39,7 @@ def test_registry_lookup() -> None:
         SQLALCHEMY_PACK,
         DJANGO_PACK,
         FLASK_PACK,
+        HTTPCLIENT_PACK,  # ENH-020 C-full
     }
     assert reg.for_language("rust") == []
 
