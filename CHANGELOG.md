@@ -8,6 +8,17 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+### Changed
+
+- **Getting-started guides reorganised by setup.** The single end-to-end guide is
+  now a hub that branches into three clearly-named, step-by-step walkthroughs —
+  [a single repo](docs/guides/getting-started/1-single-repo.md),
+  [a workspace](docs/guides/getting-started/2-workspace.md) (microservices /
+  federation), and [a central store](docs/guides/getting-started/3-central-store.md)
+  (org-level hosted index + read-only) — matching the three ways CKG is run. The
+  10 topic guides are unchanged; `01-getting-started.md` stays as the hub so
+  existing links resolve. README + guides index updated.
+
 ### Added
 
 - **Microservices demo + end-to-end test** for the org-central features. A
