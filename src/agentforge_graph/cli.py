@@ -176,9 +176,11 @@ async def _status(args: argparse.Namespace) -> int:
     from agentforge_graph.core import GraphQuery
     from agentforge_graph.ingest.codegraph import _git_commit
     from agentforge_graph.ingest.incremental import IndexMeta
+    from agentforge_graph.store import resolve_root
 
     cfg = resolve_config(args.config, args.path)
-    root = Path(args.path) / StoreConfig.load(cfg).path
+    store_cfg = StoreConfig.load(cfg)
+    root = resolve_root(args.path, store_cfg)
     meta = IndexMeta.load(root)
     head = _git_commit(args.path)
     dirty = bool(head) and bool(meta.indexed_commit) and head != meta.indexed_commit
@@ -208,7 +210,7 @@ async def _status(args: argparse.Namespace) -> int:
         f"nodes:          {len(nodes)}"
         + (" (" + ", ".join(f"{k}={v}" for k, v in sorted(by_kind.items())) + ")" if nodes else ""),
         f"temporal:       {temporal_line}",
-        f"store:          {root}",
+        f"store:          {root}" + (" (central)" if store_cfg.central_root else ""),
     ]
     print("\n".join(lines))
     return 0

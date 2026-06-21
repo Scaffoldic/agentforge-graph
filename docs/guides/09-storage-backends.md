@@ -31,6 +31,38 @@ defaults pass (and, for the server backends, run against real Neo4j + Postgres +
 SurrealDB
 in CI).
 
+## Where the index lives — in-repo vs. central (ENH-018)
+
+Independent of *which* backend you pick is *where* its artifacts live. This is a
+deliberate developer choice:
+
+| Shape | Config | Who builds | Who reads |
+|---|---|---|---|
+| **Laptop** (default) | `store.path: .ckg` | the dev | the dev |
+| **Central, embedded** | `store.central_root: /shared/ckg` | a team / CI | many |
+| **Central, server** | `store.graph.driver: surrealdb` (or neo4j/pgvector) + a shared host | a team / CI | many |
+
+By default the index is the gitignored `.ckg/` inside the repo — zero infra, it
+travels with the working copy. To **host it centrally** (build once, serve many
+developers and agents), set a `central_root`:
+
+```yaml
+# agentforge.yaml (app:) or a standalone ckg.yaml
+store:
+  central_root: ~/.agentforge/ckg     # absolute → artifacts live here, not in the repo
+```
+
+Each repo is placed in a **stable, collision-free subdir** under that root —
+keyed by its git remote (`org/repo`, the same on every machine) or, with no
+remote, by `<dirname>-<hash>`. So pointing three repos at one `central_root`
+gives three separate indexes, never a clash. `ckg status` prints the resolved
+location (with `(central)` when hosting is on). An **absolute** `store.path` still
+works for a single relocated repo; `central_root` is the multi-repo, no-collision
+way.
+
+> This is the first rung of hosting CKG as **org-level central knowledge** —
+> see [`docs/enhancements/THEME-org-central-knowledge.md`](../enhancements/THEME-org-central-knowledge.md).
+
 ## Switch the graph to Neo4j
 
 ```bash

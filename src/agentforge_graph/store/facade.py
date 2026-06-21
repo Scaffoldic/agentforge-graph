@@ -16,6 +16,7 @@ from agentforge_graph.config import StoreConfig
 from agentforge_graph.core import EdgeKind, GraphStore, Node, QueryResult, ScoredRef, VectorStore
 
 from .errors import SchemaVersionError
+from .location import resolve_root
 from .registry import graph_driver, vector_driver
 
 # Store-level on-disk layout version. Bumped when the .ckg/ layout changes;
@@ -41,7 +42,7 @@ class Store:
 
         config = resolve_config(config, repo_path)
         cfg = StoreConfig.load(config)
-        root = Path(repo_path) / cfg.path
+        root = resolve_root(repo_path, cfg)  # ENH-018: in-repo .ckg or central subdir
         _check_or_init_meta(root)  # fail-at-startup on schema mismatch
         graph_cls = graph_driver(cfg.graph.driver)
         vector_cls = vector_driver(cfg.vectors.driver)

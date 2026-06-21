@@ -115,6 +115,10 @@ class StoreConfig(_Block):
 
     KEY: ClassVar[str] = "store"
     path: str = ".ckg"
+    # ENH-018: host the index outside the repo. When set, each repo's artifacts
+    # live under ``central_root/<repo_key>`` instead of ``repo_path/path`` — so a
+    # team/CI can build once and serve many, with no cross-repo collision.
+    central_root: str | None = None
     graph: GraphCfg = Field(default_factory=GraphCfg)
     vectors: VectorCfg = Field(default_factory=VectorCfg)
 
