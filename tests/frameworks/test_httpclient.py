@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from agentforge_graph.frameworks.packs.httpclient import _url_path
+from agentforge_graph.frameworks.packs.httpclient import _compose, _url_path
 from agentforge_graph.ingest import CodeGraph
 
 SRC = """\
@@ -66,6 +66,52 @@ def test_service_calls_cli(tmp_path: Path, capsys) -> None:
     assert main(["service-calls", str(repo)]) == 0
     out = capsys.readouterr().out
     assert "/v1/orders" in out and "/v1/charge" in out
+
+
+INSTANCE_SRC = """\
+import httpx
+import requests
+
+orders = httpx.Client(base_url="http://orders-svc")
+session = requests.Session()
+
+
+def list_orders():
+    return orders.get("/v1/orders")  # base_url + path
+
+
+def get_order():
+    return orders.get("/v1/orders/42")
+
+
+def health():
+    return session.get("http://other/health")  # absolute via a session (no base_url)
+"""
+
+
+async def test_captures_instance_clients_and_base_url(tmp_path: Path) -> None:
+    repo = tmp_path / "svc"
+    repo.mkdir()
+    (repo / "client.py").write_text(INSTANCE_SRC)
+    cg = await CodeGraph.index(repo_path=repo)
+    try:
+        calls = await cg.service_calls()
+    finally:
+        await cg.close()
+    by_path = {c.path: c for c in calls}
+    assert set(by_path) == {"/v1/orders", "/v1/orders/42", "/health"}
+    # base_url composed onto the path
+    assert by_path["/v1/orders"].url == "http://orders-svc/v1/orders"
+    assert by_path["/v1/orders"].framework == "httpx"
+    # a session call with an absolute URL is kept as-is
+    assert by_path["/health"].url == "http://other/health"
+
+
+def test_compose_base_url() -> None:
+    assert _compose("http://orders", "/v1/x") == "http://orders/v1/x"
+    assert _compose("http://orders/", "v1/x") == "http://orders/v1/x"
+    assert _compose("", "/v1/x") == "/v1/x"  # module-qualified call, no base
+    assert _compose("http://orders", "http://other/x") == "http://other/x"  # absolute wins
 
 
 def test_url_path_normalization() -> None:

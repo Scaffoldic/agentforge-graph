@@ -10,6 +10,13 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **HTTP client coverage: instance clients + `base_url`** (ENH-020 C-full). The
+  `httpclient` pack now also captures calls through a client *instance* —
+  `s = requests.Session(); s.get(…)` and `c = httpx.Client(base_url="http://orders");
+  c.get("/v1/x")` — composing `base_url + path` into the matched URL. This is the
+  dominant real-world pattern (previously only module-qualified `requests.get(…)`
+  with a literal URL was seen), so the cross-service map covers far more actual
+  calls. Still conservative: dynamic URLs are counted, not guessed.
 - **`ckg_trace` — walk a request across services** (ENH-020 C-full). From a
   starting service, trace the cross-service call graph `downstream` (what it
   calls — data flow) or `upstream` (who calls it — blast radius), to a depth.
