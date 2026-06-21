@@ -12,7 +12,7 @@ import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from agentforge_graph.store import Store
+from agentforge_graph.store import Store, resolve_root
 
 from .pack import PackRegistry
 from .packs import BUILTIN_PACKS, builtin_registry
@@ -226,7 +226,7 @@ class CodeGraph:
         source, registry = _source_registry(repo_path, config, languages, include, exclude)
         repo = Path(repo_path).resolve().name
         commit = _git_commit(repo_path)
-        root = Path(repo_path) / StoreConfig.load(config).path
+        root = resolve_root(repo_path, StoreConfig.load(config))
         ingest_cfg = IngestConfig.load(config)
         meta = IndexMeta.load(root)
 
@@ -285,7 +285,7 @@ class CodeGraph:
         source, registry = _source_registry(self._repo_path, self._config, self._languages)
         repo = Path(self._repo_path).resolve().name
         commit = _git_commit(self._repo_path)
-        root = Path(self._repo_path) / StoreConfig.load(self._config).path
+        root = resolve_root(self._repo_path, StoreConfig.load(self._config))
         ingest_cfg = IngestConfig.load(self._config)
         meta = IndexMeta.load(root)
         frameworks = _framework_extractor(self._repo_path, self._config, registry)
@@ -377,7 +377,7 @@ class CodeGraph:
             emb,
             commit=_git_commit(self._repo_path),
         )
-        root = Path(self._repo_path) / StoreConfig.load(self._config).path
+        root = resolve_root(self._repo_path, StoreConfig.load(self._config))
         dirty: DirtySet | None = None
         only_paths: set[str] | None = None
         ids: list[str] = []
@@ -569,7 +569,7 @@ class CodeGraph:
         higher temporal layer (ADR-0001)."""
         from agentforge_graph.config import StoreConfig, TemporalConfig
 
-        root = Path(self._repo_path) / StoreConfig.load(self._config).path
+        root = resolve_root(self._repo_path, StoreConfig.load(self._config))
         if not (root / "temporal.db").exists():
             return None
         from agentforge_graph.temporal import TemporalIndex, TemporalStore
@@ -609,7 +609,7 @@ class CodeGraph:
         from agentforge_graph.config import StoreConfig, TemporalConfig
 
         enabled = TemporalConfig.load(self._config).enabled
-        root = Path(self._repo_path) / StoreConfig.load(self._config).path
+        root = resolve_root(self._repo_path, StoreConfig.load(self._config))
         db = root / "temporal.db"
         if not db.exists():
             return {"enabled": enabled, "events": 0, "has_sidecar": False, "backfilled_through": ""}
@@ -676,7 +676,7 @@ class CodeGraph:
 
         cfg = EnrichConfig.load(self._config)
         repo = Path(self._repo_path).resolve().name
-        root = Path(self._repo_path) / StoreConfig.load(self._config).path
+        root = resolve_root(self._repo_path, StoreConfig.load(self._config))
         if isinstance(judge, PatternJudge):
             the_judge: PatternJudge = judge
         else:
@@ -777,7 +777,7 @@ class CodeGraph:
 
         cfg = EnrichConfig.load(self._config)
         repo = Path(self._repo_path).resolve().name
-        root = Path(self._repo_path) / StoreConfig.load(self._config).path
+        root = resolve_root(self._repo_path, StoreConfig.load(self._config))
         if isinstance(summarizer, Summarizer):
             the_summarizer: Summarizer = summarizer
         else:

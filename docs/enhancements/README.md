@@ -20,8 +20,8 @@ One file per enhancement: `ENH-NNN-short-slug.md`. Keep this index current.
 | [ENH-009](ENH-009-retrieval-precision-dense-codebases.md) | Sharpen retrieval precision on dense / comment-sparse codebases (rerank/anchoring) | High | M | retrieve | partial (opt-in lexical rerank) |
 | ENH-010..013 | SurrealDB · cross-file resolution · more packs · rerank measurement (shipped in 0.4.0 — see each spec file) | — | — | — | done |
 | [ENH-017](ENH-017-surface-framework-upgrade-drift.md) | Surface framework-upgrade drift so consumers can clean workarounds | Med | S–M | framework / upstream | proposed (upstream) |
-| [ENH-018](ENH-018-store-location-and-central-hosting.md) | Store-location choice (in-repo vs. central) + read-only consumers | High | S–M | config/store | proposed |
-| [ENH-019](ENH-019-serve-mcp-workdir-autodiscovery.md) | `serve-mcp` working-directory auto-discovery (zero-config consumption) | Medium | S | cli/serve | proposed |
+| [ENH-018](ENH-018-store-location-and-central-hosting.md) | Store-location choice (in-repo vs. central) + read-only consumers | High | S–M | config/store | in progress (central_root done; read-only + server namespacing next) |
+| [ENH-019](ENH-019-serve-mcp-workdir-autodiscovery.md) | `serve-mcp` working-directory auto-discovery (zero-config consumption) | Medium | S | cli/serve | done |
 | [ENH-020](ENH-020-federated-multi-repo-mcp.md) | Federated multi-repo MCP + cross-service contract edges | High | L | serve/frameworks | proposed |
 
 ## Themes

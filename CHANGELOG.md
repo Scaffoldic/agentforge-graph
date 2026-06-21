@@ -10,6 +10,15 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **Host the index outside the repo with `store.central_root`** (ENH-018).
+  By default the index stays in the gitignored `.ckg/` inside the repo (the
+  laptop story, unchanged). Set `store.central_root: /shared/ckg` and each repo's
+  artifacts move to a stable, **collision-free per-repo subdir** under that root
+  — keyed by git remote (`org/repo`, host-independent) or `<dirname>-<hash>` with
+  no remote — so a team/CI can build once and host many repos centrally. The
+  `.ckg` root is now resolved through one helper (`store.location.resolve_root`),
+  de-duplicating ~10 call sites. `ckg status` shows the resolved location
+  (`(central)` when hosting is on). First rung of the org-central-knowledge theme.
 - **`ckg` now discovers the repo root from the working directory** (ENH-019).
   When no path is given, every subcommand — including `ckg serve-mcp` — walks up
   from the cwd to the nearest `.ckg/` / `agentforge.yaml` / `ckg.yaml` / `.git`

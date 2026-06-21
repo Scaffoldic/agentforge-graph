@@ -271,6 +271,7 @@ async def run_backfill(
     from agentforge_graph.ingest.codegraph import _registry_for
     from agentforge_graph.ingest.incremental import IncrementalIndexer
     from agentforge_graph.ingest.pipeline import IngestPipeline
+    from agentforge_graph.store import resolve_root
 
     if history == 0:
         return BackfillReport(ran=False, reason="history=0 (nothing to backfill)")
@@ -281,7 +282,7 @@ async def run_backfill(
     if len(commits) < 2:  # need a baseline + ≥1 step
         return BackfillReport(ran=False, reason="not a git repo or too few commits")
 
-    root = Path(repo_path) / StoreConfig.load(config).path
+    root = resolve_root(repo_path, StoreConfig.load(config))
     tstore = TemporalStore.open(root)
     target_oldest = commits[0]
     cursor = await tstore.get_meta("backfilled_through")

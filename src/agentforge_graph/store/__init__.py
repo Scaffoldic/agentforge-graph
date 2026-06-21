@@ -17,6 +17,7 @@ from .errors import (
 from .facade import Store
 from .kuzu_store import KuzuGraphStore
 from .lance_store import LanceVectorStore
+from .location import repo_key, resolve_root
 from .registry import graph_driver, vector_driver
 
 __all__ = [
@@ -25,6 +26,8 @@ __all__ = [
     "LanceVectorStore",
     "graph_driver",
     "vector_driver",
+    "repo_key",
+    "resolve_root",
     "StoreError",
     "StoreConfigError",
     "DriverNotFound",
