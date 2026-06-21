@@ -8,6 +8,19 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+### Added
+
+- **`ckg` now discovers the repo root from the working directory** (ENH-019).
+  When no path is given, every subcommand — including `ckg serve-mcp` — walks up
+  from the cwd to the nearest `.ckg/` / `agentforge.yaml` / `ckg.yaml` / `.git`
+  (nearest wins), like `git`. So a bare `ckg serve-mcp` from anywhere inside a
+  repo serves *that* repo — no `--repo` needed — which is what an MCP client
+  launching the server in a project directory wants. Falls back to `.` when no
+  marker is found (unchanged for a bare directory); an explicit positional /
+  `--path` / `--repo` always wins; when discovery climbs above the cwd the
+  resolved root is announced on stderr. First rung of the org-central-knowledge
+  theme (zero-config consumption).
+
 ## [0.4.0] — 2026-06-20
 
 ### Changed

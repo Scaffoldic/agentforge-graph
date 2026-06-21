@@ -40,7 +40,14 @@ Two transports, **same 10 tools and guardrails** — pick by how the client conn
 
 ```bash
 ckg serve-mcp --repo .            # blocks; --config <ckg.yaml> optional
+ckg serve-mcp                     # no --repo: discovers the repo root from the cwd
 ```
+
+A bare `ckg serve-mcp` (no `--repo`) **discovers the repo root by walking up from
+the working directory** to the nearest `.ckg/` / `agentforge.yaml` / `ckg.yaml` /
+`.git`, like `git` (ENH-019). So a client that launches the server in a project
+directory serves *that* repo with no path wiring; an explicit `--repo` always
+wins.
 
 **Claude Code**:
 

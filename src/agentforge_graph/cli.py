@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -17,13 +18,19 @@ from agentforge_graph.ingest import CodeGraph
 from agentforge_graph.ingest.report import IndexReport
 from agentforge_graph.temporal import parse_history
 
+# ENH-019: directories/files that mark a repo root for upward discovery — a CKG
+# index, engine config, or a git work tree. ``.ckg`` (an actual index) is the
+# strongest signal; the others let a not-yet-indexed repo still be located.
+_REPO_MARKERS = (".ckg", "agentforge.yaml", "ckg.yaml", ".git")
+
 
 def _add_repo_arg(parser: argparse.ArgumentParser, *, positional: bool = True) -> None:
     """Attach the standard repo-path argument (ENH-006).
 
-    Convention: a positional ``[path]`` defaulting to ``.`` on every subcommand,
-    with ``--path`` / ``--repo`` accepted as back-compat aliases. Precedence
-    (resolved in :func:`main`): positional > ``--path``/``--repo`` > ``.``.
+    Convention: a positional ``[path]`` on every subcommand, with ``--path`` /
+    ``--repo`` accepted as back-compat aliases. Precedence (resolved in
+    :func:`_resolve_repo_path`): positional > ``--path``/``--repo`` > the repo
+    root discovered upward from the cwd (ENH-019) > ``.``.
 
     ``positional=False`` is for subcommands whose positional slot is already
     taken (e.g. ``query`` / ``tagged``'s leading argument); they keep only the
@@ -38,10 +45,44 @@ def _add_repo_arg(parser: argparse.ArgumentParser, *, positional: bool = True) -
     )
 
 
+def discover_repo_root(start: Path) -> Path | None:
+    """Walk upward from ``start`` to the nearest directory that looks like a repo
+    root — one holding a CKG index (``.ckg/``), engine config
+    (``agentforge.yaml`` / ``ckg.yaml``), or a git work tree (``.git``).
+
+    Returns the first such directory (nearest wins), or ``None`` if none is found
+    up to the filesystem root. This lets a bare ``ckg`` invocation serve the repo
+    the caller is *inside*, like ``git`` finds its ``.git`` (ENH-019).
+    """
+    start = start.resolve()
+    for d in (start, *start.parents):
+        if any((d / marker).exists() for marker in _REPO_MARKERS):
+            return d
+    return None
+
+
 def _resolve_repo_path(args: argparse.Namespace) -> None:
-    """Collapse positional ``path`` + ``--path``/``--repo`` alias into ``args.path``."""
-    if hasattr(args, "path") or hasattr(args, "path_alias"):
-        args.path = getattr(args, "path", None) or getattr(args, "path_alias", None) or "."
+    """Collapse positional ``path`` + ``--path``/``--repo`` alias into ``args.path``.
+
+    Precedence: explicit positional > ``--path`` / ``--repo`` alias > the repo
+    root discovered upward from the cwd (ENH-019) > ``.`` (the cwd itself, when
+    no repo marker is found). When discovery climbs above the cwd, the resolved
+    root is announced on stderr so the chosen repo is never a surprise.
+    """
+    if not (hasattr(args, "path") or hasattr(args, "path_alias")):
+        return
+    explicit = getattr(args, "path", None) or getattr(args, "path_alias", None)
+    if explicit:
+        args.path = explicit
+        return
+    cwd = Path.cwd()
+    discovered = discover_repo_root(cwd)
+    if discovered is None:
+        args.path = "."
+        return
+    args.path = str(discovered)
+    if discovered != cwd.resolve():
+        print(f"ckg: using repo root {discovered} (discovered from {cwd})", file=sys.stderr)
 
 
 def _format_report(report: IndexReport) -> str:
