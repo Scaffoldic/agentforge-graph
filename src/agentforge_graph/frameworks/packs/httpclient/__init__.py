@@ -27,12 +27,14 @@ from agentforge_graph.frameworks.base import FrameworkFacts, FrameworkPack
 from agentforge_graph.frameworks.packs._python_ast import (
     first_string_in,
     python_language,
+    string_kwarg,
     text,
 )
 
 _HERE = Path(__file__).parent
 _HTTP_METHODS = {"get", "post", "put", "delete", "patch", "options", "head"}
 _CLIENT_MODULES = {"requests", "httpx"}
+_CLIENT_CTORS = {"Session", "Client", "AsyncClient"}  # requests.Session / httpx.Client
 
 
 @cache
@@ -40,11 +42,16 @@ def _calls_query() -> str:
     return (_HERE / "calls.scm").read_text(encoding="utf-8")
 
 
+@cache
+def _clients_query() -> str:
+    return (_HERE / "clients.scm").read_text(encoding="utf-8")
+
+
 class HttpClientPack(FrameworkPack):
     name = "httpclient"
     language = "python"
     language_slug = "py"
-    version = "1"
+    version = "2"  # ENH-020: instance clients + base_url composition
     dep_names = ("requests", "httpx")
     import_markers = ("import requests", "import httpx", "from requests", "from httpx")
 
@@ -53,21 +60,30 @@ class HttpClientPack(FrameworkPack):
         root = Parser(python_language()).parse(src).root_node
         prov = Provenance.parsed(f"pack:{self.name}@{self.version}", commit)
         facts = FrameworkFacts()
+        # pass-1a: client instances (var -> framework + base_url)
+        clients = self._client_vars(root, src)
         query = Query(python_language(), _calls_query())
         seen: set[str] = set()
         for _pattern, caps in QueryCursor(query).matches(root):
             obj_caps, method_caps, args_caps = caps.get("obj"), caps.get("method"), caps.get("args")
             if not (obj_caps and method_caps and args_caps):
                 continue
-            if text(obj_caps[0], src) not in _CLIENT_MODULES:
+            obj = text(obj_caps[0], src)
+            # module-qualified (requests.get) OR a known client instance (s.get)
+            if obj in _CLIENT_MODULES:
+                framework, base_url = obj, ""
+            elif obj in clients:
+                framework, base_url = clients[obj]
+            else:
                 continue
             method = text(method_caps[0], src).lower()
             if method not in _HTTP_METHODS:
                 continue
-            url = first_string_in(args_caps[0], src)
-            if url is None:
+            arg = first_string_in(args_caps[0], src)
+            if arg is None:
                 facts.unresolved += 1  # dynamic URL — counted, never guessed
                 continue
+            url = _compose(base_url, arg)
             method_u = method.upper()
             call_node = caps["call"][0]
             line = call_node.start_point[0] + 1
@@ -87,12 +103,41 @@ class HttpClientPack(FrameworkPack):
                         "method": method_u,
                         "url": url,
                         "path": _url_path(url),
-                        "framework": text(obj_caps[0], src),
+                        "framework": framework,
                     },
                     provenance=prov,
                 )
             )
         return facts
+
+    def _client_vars(self, root: object, src: bytes) -> dict[str, tuple[str, str]]:
+        """Variables bound to an HTTP client instance → ``(framework, base_url)``:
+        ``c = httpx.Client(base_url="…")`` / ``s = requests.Session()``."""
+        clients: dict[str, tuple[str, str]] = {}
+        query = Query(python_language(), _clients_query())
+        for _pattern, caps in QueryCursor(query).matches(root):  # type: ignore[arg-type]
+            var, mod, ctor, args = (
+                caps.get("var"),
+                caps.get("mod"),
+                caps.get("ctor"),
+                caps.get("ctorargs"),
+            )
+            if not (var and mod and ctor and args):
+                continue
+            if text(mod[0], src) not in _CLIENT_MODULES or text(ctor[0], src) not in _CLIENT_CTORS:
+                continue
+            base_url = string_kwarg(args[0], "base_url", src) or ""
+            clients[text(var[0], src)] = (text(mod[0], src), base_url)
+        return clients
+
+
+def _compose(base_url: str, arg: str) -> str:
+    """Join a client ``base_url`` with a call argument. A bare path composes onto
+    the base; an absolute URL passed despite a base_url wins (matches httpx)."""
+    if not base_url or "://" in arg:
+        return arg
+    sep = "" if arg.startswith("/") else "/"
+    return base_url.rstrip("/") + sep + arg
 
 
 def _url_path(url: str) -> str:
