@@ -10,6 +10,13 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ### Added
 
+- **Microservices demo + end-to-end test** for the org-central features. A
+  bundled `examples/microservices` workspace (web→gateway→orders→payments,
+  spanning JS `fetch`, Python `httpx`/`requests`, and a contract-first OpenAPI
+  service) with a runnable walkthrough, plus an automated e2e test that exercises
+  ENH-018 (central hosting + read-only), ENH-019 (cwd discovery) and ENH-020
+  (federation + `ckg_services_map` + `ckg_trace`) in one flow — the demo is the
+  test fixture, so they can't drift.
 - **OpenAPI contract anchoring for the cross-service map** (ENH-020 C-full). When
   a member ships an OpenAPI/Swagger spec (`openapi.{json,yaml,yml}` /
   `swagger.{json,yaml}` at the repo root), `service_map` now matches calls against

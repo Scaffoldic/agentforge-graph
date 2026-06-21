@@ -1,0 +1,16 @@
+# payments — a contract-first service: an OpenAPI spec, no framework code.
+# ENH-020 OpenAPI anchoring matches orders' `requests.post(".../v1/charge")`
+# to this declared operation even though there is no extractable handler.
+openapi: 3.0.0
+info:
+  title: payments
+  version: "1"
+paths:
+  /v1/charge:
+    post:
+      operationId: chargeCard
+      summary: Charge a card
+  /v1/refunds/{id}:
+    post:
+      operationId: refund
+      summary: Refund a charge

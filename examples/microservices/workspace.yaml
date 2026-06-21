@@ -1,0 +1,16 @@
+# Example org workspace (ENH-020) — four services, one federated MCP endpoint.
+#   ckg index web && ckg index gateway && ckg index orders && ckg index payments
+#   ckg serve-mcp --workspace workspace.yaml
+# Then ckg_services_map / ckg_trace show the cross-service call graph:
+#   web → gateway → orders → payments   (payments is contract-first: OpenAPI only)
+workspace: acme-shop
+
+members:
+  - name: web
+    repo: ./web
+  - name: gateway
+    repo: ./gateway
+  - name: orders
+    repo: ./orders
+  - name: payments
+    repo: ./payments
