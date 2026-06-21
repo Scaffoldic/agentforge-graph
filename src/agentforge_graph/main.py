@@ -1,4 +1,3 @@
-# AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:c05d490b5a1c
 """Entry point for the ``ckg`` / ``agentforge-graph`` console script.
 
 Dispatches to the CKG command-line interface (``ckg index`` today;

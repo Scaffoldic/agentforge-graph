@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:eef758aedb26 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:eef758aedb26 -->
 # 20 — Apply schema migrations
 
 > **Goal:** evolve a persistent store's schema (Postgres /

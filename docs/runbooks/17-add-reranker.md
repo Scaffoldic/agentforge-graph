@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:2718f76d448e -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:2718f76d448e -->
 # 17 — Add a reranker
 
 > **Goal:** improve retrieval precision by re-scoring the top-k

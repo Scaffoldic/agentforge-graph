@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:4f5a8eabfd56 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:4f5a8eabfd56 -->
 # 18 — Add hybrid search (BM25 + vector)
 
 > **Goal:** combine keyword (BM25) and semantic (vector) recall

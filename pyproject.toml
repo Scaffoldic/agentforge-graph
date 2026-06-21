@@ -1,4 +1,3 @@
-# AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:6f314576dc1d
 # NOTE: customized for agentforge-graph — deps + extras edited from the
 # scaffold default. Managed-file upgrades will treat this as forked.
 [project]

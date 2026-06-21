@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:acfbdccaaad2 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:acfbdccaaad2 -->
 # 10 — Add evaluators
 
 > **Goal:** score each agent run on quality so regressions are

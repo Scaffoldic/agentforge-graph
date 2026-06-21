@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:66b694aabc6e -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:66b694aabc6e -->
 # 21 — Use streaming guardrails (sentence-window)
 
 > **Goal:** stream tokens to your end-user while still running

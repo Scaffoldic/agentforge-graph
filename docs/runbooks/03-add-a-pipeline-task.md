@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:e02a38df5766 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:e02a38df5766 -->
 # 03 — Add a pipeline task
 
 > **Goal:** insert a deterministic, non-LLM step into the agent's

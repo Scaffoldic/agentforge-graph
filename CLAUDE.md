@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:9120f1c4a774 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:9120f1c4a774 -->
 > See [AGENTS.md](./AGENTS.md) for AgentForge conventions. Claude
 > Code reads both files; **AGENTS.md is the canonical source**.
 

@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:39504e95e5ee -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:39504e95e5ee -->
 # 19 — Add GraphRAG (graph-augmented retrieval)
 
 > **Goal:** enrich top-k retrieval with N-hop neighbours from a

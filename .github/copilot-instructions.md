@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:23c6e939d9d1 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:23c6e939d9d1 -->
 See [AGENTS.md](../AGENTS.md) for project conventions. AGENTS.md
 is the canonical source for AI-assistant instructions. This file
 exists so GitHub Copilot's native

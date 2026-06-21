@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:b9ce79b8f258 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:b9ce79b8f258 -->
 # 12 — Add observability
 
 > **Goal:** stream structured logs + distributed traces from

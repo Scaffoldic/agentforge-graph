@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:3e945da99f48 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:3e945da99f48 -->
 # 09 — Add MCP servers
 
 > **Goal:** consume Anthropic Model Context Protocol tool servers

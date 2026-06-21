@@ -1,4 +1,4 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:9767d5fccc9a -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:9767d5fccc9a -->
 # 01 — Set up a new AgentForge agent
 
 > **Goal:** verify the freshly scaffolded `agentforge-graph`

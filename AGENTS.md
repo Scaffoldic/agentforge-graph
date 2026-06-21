@@ -1,14 +1,14 @@
-<!-- AGENTFORGE-MANAGED: template:minimal@0.2.4 hash:c2f4dad7b549 -->
+<!-- AGENTFORGE-MANAGED: template:minimal@0.3.1 hash:8156ae690c99 -->
 # AgentForge agent — AI assistant instructions
 
-This project is built on **AgentForge 0.2.4**. Use
+This project is built on **AgentForge 0.3.1**. Use
 these rules when suggesting changes. The file is read by Claude
 Code, Cursor, Aider, and any tool following the
 [AGENTS.md convention](https://agents.md).
 
 ## Project shape (you must respect this)
 
-- Framework version: `0.2.4`
+- Framework version: `0.3.1`
 - Template: `minimal`
 - Project slug: `agentforge-graph`
 - LLM provider: `anthropic`
@@ -161,6 +161,4 @@ design-doc-first for features. Gate every change on
 **Dogfood:** `ckg index . && ckg serve-mcp --repo .` exposes this repo's own
 graph (decisions, routes, impact, summaries) — useful grounded context for an
 assistant working here.
-
 <!-- agentforge:end-custom -->
-
