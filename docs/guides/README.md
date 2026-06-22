@@ -13,9 +13,9 @@ setup. They build on each other in order.
 | # | Guide | When to use it |
 |---|---|---|
 | — | [Getting started (hub)](01-getting-started.md) | Overview + how to choose between the three setups below. |
-| 1 | [A single repo](getting-started/1-single-repo.md) | Index one repository on your laptop — the base case, no infra. |
-| 2 | [A workspace](getting-started/2-workspace.md) | Many repos / microservices: one federated endpoint + cross-service tracing. |
-| 3 | [A central store](getting-started/3-central-store.md) | Org-level shared knowledge: host the index (dir or DB), consume `--read-only`. |
+| 1 | [A single repo](getting-started/1-single-repo.md) | Index one repository on your laptop — the base case, no infra (`ckg build .`). |
+| 2 | [A workspace](getting-started/2-workspace.md) | Many repos / microservices: build all with one command (`ckg build --workspace`, local paths or git URLs), one federated endpoint + cross-service tracing. |
+| 3 | [A central store](getting-started/3-central-store.md) | Org-level shared knowledge: host the index (dir or DB), consume `--read-only`; set it once in workspace `defaults:`. |
 
 ## Topic guides
 
