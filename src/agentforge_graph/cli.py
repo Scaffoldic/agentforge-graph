@@ -757,7 +757,12 @@ async def _doctor(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    from agentforge_graph import __version__
+
     parser = argparse.ArgumentParser(prog="ckg", description="Code Knowledge Graph engine")
+    # `ckg --version` / `-V` short-circuits during parsing (before the required
+    # subcommand check), so it works without a subcommand.
+    parser.add_argument("--version", "-V", action="version", version=f"ckg {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     idx = sub.add_parser("index", help="index a repository into the graph")
