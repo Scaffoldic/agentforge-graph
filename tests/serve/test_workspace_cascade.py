@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from agentforge_graph.config import EmbedConfig, StoreConfig
 from agentforge_graph.serve.workspace import WorkspaceConfig, member_overrides
 
@@ -124,3 +126,58 @@ def test_no_defaults_yields_empty_section(tmp_path: Path) -> None:
     rc = ws.resolve_member_config(ws.members[0])
     assert rc.section == {}
     assert EmbedConfig.load(rc).driver == EmbedConfig().driver  # built-in defaults
+
+
+# --- ENH-023: per-member embed enable/disable -------------------------------
+
+
+@pytest.mark.parametrize(("flag", "expected"), [("true", True), ("false", False)])
+def test_member_embed_shorthand_sets_enabled(tmp_path: Path, flag: str, expected: bool) -> None:
+    ws = _ws(
+        tmp_path,
+        f"members:\n  - name: web\n    repo: ./web\n    embed: {flag}\n",
+    )
+    rc = ws.resolve_member_config(ws.members[0])
+    assert EmbedConfig.load(rc).enabled is expected
+
+
+def test_member_embed_shorthand_preserves_default_block(tmp_path: Path) -> None:
+    """`embed: false` shorthand sets enabled without clobbering an inherited
+    embed driver from defaults."""
+    ws = _ws(
+        tmp_path,
+        """
+defaults:
+  embed:
+    driver: openai
+members:
+  - name: web
+    repo: ./web
+    embed: false
+""",
+    )
+    rc = ws.resolve_member_config(ws.members[0])
+    cfg = EmbedConfig.load(rc)
+    assert cfg.enabled is False
+    assert cfg.driver == "openai"  # default block survives the shorthand
+
+
+def test_member_config_file_overrides_embed_shorthand(tmp_path: Path) -> None:
+    (tmp_path / "web").mkdir()
+    (tmp_path / "web" / "ckg.yaml").write_text("embed:\n  enabled: true\n")
+    ws = _ws(
+        tmp_path,
+        """
+members:
+  - name: web
+    repo: ./web
+    embed: false
+    config: ./web/ckg.yaml
+""",
+    )
+    rc = ws.resolve_member_config(ws.members[0])
+    assert EmbedConfig.load(rc).enabled is True  # member file wins over shorthand
+
+
+def test_embed_enabled_defaults_true() -> None:
+    assert EmbedConfig().enabled is True

@@ -207,6 +207,10 @@ class EmbedConfig(_Block):
     ``bedrock`` (Cohere embed-v4); tests/CI use ``fake``."""
 
     KEY: ClassVar[str] = "embed"
+    # ENH-023: whether to build vectors at all. False → `ckg embed` / `ckg build`
+    # skip this repo (no embedder constructed, no creds needed); every tool works
+    # except ckg_search. Default True preserves prior behavior when embed is run.
+    enabled: bool = True
     # ENH-003: bedrock | fake | openai | <entry-point>. `openai` also covers
     # OpenAI-compatible local servers via `base_url` (Ollama/vLLM/LM Studio).
     driver: str = "bedrock"

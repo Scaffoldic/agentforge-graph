@@ -21,6 +21,8 @@ from .report import IndexReport, ModelInfo, RouteInfo, ServiceCallInfo, ServiceI
 from .source import RepoSource
 
 if TYPE_CHECKING:
+    from agentforge_graph.config import ConfigSource
+
     # embed/retrieve import ingest, so reference their types under TYPE_CHECKING.
     from agentforge_graph.embed import EmbedReport
     from agentforge_graph.enrich import SummaryInfo, TaggedInfo
@@ -28,10 +30,6 @@ if TYPE_CHECKING:
     from agentforge_graph.repomap import RankedSymbol
     from agentforge_graph.retrieve import ContextPack
     from agentforge_graph.retrieve.retriever import Mode
-
-
-if TYPE_CHECKING:
-    from agentforge_graph.config import ConfigSource
 
 
 def _git_commit(repo_path: str | Path) -> str:
@@ -365,16 +363,24 @@ class CodeGraph:
         from agentforge_graph.chunking import CASTChunker
         from agentforge_graph.config import ChunkingConfig, EmbedConfig, StoreConfig
         from agentforge_graph.core import SymbolID
-        from agentforge_graph.embed import Embedder, EmbedPipeline, embedder_from_config
+        from agentforge_graph.embed import (
+            Embedder,
+            EmbedPipeline,
+            EmbedReport,
+            embedder_from_config,
+        )
 
         from .incremental import DirtySet
 
         chunking = ChunkingConfig.load(self._config)
-        emb = (
-            embedder
-            if isinstance(embedder, Embedder)
-            else embedder_from_config(EmbedConfig.load(self._config))
-        )
+        embed_cfg = EmbedConfig.load(self._config)
+        # ENH-023: a repo with embed disabled builds no vectors — skip without
+        # constructing an embedder (so no creds are required). An explicitly
+        # supplied embedder is an intentional override and still runs.
+        if not embed_cfg.enabled and not isinstance(embedder, Embedder):
+            self._embed_report = EmbedReport(disabled=True)
+            return self._embed_report
+        emb = embedder if isinstance(embedder, Embedder) else embedder_from_config(embed_cfg)
         source, registry = _source_registry(self._repo_path, self._config, self._languages)
         pipeline = EmbedPipeline(
             CASTChunker(chunking.max_tokens, chunking.min_tokens),
