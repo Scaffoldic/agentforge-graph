@@ -29,6 +29,7 @@ import subprocess
 import tempfile
 from collections.abc import Iterable, Iterator
 from pathlib import Path, PurePosixPath
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
@@ -38,6 +39,9 @@ from agentforge_graph.store import Store
 
 from .recorder import build_recorder, seed_symbols
 from .store import TemporalStore
+
+if TYPE_CHECKING:
+    from agentforge_graph.config import ConfigSource
 
 _FULL = -1  # `--history full` sentinel
 
@@ -259,7 +263,7 @@ async def _open_temp_store(tmp: Path) -> Store:
 
 async def run_backfill(
     repo_path: str | Path,
-    config: str | Path | None,
+    config: ConfigSource,
     history: int,
     *,
     languages: str | list[str] | None = None,

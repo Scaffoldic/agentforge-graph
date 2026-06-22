@@ -13,7 +13,7 @@ import re
 import tomllib
 from pathlib import Path
 
-from agentforge_graph.config import FrameworksConfig
+from agentforge_graph.config import ConfigSource, FrameworksConfig
 
 from .base import FrameworkPack
 from .registry import FrameworkRegistry
@@ -96,7 +96,7 @@ def _source_sample(repo_path: Path, exts: set[str]) -> str:
 
 def active_frameworks(
     repo_path: str | Path,
-    config: str | Path | None,
+    config: ConfigSource,
     registry: FrameworkRegistry,
     language_extensions: set[str],
 ) -> list[FrameworkPack]:

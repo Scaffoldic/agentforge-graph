@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from agentforge_core.contracts.tool import Tool
 from agentforge_mcp import MCPServer
@@ -25,6 +25,9 @@ from .http_runner import BearerAuthMiddleware, is_loopback
 from .tools import ALL_TOOLS, CkgServicesMap, CkgTrace
 from .workspace import WorkspaceConfig
 
+if TYPE_CHECKING:
+    from agentforge_graph.config import ConfigSource
+
 Transport = Literal["stdio", "http"]
 
 
@@ -34,7 +37,7 @@ def _tools_for(engine: EngineProvider) -> list[Tool]:
     return [tool_cls(engine) for tool_cls in ALL_TOOLS]  # type: ignore[abstract]
 
 
-def code_graph_tools(repo_path: str | Path = ".", config: str | Path | None = None) -> list[Tool]:
+def code_graph_tools(repo_path: str | Path = ".", config: ConfigSource = None) -> list[Tool]:
     """The CKG toolset as native AgentForge ``Tool`` instances, sharing one
     lazily-opened engine. Pass straight to ``Agent(tools=code_graph_tools("."))``."""
     return _tools_for(_Engine(repo_path, config))
@@ -52,7 +55,7 @@ def federated_tools(workspace: str | Path) -> list[Tool]:
 
 def build_mcp_server(
     repo_path: str | Path = ".",
-    config: str | Path | None = None,
+    config: ConfigSource = None,
     *,
     transport: Transport = "stdio",
     host: str = "127.0.0.1",
@@ -110,7 +113,7 @@ def build_mcp_server(
 
 async def serve_mcp(
     repo_path: str | Path = ".",
-    config: str | Path | None = None,
+    config: ConfigSource = None,
     *,
     transport: Transport = "stdio",
     host: str = "127.0.0.1",
