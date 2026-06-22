@@ -11,8 +11,11 @@ Deterministic and framework-free (subprocess only).
 
 from __future__ import annotations
 
+import logging
 import subprocess
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 CHECKOUTS_DIRNAME = ".checkouts"
 
@@ -57,7 +60,9 @@ def ensure_checkout(
     """
     dest = Path(dest)
     ensure_gitignore(dest.parent)
+    pin = f" @ {ref}" if ref else ""
     if not (dest / ".git").exists():
+        logger.info("checkout: cloning %s%s → %s", git_url, pin, dest)
         args = ["clone"]
         if shallow and not ref:
             args += ["--depth", "1"]
@@ -66,9 +71,12 @@ def ensure_checkout(
         if ref:
             _git("-C", str(dest), "checkout", ref)
     elif fetch:
+        logger.info("checkout: fetching %s%s", dest, pin)
         _git("-C", str(dest), "fetch", "--tags", "--prune", "origin")
         if ref:
             _git("-C", str(dest), "checkout", ref)
         else:
             _git("-C", str(dest), "pull", "--ff-only")
+    else:
+        logger.debug("checkout: using existing %s (no fetch)", dest)
     return dest

@@ -182,6 +182,17 @@ class StoreConfig(_Block):
     vectors: VectorCfg = Field(default_factory=VectorCfg)
 
 
+class LoggingConfig(_Block):
+    """The ``logging:`` block of ckg.yaml — how chatty the engine is.
+
+    ``level`` is ``warning`` (quiet) by default; set ``info`` to trace the major
+    steps of a run or ``debug`` for per-phase detail. Overridable per invocation
+    by ``--log-level`` / ``--debug`` / ``-v`` on the CLI or ``$CKG_LOG_LEVEL``."""
+
+    KEY: ClassVar[str] = "logging"
+    level: str = "warning"  # debug | info | warning | error
+
+
 class IngestConfig(_Block):
     """The ``ingest:`` block of ckg.yaml (feat-002 / ADR-0009)."""
 

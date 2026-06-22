@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import logging
 import os
 import sys
 from collections.abc import Sequence
@@ -18,6 +19,8 @@ from agentforge_graph.embed import EmbedReport
 from agentforge_graph.ingest import CodeGraph
 from agentforge_graph.ingest.report import IndexReport
 from agentforge_graph.temporal import parse_history
+
+logger = logging.getLogger(__name__)
 
 # ENH-019: directories/files that mark a repo root for upward discovery — a CKG
 # index, engine config, or a git work tree. ``.ckg`` (an actual index) is the
@@ -201,18 +204,22 @@ async def _workspace_run(args: argparse.Namespace, *, steps: tuple[str, ...], fu
         return 2
 
     fetch = not getattr(args, "no_fetch", False)  # ENH-024: --no-fetch builds offline
+    logger.info("workspace %s: %s %d member(s)", ws.workspace, "+".join(steps), len(ws.members))
     rows: list[tuple[str, str, str]] = []
     failed = False
-    for m in ws.members:
+    for i, m in enumerate(ws.members, 1):
         cfg = ws.resolve_member_config(m)
         if is_read_only(StoreConfig.load(cfg)):  # ENH-018: skip consume-only members
+            logger.info("[%d/%d] %s: skipped (read-only)", i, len(ws.members), m.name)
             rows.append((m.name, "skipped", "read-only (consume-only)"))
             continue
         try:
+            logger.info("[%d/%d] %s: building", i, len(ws.members), m.name)
             # ENH-024: clone/fetch a git member into its managed checkout first.
             repo = ws.prepare_member(m, fetch=fetch)
             rows.append((m.name, "ok", await _run_member_steps(repo, cfg, steps, full=full)))
         except Exception as exc:  # continue-on-error: one bad member doesn't abort the batch
+            logger.warning("[%d/%d] %s: FAILED — %s", i, len(ws.members), m.name, exc)
             failed = True
             rows.append((m.name, "FAILED", str(exc)))
     _print_member_report(ws.workspace, rows)
@@ -1005,6 +1012,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     # ENH-018: every subcommand accepts --read-only (assert consume-only for this
     # invocation; write verbs then refuse). The durable form is store.read_only.
+    # Logging: every subcommand accepts --log-level / --debug / -v to trace a run
+    # (also via $CKG_LOG_LEVEL or logging.level in ckg.yaml).
     for p in sub.choices.values():
         p.add_argument(
             "--read-only",
@@ -1012,12 +1021,44 @@ def build_parser() -> argparse.ArgumentParser:
             help="treat the index as consume-only (write verbs refuse); "
             "also via store.read_only / $CKG_READ_ONLY",
         )
+        p.add_argument(
+            "--log-level",
+            default=None,
+            choices=["debug", "info", "warning", "error"],
+            help="log verbosity (also $CKG_LOG_LEVEL / logging.level in ckg.yaml)",
+        )
+        p.add_argument("--debug", action="store_true", help="shorthand for --log-level debug")
+        p.add_argument(
+            "-v", "--verbose", action="store_true", help="shorthand for --log-level info"
+        )
     return parser
+
+
+def _configure_logging(args: argparse.Namespace) -> None:
+    """Set engine log verbosity from flags → $CKG_LOG_LEVEL → ckg.yaml → warning."""
+    from agentforge_graph.config import LoggingConfig, resolve_config
+    from agentforge_graph.observability import configure, resolve_level
+
+    config_level: str | None = None
+    try:
+        cfg = resolve_config(getattr(args, "config", None), getattr(args, "path", "."))
+        config_level = LoggingConfig.load(cfg).level
+    except Exception:  # config problems surface later in the verb, not here
+        config_level = None
+    configure(
+        resolve_level(
+            cli_level=getattr(args, "log_level", None),
+            cli_debug=getattr(args, "debug", False),
+            cli_verbose=getattr(args, "verbose", False),
+            config_level=config_level,
+        )
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     _resolve_repo_path(args)
+    _configure_logging(args)
     # ENH-018: bridge --read-only to the env so the store layer (which never sees
     # argparse) honors it uniformly alongside store.read_only.
     if getattr(args, "read_only", False):
