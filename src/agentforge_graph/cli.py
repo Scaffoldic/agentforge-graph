@@ -157,6 +157,8 @@ def _format_report(report: IndexReport) -> str:
 
 
 def _format_embed(report: EmbedReport) -> str:
+    if report.disabled:  # ENH-023: embed.enabled is false for this repo
+        return "embedding skipped — embed.enabled is false (no vectors built)"
     docs = f" + {report.doc_chunks} doc chunks" if report.doc_chunks else ""
     return (
         f"embedded {report.embedded} chunks across {report.files} files{docs} "

@@ -126,6 +126,13 @@ class WorkspaceConfig(BaseModel):
         _merge_blocks(section, self.sibling_defaults)
         _merge_blocks(section, self.defaults)
         _merge_blocks(section, member_overrides(m))
+        # ENH-023: per-member `embed: true|false` shorthand → embed.enabled. Same
+        # (member-inline) precedence tier as block overrides; a member `config:`
+        # file can still override it below.
+        embed_flag = (m.model_extra or {}).get("embed")
+        if isinstance(embed_flag, bool):
+            block = section.get("embed")
+            section["embed"] = {**(block if isinstance(block, dict) else {}), "enabled": embed_flag}
         mc = self.member_config(m)
         if mc and Path(mc).is_file():
             _merge_blocks(section, _section_of(Path(mc)))
