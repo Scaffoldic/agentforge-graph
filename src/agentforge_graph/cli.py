@@ -200,6 +200,7 @@ async def _workspace_run(args: argparse.Namespace, *, steps: tuple[str, ...], fu
         print("\nfix the above before building (see `ckg doctor --workspace`).", file=sys.stderr)
         return 2
 
+    fetch = not getattr(args, "no_fetch", False)  # ENH-024: --no-fetch builds offline
     rows: list[tuple[str, str, str]] = []
     failed = False
     for m in ws.members:
@@ -208,9 +209,9 @@ async def _workspace_run(args: argparse.Namespace, *, steps: tuple[str, ...], fu
             rows.append((m.name, "skipped", "read-only (consume-only)"))
             continue
         try:
-            rows.append(
-                (m.name, "ok", await _run_member_steps(ws.member_repo(m), cfg, steps, full=full))
-            )
+            # ENH-024: clone/fetch a git member into its managed checkout first.
+            repo = ws.prepare_member(m, fetch=fetch)
+            rows.append((m.name, "ok", await _run_member_steps(repo, cfg, steps, full=full)))
         except Exception as exc:  # continue-on-error: one bad member doesn't abort the batch
             failed = True
             rows.append((m.name, "FAILED", str(exc)))
@@ -787,6 +788,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="index every member of a workspace.yaml (ENH-021); each with its resolved config",
     )
+    idx.add_argument(
+        "--no-fetch",
+        action="store_true",
+        help="build git members against the existing checkout, without fetching (ENH-024)",
+    )
     idx.set_defaults(func=_index)
 
     st = sub.add_parser("status", help="show the index commit, staleness and node counts")
@@ -828,6 +834,11 @@ def build_parser() -> argparse.ArgumentParser:
     bld.add_argument("--enrich", action="store_true", help="also run LLM enrichment (pattern tags)")
     bld.add_argument(
         "--full", action="store_true", help="force a full rebuild instead of incremental"
+    )
+    bld.add_argument(
+        "--no-fetch",
+        action="store_true",
+        help="build git members against the existing checkout, without fetching (ENH-024)",
     )
     bld.set_defaults(func=_build)
 

@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from agentforge_graph.config import ResolvedConfig, _section_of, block_keys
 
@@ -35,7 +35,9 @@ class WorkspaceMember(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     name: str
-    repo: str
+    repo: str | None = None  # local path; mutually exclusive with `git` (ENH-024)
+    git: str | None = None  # ENH-024: a git/github URL cloned into a managed checkout
+    ref: str | None = None  # ENH-024: branch/tag/sha to pin a git member to
     config: str | None = None
 
     @field_validator("name")
@@ -44,6 +46,13 @@ class WorkspaceMember(BaseModel):
         if not v.strip():
             raise ValueError("workspace member name must be non-empty")
         return v
+
+    @model_validator(mode="after")
+    def _exactly_one_source(self) -> WorkspaceMember:
+        # ENH-024: a member is either a local `repo:` or a remote `git:`, not both.
+        if bool(self.repo) == bool(self.git):
+            raise ValueError(f"member {self.name!r} must set exactly one of `repo` or `git`")
+        return self
 
 
 def member_overrides(m: WorkspaceMember) -> dict[str, Any]:
@@ -54,6 +63,14 @@ def member_overrides(m: WorkspaceMember) -> dict[str, Any]:
     extra = m.model_extra or {}
     keys = block_keys()
     return {k: v for k, v in extra.items() if k in keys and isinstance(v, dict)}
+
+
+def _slug_fallback(git_url: str) -> str:
+    """A filesystem-safe checkout dir name for a git URL with no parseable
+    ``org/repo`` tail (ENH-024) — a short stable hash so two odd URLs never clash."""
+    import hashlib
+
+    return "repo-" + hashlib.sha1(git_url.encode()).hexdigest()[:8]
 
 
 def _merge_blocks(dst: dict[str, Any], src: dict[str, Any]) -> None:
@@ -101,10 +118,37 @@ class WorkspaceConfig(BaseModel):
             raise ValueError(f"{p}: duplicate member names {names}")
         return cfg
 
+    @property
+    def checkouts_dir(self) -> Path:
+        """Where git members (ENH-024) are cloned — git-ignored, under the manifest."""
+        from .checkout import CHECKOUTS_DIRNAME
+
+        return self.base_dir / CHECKOUTS_DIRNAME
+
     def member_repo(self, m: WorkspaceMember) -> Path:
-        """The member's repo path, resolved against the manifest directory."""
-        repo = Path(m.repo)
+        """The member's repo path on disk. For a local member, resolved against
+        the manifest directory; for a git member (ENH-024), its managed checkout
+        location (which `prepare_member` clones/fetches before a build)."""
+        if m.git:
+            from agentforge_graph.store.location import slug_from_remote
+
+            slug = slug_from_remote(m.git) or _slug_fallback(m.git)
+            return self.checkouts_dir / slug
+        repo = Path(m.repo or ".")
         return repo if repo.is_absolute() else (self.base_dir / repo)
+
+    def prepare_member(
+        self, m: WorkspaceMember, *, fetch: bool = True, shallow: bool = True
+    ) -> Path:
+        """Ensure the member's working copy exists and return its path. Local
+        members resolve directly; git members (ENH-024) are cloned/fetched into
+        their managed checkout via ambient git auth."""
+        dest = self.member_repo(m)
+        if m.git:
+            from .checkout import ensure_checkout
+
+            ensure_checkout(m.git, dest, ref=m.ref, fetch=fetch, shallow=shallow)
+        return dest
 
     def member_config(self, m: WorkspaceMember) -> str | None:
         if m.config is None:
