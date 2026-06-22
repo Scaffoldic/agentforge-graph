@@ -8,6 +8,42 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+The **workspace build** theme — the build/setup side of org-central knowledge.
+0.5 made *consuming* a central, federated graph easy; this makes *building* it
+easy: stand up a multi-repo CKG from **one manifest, one config, one command**,
+with fail-fast validation and (optionally) repos cloned from git URLs.
+
+### Added
+
+- **`ckg build` + `--workspace` on the write verbs** (ENH-021). `ckg build
+  --workspace workspace.yaml` indexes every member, embeds the ones where it's
+  enabled, and (with `--enrich`) runs LLM pattern tags — one command for the whole
+  org, with a per-member report. `ckg index` / `embed` / `enrich` each also take
+  `--workspace`. `ckg build .` works on a single repo too. Members build with
+  their resolved config, read-only members are skipped, and a failing member is
+  reported without aborting the batch.
+- **Workspace-level config cascade** (ENH-022). A `defaults:` block in
+  `workspace.yaml` (or a sibling `ckg.yaml`) supplies config every member inherits
+  — store location, embedder, read-only — with per-member overrides. Configure the
+  whole org once instead of dropping a `ckg.yaml` into each repo. Internally, a
+  `ResolvedConfig` is a drop-in, in-memory config source threaded through the
+  engine alongside a file path.
+- **Per-member embed enable/disable** (ENH-023). `embed.enabled` (and the
+  per-member `embed: true|false` shorthand) so a build knows which repos to
+  vectorize; a disabled repo builds its graph with **no embedder constructed** (no
+  credentials needed) — every tool works except `ckg_search`.
+- **`ckg doctor` + fail-fast config preflight** (ENH-026). Index/embed/enrich now
+  validate the resolved config **before** any work and refuse with the exact fix
+  (e.g. *"run `pip install 'agentforge-graph[bedrock]'`"*) instead of a deep
+  `ModuleNotFoundError`. `ckg doctor [path] [--workspace]` reports readiness
+  (drivers installed, credentials present) for a repo or every workspace member at
+  once, without indexing.
+- **Remote repo sources in a workspace** (ENH-024). A member can be a
+  **git/github URL** (`git:` + optional `ref:`) instead of a local path; the build
+  clones it into a managed, git-ignored `<workspace>/.checkouts/<slug>` using your
+  ambient git auth (ssh agent / credential helper — we never handle credentials)
+  and builds it there. `--no-fetch` builds against the existing checkout offline.
+
 ## [0.5.0] — 2026-06-21
 
 The **org-level central knowledge** release — take CKG from "indexes my one repo"
