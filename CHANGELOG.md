@@ -43,6 +43,9 @@ with fail-fast validation and (optionally) repos cloned from git URLs.
   clones it into a managed, git-ignored `<workspace>/.checkouts/<slug>` using your
   ambient git auth (ssh agent / credential helper — we never handle credentials)
   and builds it there. `--no-fetch` builds against the existing checkout offline.
+- **`ckg --version` / `-V`** prints the installed package version, and
+  `agentforge_graph.__version__` exposes it to library users (resolved from package
+  metadata).
 
 ## [0.5.0] — 2026-06-21
 
