@@ -76,6 +76,23 @@ members:
     embed: false                         # structure-only — no vectors, no creds
 ```
 
+### Repos by URL (ENH-024)
+
+A member can be a **git/github URL** instead of a local path — the build clones
+it (using your existing ssh/credential-helper auth) into a managed,
+git-ignored `<workspace>/.checkouts/<slug>` and builds it there:
+
+```yaml
+members:
+  - name: gateway
+    git: git@github.com:acme/gateway.git
+    ref: main                            # optional branch/tag/sha pin
+```
+
+First build clones (shallow unless `ref` is pinned); later builds fetch and
+update. `ckg build --workspace … --no-fetch` builds against the existing checkout
+offline. We never handle credentials — `git` uses your ambient auth.
+
 > For a team, build centrally instead of per-laptop — see
 > [3 — a central store](3-central-store.md). A workspace and a central store
 > compose: set `store.central_root` once in `defaults:` and every member's index
