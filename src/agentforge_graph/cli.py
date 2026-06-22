@@ -110,6 +110,33 @@ def _refuse_write_if_read_only(args: argparse.Namespace) -> bool:
     return False
 
 
+def _print_problem(p: Any, *, stream: Any = None) -> None:
+    """Render one preflight Problem (ENH-026): a marker, the summary, and the
+    fix on the next line."""
+    out = stream if stream is not None else sys.stderr
+    mark = "✗" if p.is_error else "⚠"
+    scope = f"[{p.scope}] " if p.scope and p.scope != "repo" else ""
+    print(f"{mark} {scope}{p.summary}", file=out)
+    if p.fix:
+        print(f"  fix: {p.fix}", file=out)
+
+
+def _preflight_or_exit(
+    args: argparse.Namespace, *, embed: bool = False, enrich: bool = False
+) -> bool:
+    """ENH-026: validate the resolved config for the work this verb will do,
+    *before* opening the store. Prints each problem with its fix; returns True
+    (caller exits non-zero) when any error is found. Warnings don't block."""
+    from agentforge_graph.config import resolve_config
+    from agentforge_graph.preflight import preflight
+
+    cfg = resolve_config(args.config, args.path)
+    problems = preflight(cfg, scope=str(args.path), embed=embed, enrich=enrich)
+    for p in problems:
+        _print_problem(p)
+    return any(p.is_error for p in problems)
+
+
 def _format_report(report: IndexReport) -> str:
     lines = [
         f"indexed {report.files_indexed} files: {report.nodes} nodes, {report.edges} edges",
@@ -178,6 +205,8 @@ def _format_backfill(rep: Any) -> str:
 
 async def _index(args: argparse.Namespace) -> int:
     if _refuse_write_if_read_only(args):
+        return 2
+    if _preflight_or_exit(args, embed=args.embed):
         return 2
     cg = await CodeGraph.index(
         repo_path=args.path,
@@ -298,6 +327,8 @@ async def _changed_since(args: argparse.Namespace) -> int:
 async def _embed(args: argparse.Namespace) -> int:
     if _refuse_write_if_read_only(args):
         return 2
+    if _preflight_or_exit(args, embed=True):
+        return 2
     cg = await CodeGraph.open(repo_path=args.path, config=args.config, languages=args.lang or None)
     try:
         print(_format_embed(await cg.embed()))
@@ -397,6 +428,8 @@ async def _decisions(args: argparse.Namespace) -> int:
 
 async def _enrich(args: argparse.Namespace) -> int:
     if _refuse_write_if_read_only(args):
+        return 2
+    if _preflight_or_exit(args, enrich=True):
         return 2
     cg = await CodeGraph.open(repo_path=args.path, config=args.config)
     do_summaries = args.summaries or args.all
@@ -576,6 +609,42 @@ async def _query(args: argparse.Namespace) -> int:
         return 1
     finally:
         await cg.close()
+    return 0
+
+
+async def _doctor(args: argparse.Namespace) -> int:
+    """ENH-026: validate config readiness without indexing — for one repo or a
+    whole workspace, reporting every problem (and its fix) in one pass."""
+    from agentforge_graph.preflight import preflight
+
+    if getattr(args, "workspace", None):
+        from agentforge_graph.serve.workspace import WorkspaceConfig
+
+        ws = WorkspaceConfig.load(args.workspace)
+        scopes = [m.name for m in ws.members]
+        problems = [
+            p
+            for m in ws.members
+            for p in preflight(ws.resolve_member_config(m), scope=m.name, embed=True, enrich=True)
+        ]
+    else:
+        from agentforge_graph.config import resolve_config
+
+        scopes = [str(args.path)]
+        problems = preflight(
+            resolve_config(args.config, args.path), scope=str(args.path), embed=True, enrich=True
+        )
+
+    errors = [p for p in problems if p.is_error]
+    if not problems:
+        print(f"ckg doctor: config OK for {', '.join(scopes)} — drivers + credentials ready.")
+        return 0
+    for p in problems:
+        _print_problem(p, stream=sys.stdout)
+    if errors:
+        print(f"\n{len(errors)} problem(s) must be fixed before indexing.")
+        return 2
+    print("\nconfig usable (warnings only).")
     return 0
 
 
@@ -776,6 +845,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     tr.add_argument("--depth", type=int, default=10, help="max hops (default: 10)")
     tr.set_defaults(func=_trace)
+
+    doc = sub.add_parser(
+        "doctor", help="validate config readiness (drivers installed, creds present) — ENH-026"
+    )
+    _add_repo_arg(doc)
+    doc.add_argument("--config", default=None, help="path to ckg.yaml")
+    doc.add_argument(
+        "--workspace", default=None, help="validate every member of a workspace.yaml at once"
+    )
+    doc.set_defaults(func=_doctor)
 
     # ENH-018: every subcommand accepts --read-only (assert consume-only for this
     # invocation; write verbs then refuse). The durable form is store.read_only.
