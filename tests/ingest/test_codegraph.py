@@ -51,6 +51,41 @@ async def test_index_creates_embedded_store(indexed: CodeGraph, tmp_path: Path) 
     assert (tmp_path / "proj" / ".ckg" / "graph.kuzu").exists()
 
 
+async def test_index_threads_resolved_config(tmp_path: Path, python_repo: Path) -> None:
+    """ENH-022: a ResolvedConfig (in-memory merged section) is a drop-in config
+    source — the store path from it wins, proving the cascade threads end-to-end
+    through CodeGraph without a config file."""
+    from agentforge_graph.config import ResolvedConfig
+
+    repo = tmp_path / "proj"
+    shutil.copytree(python_repo, repo)
+    rc = ResolvedConfig(section={"store": {"path": "custom_ckg"}}, origin="test")
+    cg = await CodeGraph.index(repo_path=repo, config=rc)
+    try:
+        assert (repo / "custom_ckg" / "graph.kuzu").exists()  # path from ResolvedConfig
+        assert not (repo / ".ckg").exists()  # default not used
+    finally:
+        await cg.close()
+
+
+async def test_embed_disabled_skips_without_embedder(tmp_path: Path, python_repo: Path) -> None:
+    """ENH-023: embed.enabled=false → embed() builds no vectors and constructs no
+    embedder (so a bedrock/openai driver needs no creds for a structure-only repo)."""
+    from agentforge_graph.config import ResolvedConfig
+
+    repo = tmp_path / "proj"
+    shutil.copytree(python_repo, repo)
+    # driver bedrock would need AWS creds if constructed; enabled:false must skip it
+    rc = ResolvedConfig(section={"embed": {"enabled": False, "driver": "bedrock"}}, origin="test")
+    cg = await CodeGraph.index(repo_path=repo, config=rc)
+    try:
+        report = await cg.embed()
+        assert report.disabled is True
+        assert report.embedded == 0
+    finally:
+        await cg.close()
+
+
 async def test_open_does_not_index(tmp_path: Path, python_repo: Path) -> None:
     repo = tmp_path / "proj"
     shutil.copytree(python_repo, repo)

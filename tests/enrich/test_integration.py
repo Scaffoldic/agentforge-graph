@@ -95,6 +95,9 @@ def test_ckg_enrich_and_tagged_cli(
     repo = tmp_path / "proj"
     repo.mkdir()
     (repo / "app.py").write_text(PATTERNS_CODE)
+    # scripted provider: the judge is monkeypatched above; the config must declare
+    # it so the ENH-026 preflight doesn't require the (unused) Bedrock extra.
+    (repo / "ckg.yaml").write_text("enrich:\n  provider: scripted\n")
     assert main(["index", str(repo)]) == 0
     capsys.readouterr()
     assert main(["enrich", str(repo)]) == 0

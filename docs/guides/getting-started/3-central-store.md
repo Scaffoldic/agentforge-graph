@@ -83,8 +83,10 @@ and secrets handling.
 ```
 
 Combine with a [workspace](2-workspace.md) to serve the whole org — federated and
-hosted — from one MCP endpoint: each member's `ckg.yaml` points at the shared
-`central_root` (or server), and `ckg serve-mcp --workspace` reads it read-only.
+hosted — from one MCP endpoint. Set `store.central_root` **once** in the
+workspace's `defaults:` block (config cascade) and every member inherits it;
+`ckg build --workspace workspace.yaml` builds them all into the shared root (each
+under its own slug), and `ckg serve-mcp --workspace` reads it read-only.
 
 ## Notes
 

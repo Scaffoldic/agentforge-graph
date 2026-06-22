@@ -43,6 +43,11 @@ ckg map /path/to/repo               # a budget-aware, centrality-ranked repo map
 > **Tip (no `--repo` needed):** run a bare `ckg` command from *inside* a repo and
 > it discovers the repo root from your working directory (like `git`).
 
+> **One-command build:** `ckg build .` runs index → embed (where enabled) → (with
+> `--enrich`) pattern tags in one go. Before a creds-dependent step, `ckg doctor`
+> validates your config (selected driver installed, credentials present) and prints
+> the exact `pip install` / `export` fix — no half-finished runs.
+
 ## 3. See the framework surface (still no creds)
 
 If the repo uses a supported framework (FastAPI, Flask, SQLAlchemy, Django,

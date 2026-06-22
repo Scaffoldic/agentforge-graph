@@ -33,6 +33,18 @@ def _slug(text: str) -> str:
     return _SLUG_RE.sub("-", text).strip("-")
 
 
+def slug_from_remote(remote: str) -> str | None:
+    """The host-independent ``org-repo`` slug from a git remote URL or path
+    (e.g. ``git@github.com:org/repo.git`` / ``https://h/org/repo`` → ``org-repo``),
+    or ``None`` if no usable tail. Shared by :func:`repo_key` and the ENH-024
+    workspace checkout dir so a repo keys the same whether cloned or local."""
+    tail = remote[:-4] if remote.endswith(".git") else remote
+    parts = [p for p in re.split(r"[/:]", tail) if p]
+    if parts:
+        return _slug("/".join(parts[-2:])) or None
+    return None
+
+
 def _git_remote(repo_path: Path) -> str | None:
     """``remote.origin.url`` for ``repo_path``, or ``None`` if there is no git
     remote (or git is unavailable)."""
@@ -60,12 +72,9 @@ def repo_key(repo_path: str | Path) -> str:
     path = Path(repo_path).resolve()
     remote = _git_remote(path)
     if remote:
-        tail = remote[:-4] if remote.endswith(".git") else remote
-        parts = [p for p in re.split(r"[/:]", tail) if p]
-        if parts:
-            key = _slug("/".join(parts[-2:]))
-            if key:
-                return key
+        key = slug_from_remote(remote)
+        if key:
+            return key
     digest = hashlib.sha1(str(path).encode()).hexdigest()[:8]
     return f"{_slug(path.name) or 'repo'}-{digest}"
 

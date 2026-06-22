@@ -35,19 +35,76 @@ A runnable example ships in
 (`web → gateway → orders → payments`, spanning JS `fetch`, Python
 `httpx`/`requests`, and a contract-first OpenAPI service).
 
-## 2. Index each member
+## 2. Build the whole workspace in one command (ENH-021)
 
-Each member is an ordinary repo — index them as in guide 1 (incremental, no creds
-for the structural graph):
+The write verbs are workspace-aware — point them at the manifest and they build
+**every** member. The one command is `ckg build`:
 
 ```bash
-ckg index ./web && ckg index ./gateway \
-  && ckg index ./services/orders && ckg index ./services/payments
+ckg build --workspace workspace.yaml          # index + embed (where enabled) every member
+ckg build --workspace workspace.yaml --enrich # also LLM pattern tags
 ```
 
-> For a team, build these centrally instead of per-laptop — see
+`index`, `embed`, and `enrich` also each take `--workspace` if you want a single
+step across the org (`ckg index --workspace workspace.yaml`). Every member is
+built with its **resolved config** (workspace `defaults:` + per-member overrides —
+see below), and the run ends with a per-member report.
+
+> **Trace it end to end.** Add `--debug` (or `-v` for info, or `--log-level
+> debug`) to watch each step — per-member build progress, index counts, the
+> embedder used, git clone/fetch. Or set it durably in config: `logging: { level:
+> debug }`. Quiet (`warning`) by default; `$CKG_LOG_LEVEL` works too.
+
+Before doing any work, the build **preflights every member** — if a selected
+driver's extra isn't installed (or a credential is missing) it refuses up front
+with the fix, rather than failing on member 2 of 4. Validate without building via
+`ckg doctor --workspace workspace.yaml`.
+
+### Configure once: workspace defaults + per-member overrides (ENH-022/023)
+
+Put shared config in a `defaults:` block in the manifest (or a sibling
+`ckg.yaml`); every member inherits it, and a member can override or opt out:
+
+```yaml
+# workspace.yaml
+workspace: acme-shop
+defaults:
+  store:
+    central_root: ~/.agentforge/ckg     # all members → central, slug-namespaced
+  embed:
+    driver: bedrock                      # one embedder for the org
+members:
+  - name: web
+    repo: ./web
+  - name: vendor-lib
+    repo: ./vendor-lib
+    embed: false                         # structure-only — no vectors, no creds
+```
+
+### Repos by URL (ENH-024)
+
+A member can be a **git/github URL** instead of a local path — the build clones
+it (using your existing ssh/credential-helper auth) into a managed,
+git-ignored `<workspace>/.checkouts/<slug>` and builds it there:
+
+```yaml
+members:
+  - name: gateway
+    git: git@github.com:acme/gateway.git
+    ref: main                            # optional branch/tag/sha pin
+```
+
+First build clones (shallow unless `ref` is pinned); later builds fetch and
+update. `ckg build --workspace … --no-fetch` builds against the existing checkout
+offline. We never handle credentials — `git` uses your ambient auth.
+
+> For a team, build centrally instead of per-laptop — see
 > [3 — a central store](3-central-store.md). A workspace and a central store
-> compose: each member's `ckg.yaml` can point at the shared root.
+> compose: set `store.central_root` once in `defaults:` and every member's index
+> lands in the shared root under its own slug.
+
+Each member is still an ordinary repo — you can also index one on its own exactly
+as in guide 1 (`ckg index ./web`).
 
 ## 3. Serve the whole org from one endpoint
 
@@ -88,7 +145,7 @@ one repo): `ckg_symbol`, `ckg_impact`, `ckg_neighbors`, `ckg_explain`,
 
 ```bash
 cd examples/microservices
-for s in web gateway orders payments; do ckg index "$s"; done
+ckg build --workspace workspace.yaml          # one command: index every member
 
 # inspect the cross-service graph from the terminal (no agent needed):
 ckg services-map --workspace workspace.yaml

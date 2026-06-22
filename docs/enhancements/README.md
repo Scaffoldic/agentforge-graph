@@ -23,6 +23,12 @@ One file per enhancement: `ENH-NNN-short-slug.md`. Keep this index current.
 | [ENH-018](ENH-018-store-location-and-central-hosting.md) | Store-location choice (in-repo vs. central) + read-only consumers | High | S–M | config/store | in progress (central_root done; read-only + server namespacing next) |
 | [ENH-019](ENH-019-serve-mcp-workdir-autodiscovery.md) | `serve-mcp` working-directory auto-discovery (zero-config consumption) | Medium | S | cli/serve | done |
 | [ENH-020](ENH-020-federated-multi-repo-mcp.md) | Federated multi-repo MCP + cross-service contract edges | High | L | serve/frameworks | done (C-lite federation + C-full: service map, ckg_trace, Python/JS clients incl. instances+base_url, OpenAPI anchoring; only gRPC/proto deferred) |
+| [ENH-021](ENH-021-workspace-build-commands.md) | Workspace-driven build commands (`ckg build/index/embed --workspace`) | High | M | cli/serve | done (0.6) |
+| [ENH-022](ENH-022-workspace-config-cascade.md) | Workspace-level config cascade (configure once) | High | M | config/serve | done (0.6) |
+| [ENH-023](ENH-023-per-member-embed-toggle.md) | Per-member embed enable/disable | Medium | S | config/cli | done (0.6) |
+| [ENH-024](ENH-024-remote-repo-sources.md) | Remote repo sources in workspace (git/github URL clone) | Med–High | L | serve/cli | done (0.6) |
+| [ENH-025](ENH-025-voyage-embedder.md) | First-party Voyage embedder | Medium | S | embed | deferred (raise upstream first) |
+| [ENH-026](ENH-026-config-preflight-fail-fast.md) | Fail-fast config preflight + `ckg doctor` | High | S–M | registry/cli | done (0.6) |
 
 ## Themes
 

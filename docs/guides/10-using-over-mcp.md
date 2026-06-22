@@ -88,7 +88,7 @@ members:
 ```
 
 ```bash
-ckg index ./gateway && ckg index ./services/orders && ckg index ./services/payments
+ckg build --workspace workspace.yaml              # index (+embed) every member, one command (ENH-021)
 ckg serve-mcp --workspace workspace.yaml          # one federated endpoint
 ```
 

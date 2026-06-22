@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import logging
 import os
 import sys
 from collections.abc import Sequence
@@ -18,6 +19,8 @@ from agentforge_graph.embed import EmbedReport
 from agentforge_graph.ingest import CodeGraph
 from agentforge_graph.ingest.report import IndexReport
 from agentforge_graph.temporal import parse_history
+
+logger = logging.getLogger(__name__)
 
 # ENH-019: directories/files that mark a repo root for upward discovery — a CKG
 # index, engine config, or a git work tree. ``.ckg`` (an actual index) is the
@@ -110,6 +113,119 @@ def _refuse_write_if_read_only(args: argparse.Namespace) -> bool:
     return False
 
 
+def _print_problem(p: Any, *, stream: Any = None) -> None:
+    """Render one preflight Problem (ENH-026): a marker, the summary, and the
+    fix on the next line."""
+    out = stream if stream is not None else sys.stderr
+    mark = "✗" if p.is_error else "⚠"
+    scope = f"[{p.scope}] " if p.scope and p.scope != "repo" else ""
+    print(f"{mark} {scope}{p.summary}", file=out)
+    if p.fix:
+        print(f"  fix: {p.fix}", file=out)
+
+
+def _preflight_or_exit(
+    args: argparse.Namespace, *, embed: bool = False, enrich: bool = False
+) -> bool:
+    """ENH-026: validate the resolved config for the work this verb will do,
+    *before* opening the store. Prints each problem with its fix; returns True
+    (caller exits non-zero) when any error is found. Warnings don't block."""
+    from agentforge_graph.config import resolve_config
+    from agentforge_graph.preflight import preflight
+
+    cfg = resolve_config(args.config, args.path)
+    problems = preflight(cfg, scope=str(args.path), embed=embed, enrich=enrich)
+    for p in problems:
+        _print_problem(p)
+    return any(p.is_error for p in problems)
+
+
+# --- ENH-021: workspace build (one manifest, one command) -------------------
+
+
+async def _run_member_steps(
+    repo: str | Path, config: Any, steps: tuple[str, ...], *, full: bool
+) -> str:
+    """Run the requested build steps for one repo/member and return a one-line
+    summary. ``index`` (re)builds; ``embed``/``enrich`` open the existing graph.
+    Honors ENH-023 (embed.enabled) via ``cg.embed()``."""
+    parts: list[str] = []
+    if "index" in steps:
+        cg = await CodeGraph.index(repo_path=repo, config=config, full=full)
+    else:
+        cg = await CodeGraph.open(repo_path=repo, config=config)
+    try:
+        if "index" in steps:
+            r = cg.stats()
+            parts.append(f"index {r.files_indexed} files/{r.nodes} nodes")
+        if "embed" in steps:
+            e = await cg.embed()
+            parts.append("embed disabled" if e.disabled else f"embed {e.embedded} chunks")
+        if "enrich" in steps:
+            er = await cg.enrich()
+            parts.append(f"enrich {er.tagged} tagged")
+    finally:
+        await cg.close()
+    return ", ".join(parts)
+
+
+def _print_member_report(workspace: str, rows: list[tuple[str, str, str]]) -> None:
+    print(f"\nworkspace {workspace}: {len(rows)} member(s)")
+    width = max((len(n) for n, _, _ in rows), default=0)
+    for name, status, detail in rows:
+        print(f"  {name:<{width}}  {status:<7}  {detail}")
+
+
+async def _workspace_run(args: argparse.Namespace, *, steps: tuple[str, ...], full: bool) -> int:
+    """Run ``steps`` for every member of ``args.workspace`` (ENH-021). Preflights
+    all members up front (ENH-026) and refuses before any work; otherwise builds
+    each member with its resolved config (ENH-022), continuing past a failing
+    member and reporting per-member results."""
+    from agentforge_graph.config import StoreConfig
+    from agentforge_graph.preflight import preflight
+    from agentforge_graph.serve.workspace import WorkspaceConfig
+    from agentforge_graph.store import is_read_only
+
+    ws = WorkspaceConfig.load(args.workspace)
+    want_embed, want_enrich = "embed" in steps, "enrich" in steps
+
+    # ENH-026: validate every member's config up front; report all problems once.
+    problems = [
+        p
+        for m in ws.members
+        for p in preflight(
+            ws.resolve_member_config(m), scope=m.name, embed=want_embed, enrich=want_enrich
+        )
+    ]
+    for p in problems:
+        _print_problem(p)
+    if any(p.is_error for p in problems):
+        print("\nfix the above before building (see `ckg doctor --workspace`).", file=sys.stderr)
+        return 2
+
+    fetch = not getattr(args, "no_fetch", False)  # ENH-024: --no-fetch builds offline
+    logger.info("workspace %s: %s %d member(s)", ws.workspace, "+".join(steps), len(ws.members))
+    rows: list[tuple[str, str, str]] = []
+    failed = False
+    for i, m in enumerate(ws.members, 1):
+        cfg = ws.resolve_member_config(m)
+        if is_read_only(StoreConfig.load(cfg)):  # ENH-018: skip consume-only members
+            logger.info("[%d/%d] %s: skipped (read-only)", i, len(ws.members), m.name)
+            rows.append((m.name, "skipped", "read-only (consume-only)"))
+            continue
+        try:
+            logger.info("[%d/%d] %s: building", i, len(ws.members), m.name)
+            # ENH-024: clone/fetch a git member into its managed checkout first.
+            repo = ws.prepare_member(m, fetch=fetch)
+            rows.append((m.name, "ok", await _run_member_steps(repo, cfg, steps, full=full)))
+        except Exception as exc:  # continue-on-error: one bad member doesn't abort the batch
+            logger.warning("[%d/%d] %s: FAILED — %s", i, len(ws.members), m.name, exc)
+            failed = True
+            rows.append((m.name, "FAILED", str(exc)))
+    _print_member_report(ws.workspace, rows)
+    return 1 if failed else 0
+
+
 def _format_report(report: IndexReport) -> str:
     lines = [
         f"indexed {report.files_indexed} files: {report.nodes} nodes, {report.edges} edges",
@@ -157,6 +273,8 @@ def _format_report(report: IndexReport) -> str:
 
 
 def _format_embed(report: EmbedReport) -> str:
+    if report.disabled:  # ENH-023: embed.enabled is false for this repo
+        return "embedding skipped — embed.enabled is false (no vectors built)"
     docs = f" + {report.doc_chunks} doc chunks" if report.doc_chunks else ""
     return (
         f"embedded {report.embedded} chunks across {report.files} files{docs} "
@@ -175,7 +293,12 @@ def _format_backfill(rep: Any) -> str:
 
 
 async def _index(args: argparse.Namespace) -> int:
+    if getattr(args, "workspace", None):  # ENH-021: index every member
+        steps = ("index", "embed") if args.embed else ("index",)
+        return await _workspace_run(args, steps=steps, full=args.full)
     if _refuse_write_if_read_only(args):
+        return 2
+    if _preflight_or_exit(args, embed=args.embed):
         return 2
     cg = await CodeGraph.index(
         repo_path=args.path,
@@ -294,7 +417,11 @@ async def _changed_since(args: argparse.Namespace) -> int:
 
 
 async def _embed(args: argparse.Namespace) -> int:
+    if getattr(args, "workspace", None):  # ENH-021: embed every member
+        return await _workspace_run(args, steps=("embed",), full=False)
     if _refuse_write_if_read_only(args):
+        return 2
+    if _preflight_or_exit(args, embed=True):
         return 2
     cg = await CodeGraph.open(repo_path=args.path, config=args.config, languages=args.lang or None)
     try:
@@ -394,7 +521,11 @@ async def _decisions(args: argparse.Namespace) -> int:
 
 
 async def _enrich(args: argparse.Namespace) -> int:
+    if getattr(args, "workspace", None):  # ENH-021: enrich every member (pattern tags)
+        return await _workspace_run(args, steps=("enrich",), full=False)
     if _refuse_write_if_read_only(args):
+        return 2
+    if _preflight_or_exit(args, enrich=True):
         return 2
     cg = await CodeGraph.open(repo_path=args.path, config=args.config)
     do_summaries = args.summaries or args.all
@@ -428,6 +559,25 @@ async def _enrich(args: argparse.Namespace) -> int:
             )
     finally:
         await cg.close()
+    return 0
+
+
+async def _build(args: argparse.Namespace) -> int:
+    """ENH-021: the one command — index, then embed (where enabled), then enrich
+    (with --enrich), for a whole workspace (--workspace) or a single repo."""
+    steps = ("index", "embed") + (("enrich",) if args.enrich else ())
+    if getattr(args, "workspace", None):
+        return await _workspace_run(args, steps=steps, full=args.full)
+    if _refuse_write_if_read_only(args):
+        return 2
+    if _preflight_or_exit(args, embed=True, enrich=args.enrich):
+        return 2
+    from agentforge_graph.config import resolve_config
+
+    detail = await _run_member_steps(
+        args.path, resolve_config(args.config, args.path), steps, full=args.full
+    )
+    print(detail)
     return 0
 
 
@@ -577,8 +727,49 @@ async def _query(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _doctor(args: argparse.Namespace) -> int:
+    """ENH-026: validate config readiness without indexing — for one repo or a
+    whole workspace, reporting every problem (and its fix) in one pass."""
+    from agentforge_graph.preflight import preflight
+
+    if getattr(args, "workspace", None):
+        from agentforge_graph.serve.workspace import WorkspaceConfig
+
+        ws = WorkspaceConfig.load(args.workspace)
+        scopes = [m.name for m in ws.members]
+        problems = [
+            p
+            for m in ws.members
+            for p in preflight(ws.resolve_member_config(m), scope=m.name, embed=True, enrich=True)
+        ]
+    else:
+        from agentforge_graph.config import resolve_config
+
+        scopes = [str(args.path)]
+        problems = preflight(
+            resolve_config(args.config, args.path), scope=str(args.path), embed=True, enrich=True
+        )
+
+    errors = [p for p in problems if p.is_error]
+    if not problems:
+        print(f"ckg doctor: config OK for {', '.join(scopes)} — drivers + credentials ready.")
+        return 0
+    for p in problems:
+        _print_problem(p, stream=sys.stdout)
+    if errors:
+        print(f"\n{len(errors)} problem(s) must be fixed before indexing.")
+        return 2
+    print("\nconfig usable (warnings only).")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
+    from agentforge_graph import __version__
+
     parser = argparse.ArgumentParser(prog="ckg", description="Code Knowledge Graph engine")
+    # `ckg --version` / `-V` short-circuits during parsing (before the required
+    # subcommand check), so it works without a subcommand.
+    parser.add_argument("--version", "-V", action="version", version=f"ckg {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     idx = sub.add_parser("index", help="index a repository into the graph")
@@ -603,6 +794,16 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="backfill the temporal log from the last N commits (or 'full'); "
         "needs temporal enabled (feat-009)",
+    )
+    idx.add_argument(
+        "--workspace",
+        default=None,
+        help="index every member of a workspace.yaml (ENH-021); each with its resolved config",
+    )
+    idx.add_argument(
+        "--no-fetch",
+        action="store_true",
+        help="build git members against the existing checkout, without fetching (ENH-024)",
     )
     idx.set_defaults(func=_index)
 
@@ -630,7 +831,28 @@ def build_parser() -> argparse.ArgumentParser:
     _add_repo_arg(emb)
     emb.add_argument("--lang", action="append", help="restrict to a language (repeatable)")
     emb.add_argument("--config", default=None, help="path to ckg.yaml")
+    emb.add_argument(
+        "--workspace", default=None, help="embed every member of a workspace.yaml (ENH-021)"
+    )
     emb.set_defaults(func=_embed)
+
+    bld = sub.add_parser(
+        "build",
+        help="index + embed (+ enrich) a repo or a whole workspace in one command (ENH-021)",
+    )
+    _add_repo_arg(bld)
+    bld.add_argument("--config", default=None, help="path to ckg.yaml")
+    bld.add_argument("--workspace", default=None, help="build every member of a workspace.yaml")
+    bld.add_argument("--enrich", action="store_true", help="also run LLM enrichment (pattern tags)")
+    bld.add_argument(
+        "--full", action="store_true", help="force a full rebuild instead of incremental"
+    )
+    bld.add_argument(
+        "--no-fetch",
+        action="store_true",
+        help="build git members against the existing checkout, without fetching (ENH-024)",
+    )
+    bld.set_defaults(func=_build)
 
     qry = sub.add_parser("query", help="retrieve connected context for a question")
     qry.add_argument("query", nargs="?", default=None, help="natural-language query")
@@ -706,6 +928,9 @@ def build_parser() -> argparse.ArgumentParser:
     enr.add_argument("--all", action="store_true", help="run patterns, summaries, and decisions")
     enr.add_argument("--budget-usd", type=float, default=None, help="override the per-run USD cap")
     enr.add_argument("--config", default=None, help="path to ckg.yaml")
+    enr.add_argument(
+        "--workspace", default=None, help="enrich every member of a workspace.yaml (ENH-021)"
+    )
     enr.set_defaults(func=_enrich)
 
     sm = sub.add_parser("summaries", help="list stored module summaries")
@@ -775,8 +1000,20 @@ def build_parser() -> argparse.ArgumentParser:
     tr.add_argument("--depth", type=int, default=10, help="max hops (default: 10)")
     tr.set_defaults(func=_trace)
 
+    doc = sub.add_parser(
+        "doctor", help="validate config readiness (drivers installed, creds present) — ENH-026"
+    )
+    _add_repo_arg(doc)
+    doc.add_argument("--config", default=None, help="path to ckg.yaml")
+    doc.add_argument(
+        "--workspace", default=None, help="validate every member of a workspace.yaml at once"
+    )
+    doc.set_defaults(func=_doctor)
+
     # ENH-018: every subcommand accepts --read-only (assert consume-only for this
     # invocation; write verbs then refuse). The durable form is store.read_only.
+    # Logging: every subcommand accepts --log-level / --debug / -v to trace a run
+    # (also via $CKG_LOG_LEVEL or logging.level in ckg.yaml).
     for p in sub.choices.values():
         p.add_argument(
             "--read-only",
@@ -784,12 +1021,44 @@ def build_parser() -> argparse.ArgumentParser:
             help="treat the index as consume-only (write verbs refuse); "
             "also via store.read_only / $CKG_READ_ONLY",
         )
+        p.add_argument(
+            "--log-level",
+            default=None,
+            choices=["debug", "info", "warning", "error"],
+            help="log verbosity (also $CKG_LOG_LEVEL / logging.level in ckg.yaml)",
+        )
+        p.add_argument("--debug", action="store_true", help="shorthand for --log-level debug")
+        p.add_argument(
+            "-v", "--verbose", action="store_true", help="shorthand for --log-level info"
+        )
     return parser
+
+
+def _configure_logging(args: argparse.Namespace) -> None:
+    """Set engine log verbosity from flags → $CKG_LOG_LEVEL → ckg.yaml → warning."""
+    from agentforge_graph.config import LoggingConfig, resolve_config
+    from agentforge_graph.observability import configure, resolve_level
+
+    config_level: str | None = None
+    try:
+        cfg = resolve_config(getattr(args, "config", None), getattr(args, "path", "."))
+        config_level = LoggingConfig.load(cfg).level
+    except Exception:  # config problems surface later in the verb, not here
+        config_level = None
+    configure(
+        resolve_level(
+            cli_level=getattr(args, "log_level", None),
+            cli_debug=getattr(args, "debug", False),
+            cli_verbose=getattr(args, "verbose", False),
+            config_level=config_level,
+        )
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     _resolve_repo_path(args)
+    _configure_logging(args)
     # ENH-018: bridge --read-only to the env so the store layer (which never sees
     # argparse) honors it uniformly alongside store.read_only.
     if getattr(args, "read_only", False):

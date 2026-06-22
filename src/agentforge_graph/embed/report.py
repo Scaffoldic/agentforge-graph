@@ -13,3 +13,4 @@ class EmbedReport(BaseModel):
     doc_chunks: int = 0  # ADR/doc DocChunks embedded for semantic search (feat-010)
     model: str = ""
     dim: int = 0
+    disabled: bool = False  # ENH-023: embed.enabled was false → no vectors built
