@@ -89,10 +89,16 @@ ckg index . && ckg routes .
 #    (set store.central_root in ckg.yaml; built once by CI, read by many)
 ckg status . --read-only
 
-# 3) a workspace — the cross-service call graph across services
+# 3) a workspace — build many repos with one command, then the cross-service graph
+ckg build --workspace workspace.yaml             # index (+embed) every member, one command
 ckg services-map --workspace workspace.yaml      # who calls whom (HTTP → route)
 ckg trace payments --workspace workspace.yaml --direction upstream   # blast radius
 ```
+
+> **Configure once, fail fast.** A `defaults:` block in `workspace.yaml` (store
+> location, embedder, read-only) is inherited by every member, with per-member
+> overrides; members can be **local paths or git URLs**. `ckg doctor [--workspace]`
+> validates the config (drivers installed, credentials present) before you build.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Scaffoldic/agentforge-graph/main/docs/assets/setups.gif"
