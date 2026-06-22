@@ -46,6 +46,13 @@ with fail-fast validation and (optionally) repos cloned from git URLs.
 - **`ckg --version` / `-V`** prints the installed package version, and
   `agentforge_graph.__version__` exposes it to library users (resolved from package
   metadata).
+- **Logging / end-to-end tracing you control.** A `logging:` block in ckg.yaml
+  (`level: debug|info|warning|error`, quiet `warning` by default) plus
+  `--log-level` / `--debug` / `-v` on every command and `$CKG_LOG_LEVEL` dial up
+  engine logs that trace a run end to end — index (mode, counts), embed (model,
+  chunks), git checkout (clone/fetch), and per-member workspace build progress.
+  All on the `agentforge_graph` logger namespace; in-process consumers get the
+  same via `logging.level` without the engine hijacking their logging setup.
 
 ## [0.5.0] — 2026-06-21
 

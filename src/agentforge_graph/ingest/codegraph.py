@@ -8,6 +8,7 @@ re-opens an existing index without re-indexing. This is the
 
 from __future__ import annotations
 
+import logging
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -30,6 +31,8 @@ if TYPE_CHECKING:
     from agentforge_graph.repomap import RankedSymbol
     from agentforge_graph.retrieve import ContextPack
     from agentforge_graph.retrieve.retriever import Mode
+
+logger = logging.getLogger(__name__)
 
 
 def _git_commit(repo_path: str | Path) -> str:
@@ -220,10 +223,12 @@ class CodeGraph:
         (or a changed pack fingerprint / schema bump / ``ingest.incremental:
         false``) forces a clean rebuild."""
         from agentforge_graph.config import IngestConfig, StoreConfig, resolve_config
+        from agentforge_graph.observability import configure_from_config
 
         from .incremental import ChangeDetector, IndexMeta
 
         config = resolve_config(config, repo_path)  # discover agentforge.yaml app: / ckg.yaml
+        configure_from_config(config)  # honor logging.level for in-process consumers
         store = await Store.open(repo_path, config)
         source, registry = _source_registry(repo_path, config, languages, include, exclude)
         repo = Path(repo_path).resolve().name
@@ -238,6 +243,13 @@ class CodeGraph:
             and meta.is_indexed()
             and not meta.packs_changed(registry.packs)
         )
+        logger.info(
+            "index: %s (commit %s) — %s",
+            repo,
+            (commit or "no-git")[:10],
+            "incremental" if use_incremental else "full",
+        )
+        logger.debug("index: store=%s packs=%s", root, [p.lang_slug for p in registry.packs])
         cg = cls(store, repo_path, config, languages)
         frameworks = _framework_extractor(repo_path, config, registry)
         recorder = _build_recorder(repo_path, config, root, commit)  # feat-009 (None if off)
@@ -273,6 +285,13 @@ class CodeGraph:
         await _ingest_knowledge(store, repo_path, config, repo, commit, registry, report)
         _save_meta(root, commit, registry, result.file_hashes)
         await _prune_temporal(repo_path, config, root)
+        logger.info(
+            "index: %s done — %d files, %d nodes, %d edges",
+            repo,
+            report.files_indexed,
+            report.nodes,
+            report.edges,
+        )
         if embed:
             await cg.embed()
         return cg
@@ -351,8 +370,11 @@ class CodeGraph:
         languages: str | list[str] | None = None,
     ) -> CodeGraph:
         from agentforge_graph.config import resolve_config
+        from agentforge_graph.observability import configure_from_config
 
         config = resolve_config(config, repo_path)  # discover agentforge.yaml app: / ckg.yaml
+        configure_from_config(config)  # honor logging.level for in-process consumers
+        logger.debug("open: %s", repo_path)
         return cls(await Store.open(repo_path, config), repo_path, config, languages)
 
     async def embed(self, embedder: object | None = None, only_dirty: bool = False) -> EmbedReport:
@@ -378,9 +400,17 @@ class CodeGraph:
         # constructing an embedder (so no creds are required). An explicitly
         # supplied embedder is an intentional override and still runs.
         if not embed_cfg.enabled and not isinstance(embedder, Embedder):
+            logger.info("embed: skipped (embed.enabled is false) — no vectors built")
             self._embed_report = EmbedReport(disabled=True)
             return self._embed_report
         emb = embedder if isinstance(embedder, Embedder) else embedder_from_config(embed_cfg)
+        logger.info(
+            "embed: %s via %s (dim %d)%s",
+            Path(self._repo_path).resolve().name,
+            emb.name,
+            emb.dim,
+            " [only dirty]" if only_dirty else "",
+        )
         source, registry = _source_registry(self._repo_path, self._config, self._languages)
         pipeline = EmbedPipeline(
             CASTChunker(chunking.max_tokens, chunking.min_tokens),
@@ -400,6 +430,14 @@ class CodeGraph:
         )
         if dirty is not None:
             await dirty.mark_clean("embeddings", ids)
+        r = self._embed_report
+        logger.info(
+            "embed: done — %d chunks across %d files (%d unchanged)%s",
+            r.embedded,
+            r.files,
+            r.skipped_unchanged,
+            f", {r.doc_chunks} doc chunks" if r.doc_chunks else "",
+        )
         return self._embed_report
 
     async def retrieve(

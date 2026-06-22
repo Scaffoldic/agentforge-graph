@@ -50,6 +50,11 @@ step across the org (`ckg index --workspace workspace.yaml`). Every member is
 built with its **resolved config** (workspace `defaults:` + per-member overrides —
 see below), and the run ends with a per-member report.
 
+> **Trace it end to end.** Add `--debug` (or `-v` for info, or `--log-level
+> debug`) to watch each step — per-member build progress, index counts, the
+> embedder used, git clone/fetch. Or set it durably in config: `logging: { level:
+> debug }`. Quiet (`warning`) by default; `$CKG_LOG_LEVEL` works too.
+
 Before doing any work, the build **preflights every member** — if a selected
 driver's extra isn't installed (or a credential is missing) it refuses up front
 with the fix, rather than failing on member 2 of 4. Validate without building via
