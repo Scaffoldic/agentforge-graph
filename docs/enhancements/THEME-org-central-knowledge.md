@@ -8,8 +8,14 @@
 > org's shared code knowledge."
 
 This is a roadmap *theme*, not a single spec. It frames the **why** behind a
-ladder of enhancements (ENH-018 · ENH-019 · ENH-020) so each is read against the
-same goal rather than as an isolated ergonomic tweak.
+ladder of enhancements so each is read against the same goal rather than as an
+isolated ergonomic tweak. Two arcs:
+
+- **Serve/consume side (0.5, done):** ENH-018 · ENH-019 · ENH-020 — host the
+  knowledge centrally and serve the whole org over one federated MCP endpoint.
+- **Build/setup side (0.6 epic, proposed):** ENH-022 · ENH-021 · ENH-023 ·
+  ENH-026 · ENH-024 — stand up that knowledge from **one manifest, one config,
+  one command**, with fail-fast validation and (optionally) repos by git URL.
 
 ## Why org-level, not just per-developer
 
@@ -59,6 +65,25 @@ The rungs that close the gap:
 | 1 | **[ENH-018](ENH-018-store-location-and-central-hosting.md)** — store-location choice + central hosting + read-only consumers | Decouple *where knowledge lives* from the repo. A team/CI builds the index once (embedded-but-central, or a shared SurrealDB/Neo4j); devs & agents consume it. The developer **choice**: in-repo (laptop) vs. central (org). | S–M |
 | 2 | **[ENH-019](ENH-019-serve-mcp-workdir-autodiscovery.md)** — `serve-mcp` working-directory auto-discovery | Zero-config consumption: an agent or dev *inside* a repo gets the right knowledge without naming `--repo`. Friction that's trivial at one repo and painful across an org's many. | S |
 | 3 | **[ENH-020](ENH-020-federated-multi-repo-mcp.md)** — federated multi-repo MCP + cross-service contract edges | The payoff: **one** MCP endpoint serves the whole org, fans queries across every service's graph, and draws the **cross-service edges** (API contracts: route ↔ HTTP/gRPC client) that make a microservice architecture actually traceable. | L (phased) |
+
+### The build/setup arc (0.6 epic)
+
+ENH-018/019/020 nailed *consuming* a central, federated graph. This arc nails
+*building* it — turning the nine-hand-commands setup into one manifest-driven
+flow. Rungs (sequenced):
+
+| Rung | Enhancement | What it unlocks | Effort |
+|---|---|---|---|
+| A | **[ENH-022](ENH-022-workspace-config-cascade.md)** — workspace config cascade | Configure store location / embedder / read-only **once** at the workspace; members inherit it (per-member override). The home for cloned-repo config. | M |
+| B | **[ENH-023](ENH-023-per-member-embed-toggle.md)** — per-member embed toggle | Declarative `embed: true/false` per repo so the build knows what to vectorize (and what needs no creds). | S |
+| C | **[ENH-026](ENH-026-config-preflight-fail-fast.md)** — fail-fast preflight + `ckg doctor` | Validate the consumer's config *before* any work — driver installed? creds present? — and teach the fix. All-at-once across a workspace. | S–M |
+| D | **[ENH-021](ENH-021-workspace-build-commands.md)** — workspace build commands | `ckg build --workspace` (and `--workspace` on index/embed/enrich) builds every member in one command, with a per-member report. | M |
+| E | **[ENH-024](ENH-024-remote-repo-sources.md)** — remote repo sources | A member can be a **git/github URL** (operator's ssh access); the build clones/fetches into a managed checkout. Build the org graph from a list of URLs. | L |
+
+Dependencies: A → D (build needs the resolved per-member config); B and C feed D;
+E lands last (proven on local paths first). **[ENH-025](ENH-025-voyage-embedder.md)**
+(Voyage embedder) is adjacent but **deferred** — raised upstream with agentforge-py
+first, implemented our end afterward.
 
 ## The developer choice we are explicitly offering
 
