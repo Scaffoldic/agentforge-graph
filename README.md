@@ -69,9 +69,12 @@ ckg serve-mcp --repo .              # → 10 read-only tools for your agent
   across services** — `ckg services-map` / `ckg trace` draw the cross-service call
   graph (HTTP client → route, matched by path or OpenAPI contract).
 
-**Status: 0.5.0 — all 12 planned features shipped, now org-scale.** 0.5 adds
-central hosting + read-only consumers, a federated multi-repo workspace, and
-cross-service request tracing on top. Published on
+**Status: 0.6.0 — org-scale, and now build it in one command.** 0.5 added
+central hosting, a federated multi-repo workspace, and cross-service tracing;
+0.6 adds the **build side** — stand up a multi-repo CKG from one
+`workspace.yaml` + one config + `ckg build --workspace` (members local or by git
+URL), with fail-fast `ckg doctor` validation and config/CLI-controlled tracing.
+Published on
 [PyPI](https://pypi.org/project/agentforge-graph/). Each language pack validated on
 a real OSS repo with a creds-enabled embed/retrieval/enrich run; a real agent
 answers questions over the tools unattended. See the [`CHANGELOG`](https://github.com/Scaffoldic/agentforge-graph/blob/main/CHANGELOG.md)

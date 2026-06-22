@@ -8,6 +8,8 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-06-22
+
 The **workspace build** theme — the build/setup side of org-central knowledge.
 0.5 made *consuming* a central, federated graph easy; this makes *building* it
 easy: stand up a multi-repo CKG from **one manifest, one config, one command**,
