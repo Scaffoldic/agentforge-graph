@@ -136,7 +136,8 @@ ride alongside, not on, this chain.
 | **0.2** ✅ RELEASED | Keep it fresh cheaply (+ temporal layer 009, reranker seam ENH-009, resolver completeness) | 004, 009 | Re-index cost proportional to the diff; point-in-time history/as-of queries; intra-type calls resolve across all 10 packs |
 | **0.3** ✅ feature-complete (unreleased) | History + decisions | 009 (in 0.2), 010 | Point-in-time queries **done (0.2)**; ADRs/docs/docstrings/commits govern+describe code as graph edges **done (010)** — ready to cut |
 | **0.4** ✅ RELEASED | Framework & semantic knowledge | 011, 012 (+ ENH-010..013) | Routes/ORM/DI edges; module summaries + design-pattern tags; SurrealDB backend; cross-file resolution; 11 packs; measured rerank |
-| **0.5** ✅ feature-complete (cut in prep) | **Org-level central knowledge** — CKG as a shared, org-wide code brain for devs + agents | ENH-018, ENH-019, ENH-020 | Knowledge hostable centrally + consumed read-only; zero-config repo discovery; **one federated MCP endpoint** across services with cross-service tracing — see [theme](../enhancements/THEME-org-central-knowledge.md) |
+| **0.5** ✅ RELEASED | **Org-level central knowledge** — CKG as a shared, org-wide code brain for devs + agents | ENH-018, ENH-019, ENH-020 | Knowledge hostable centrally + consumed read-only; zero-config repo discovery; **one federated MCP endpoint** across services with cross-service tracing — see [theme](../enhancements/THEME-org-central-knowledge.md) |
+| **0.6** ✅ feature-complete (cut in prep) | **Workspace build** — the build/setup side of org-central knowledge | ENH-021, ENH-022, ENH-023, ENH-024, ENH-026 | Stand up a multi-repo CKG from one `workspace.yaml` + one config + `ckg build --workspace` (members local or git URL); fail-fast `ckg doctor`; config/CLI-controlled logging/tracing |
 
 ---
 
@@ -155,6 +156,24 @@ knowledge, served to developers and agents." See the
 All shipped in **0.5**: central hosting + read-only (ENH-018), cwd discovery
 (ENH-019), federation + `ckg_services_map` / `ckg_trace` + Python/JS client
 capture + OpenAPI anchoring (ENH-020), plus `ckg services-map` / `ckg trace` CLI.
+
+## 0.6 — workspace build theme
+
+The build/setup side of the same theme: 0.5 made *consuming* a central, federated
+graph easy; 0.6 makes *building* it easy — one manifest, one config, one command.
+
+| Order | ENH | Title | Effort | Depends on | Status |
+|---|---|---|---|---|---|
+| 1 | [ENH-022](../enhancements/ENH-022-workspace-config-cascade.md) | Workspace-level config cascade (configure once) | M | — | ✅ done (0.6) |
+| 1 | [ENH-023](../enhancements/ENH-023-per-member-embed-toggle.md) | Per-member embed enable/disable | S | — | ✅ done (0.6) |
+| 1 | [ENH-026](../enhancements/ENH-026-config-preflight-fail-fast.md) | Fail-fast config preflight + `ckg doctor` | S–M | — | ✅ done (0.6) |
+| 2 | [ENH-021](../enhancements/ENH-021-workspace-build-commands.md) | Workspace-driven build commands (`ckg build/index/embed --workspace`) | M | 022, 023, 026 | ✅ done (0.6) |
+| 3 | [ENH-024](../enhancements/ENH-024-remote-repo-sources.md) | Remote repo sources in workspace (git/github URL clone) | L | 021 | ✅ done (0.6) |
+
+Also in 0.6: `ckg --version` / `__version__`, and config/CLI-controlled logging
+(`logging.level`, `--log-level`/`--debug`/`-v`, `$CKG_LOG_LEVEL`) tracing index/
+embed/checkout/workspace-build end to end. **[ENH-025](../enhancements/ENH-025-voyage-embedder.md)**
+(Voyage embedder) deferred — raised upstream first.
 
 ---
 
