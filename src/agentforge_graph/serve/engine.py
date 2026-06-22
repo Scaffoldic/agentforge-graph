@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from agentforge_graph.config import (
+    ConfigSource,
     EmbedConfig,
     RepoMapConfig,
     RetrieveConfig,
@@ -54,7 +55,7 @@ def _git_head(repo_path: str | Path) -> str:
 
 
 class _Engine:
-    def __init__(self, repo_path: str | Path = ".", config: str | Path | None = None) -> None:
+    def __init__(self, repo_path: str | Path = ".", config: ConfigSource = None) -> None:
         from agentforge_graph.config import resolve_config
 
         self.repo_path = repo_path

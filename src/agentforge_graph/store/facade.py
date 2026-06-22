@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from agentforge_graph.config import StoreConfig
+from agentforge_graph.config import ConfigSource, StoreConfig
 from agentforge_graph.core import EdgeKind, GraphStore, Node, QueryResult, ScoredRef, VectorStore
 
 from .errors import SchemaVersionError, StoreError
@@ -33,7 +33,7 @@ class Store:
         self.config = config
 
     @classmethod
-    async def open(cls, repo_path: str | Path = ".", config: str | Path | None = None) -> Store:
+    async def open(cls, repo_path: str | Path = ".", config: ConfigSource = None) -> Store:
         """Resolve drivers from ``config`` (an ``agentforge.yaml``/``ckg.yaml``
         path, or discovered in ``repo_path``) and open the embedded index under
         ``repo_path``/<store.path>. Raises before any store is opened if the

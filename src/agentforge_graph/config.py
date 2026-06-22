@@ -21,11 +21,32 @@ earlier one.
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar, Self
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError, field_validator
+
+
+@dataclass(frozen=True)
+class ResolvedConfig:
+    """An already-merged engine config **section** (block-key → block-dict) — an
+    in-memory, drop-in alternative to a config file path.
+
+    ENH-022: the workspace cascade builds one of these per member (layering
+    workspace defaults under per-member overrides) and threads it through the
+    engine exactly like a ``Path``. ``_read_block`` reads blocks from
+    :attr:`section` instead of opening a file, so every ``X.load(config)`` call
+    site works transparently."""
+
+    section: dict[str, Any] = field(default_factory=dict)
+    origin: str = "<resolved>"  # named in error messages
+
+
+# A config source the engine can read: an explicit file path, a pre-merged
+# in-memory config (ENH-022), or None (built-in defaults / discovery).
+ConfigSource = str | Path | ResolvedConfig | None
 
 
 def _yaml_or_empty(path: Path) -> dict[str, Any]:
@@ -36,11 +57,37 @@ def _yaml_or_empty(path: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
-def resolve_config(config: str | Path | None, repo_path: str | Path = ".") -> Path | None:
-    """The config file the engine should read: an explicit ``config`` path if
-    given, else the first discovered in ``repo_path`` — ``agentforge.yaml`` when
-    it carries an ``app:`` section, otherwise ``ckg.yaml`` (then a bare
+def _section_of(path: Path, *, strict: bool = True) -> dict[str, Any]:
+    """The engine-config **section** of a config file: the ``app:`` mapping for an
+    ``agentforge.yaml`` that carries one, else the file's top level (a standalone
+    ``ckg.yaml``). ``strict`` raises ``StoreConfigError`` on malformed YAML (used
+    by the cascade so a broken member config surfaces, not silently empties)."""
+    from agentforge_graph.store.errors import StoreConfigError
+
+    try:
+        data = yaml.safe_load(path.read_text()) or {}
+    except yaml.YAMLError as exc:
+        if strict:
+            raise StoreConfigError(f"could not parse {path}: {exc}") from exc
+        return {}
+    except OSError:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    section = data["app"] if isinstance(data.get("app"), dict) else data
+    return section if isinstance(section, dict) else {}
+
+
+def resolve_config(
+    config: ConfigSource, repo_path: str | Path = "."
+) -> Path | ResolvedConfig | None:
+    """The config the engine should read: a pre-resolved :class:`ResolvedConfig`
+    passed through unchanged (ENH-022), else an explicit ``config`` path if given,
+    else the first discovered in ``repo_path`` — ``agentforge.yaml`` when it
+    carries an ``app:`` section, otherwise ``ckg.yaml`` (then a bare
     ``agentforge.yaml``). ``None`` when nothing is found (built-in defaults)."""
+    if isinstance(config, ResolvedConfig):
+        return config  # already merged in memory — nothing to discover
     if config is not None:
         return Path(config)
     root = Path(repo_path)
@@ -63,31 +110,31 @@ DEFAULT_EXCLUDES = [
 ]
 
 
-def _read_block[T: _Block](model: type[T], key: str, config: str | Path | None) -> T:
-    """Parse one engine config block into ``model``. The block is read from the
-    ``app:`` section when the file carries one (``agentforge.yaml``), else from
-    the top level (``ckg.yaml``). Missing file / ``None`` → defaults; malformed
-    YAML / block → ``StoreConfigError``."""
+def _read_block[T: _Block](model: type[T], key: str, config: ConfigSource) -> T:
+    """Parse one engine config block into ``model``. The block is read from a
+    pre-merged :class:`ResolvedConfig` section (ENH-022) or from a config file —
+    the ``app:`` section when the file carries one (``agentforge.yaml``), else the
+    top level (``ckg.yaml``). Missing file / ``None`` → defaults; malformed YAML /
+    block → ``StoreConfigError``."""
     # Imported lazily to avoid an import cycle (store.facade imports this).
     from agentforge_graph.store.errors import StoreConfigError
 
     if config is None:
         return model()
-    p = Path(config)
-    if not p.exists():
-        return model()
-    try:
-        data = yaml.safe_load(p.read_text()) or {}
-    except yaml.YAMLError as exc:
-        raise StoreConfigError(f"could not parse {p}: {exc}") from exc
-    # Engine config lives under `app:` in agentforge.yaml (the framework's
-    # sanctioned passthrough), or at the top level in a standalone ckg.yaml.
-    section = data["app"] if isinstance(data.get("app"), dict) else data
+    if isinstance(config, ResolvedConfig):
+        section: dict[str, Any] = config.section
+        origin = config.origin
+    else:
+        p = Path(config)
+        if not p.exists():
+            return model()
+        section = _section_of(p)
+        origin = str(p)
     block = section.get(key) if isinstance(section, dict) else None
     try:
         return model.model_validate(block or {})
     except ValidationError as exc:
-        raise StoreConfigError(f"invalid {key} config in {p}: {exc}") from exc
+        raise StoreConfigError(f"invalid {key} config in {origin}: {exc}") from exc
 
 
 class _Block(BaseModel):
@@ -96,8 +143,16 @@ class _Block(BaseModel):
     KEY: ClassVar[str] = ""
 
     @classmethod
-    def load(cls, ckg_yaml: str | Path | None = None) -> Self:
+    def load(cls, ckg_yaml: ConfigSource = None) -> Self:
         return _read_block(cls, cls.KEY, ckg_yaml)
+
+
+def block_keys() -> set[str]:
+    """The recognized engine config block keys — the ``KEY`` of every ``_Block``
+    subclass. The cascade (ENH-022) uses this to tell a member's inline config
+    block overrides apart from its other manifest fields, so new blocks are picked
+    up automatically with no list to keep in sync."""
+    return {c.KEY for c in _Block.__subclasses__() if c.KEY}
 
 
 class GraphCfg(BaseModel):

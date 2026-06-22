@@ -51,6 +51,23 @@ async def test_index_creates_embedded_store(indexed: CodeGraph, tmp_path: Path) 
     assert (tmp_path / "proj" / ".ckg" / "graph.kuzu").exists()
 
 
+async def test_index_threads_resolved_config(tmp_path: Path, python_repo: Path) -> None:
+    """ENH-022: a ResolvedConfig (in-memory merged section) is a drop-in config
+    source — the store path from it wins, proving the cascade threads end-to-end
+    through CodeGraph without a config file."""
+    from agentforge_graph.config import ResolvedConfig
+
+    repo = tmp_path / "proj"
+    shutil.copytree(python_repo, repo)
+    rc = ResolvedConfig(section={"store": {"path": "custom_ckg"}}, origin="test")
+    cg = await CodeGraph.index(repo_path=repo, config=rc)
+    try:
+        assert (repo / "custom_ckg" / "graph.kuzu").exists()  # path from ResolvedConfig
+        assert not (repo / ".ckg").exists()  # default not used
+    finally:
+        await cg.close()
+
+
 async def test_open_does_not_index(tmp_path: Path, python_repo: Path) -> None:
     repo = tmp_path / "proj"
     shutil.copytree(python_repo, repo)

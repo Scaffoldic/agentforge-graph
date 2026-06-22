@@ -11,7 +11,15 @@ from pathlib import Path
 
 import pytest
 
-from agentforge_graph.config import EmbedConfig, RetrieveConfig, StoreConfig, resolve_config
+from agentforge_graph.config import (
+    EmbedConfig,
+    ResolvedConfig,
+    RetrieveConfig,
+    StoreConfig,
+    block_keys,
+    resolve_config,
+)
+from agentforge_graph.store.errors import StoreConfigError
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -80,3 +88,35 @@ def test_rerank_accepts_yaml_booleans_and_strings(
 def test_rerank_default_is_off(tmp_path: Path) -> None:
     cfg = _write(tmp_path, "retrieve:\n  k: 8\n")
     assert RetrieveConfig.load(cfg).rerank == "off"
+
+
+# --- ENH-022: ResolvedConfig as a polymorphic config source -----------------
+
+
+def test_resolved_config_reads_blocks_in_memory() -> None:
+    """A block loads from a ResolvedConfig section exactly like from a file."""
+    rc = ResolvedConfig(section={"store": {"path": "x"}, "retrieve": {"k": 5}})
+    assert StoreConfig.load(rc).path == "x"
+    assert RetrieveConfig.load(rc).k == 5
+
+
+def test_resolved_config_missing_block_is_defaults() -> None:
+    rc = ResolvedConfig(section={"store": {"path": "x"}})
+    assert RetrieveConfig.load(rc).k == RetrieveConfig().k  # absent → defaults
+
+
+def test_resolve_config_passes_resolved_through() -> None:
+    rc = ResolvedConfig(section={})
+    assert resolve_config(rc) is rc  # already merged — nothing to discover
+
+
+def test_resolved_config_invalid_block_errors_with_origin() -> None:
+    rc = ResolvedConfig(section={"retrieve": {"k": "not-an-int"}}, origin="workspace:org:web")
+    with pytest.raises(StoreConfigError, match="workspace:org:web"):
+        RetrieveConfig.load(rc)
+
+
+def test_block_keys_covers_known_blocks() -> None:
+    keys = block_keys()
+    assert {"store", "embed", "retrieve", "ingest", "serve", "enrich"} <= keys
+    assert "" not in keys  # the _Block base (empty KEY) is excluded

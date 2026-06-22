@@ -30,6 +30,10 @@ if TYPE_CHECKING:
     from agentforge_graph.retrieve.retriever import Mode
 
 
+if TYPE_CHECKING:
+    from agentforge_graph.config import ConfigSource
+
+
 def _git_commit(repo_path: str | Path) -> str:
     try:
         out = subprocess.run(
@@ -60,7 +64,7 @@ def _commit_time(repo_path: str | Path, commit: str) -> int:
         return 0
 
 
-def _build_recorder(repo_path: str | Path, config: str | Path | None, root: Path, commit: str):  # type: ignore[no-untyped-def]
+def _build_recorder(repo_path: str | Path, config: ConfigSource, root: Path, commit: str):  # type: ignore[no-untyped-def]
     """Build the feat-009 evolution-log recorder when ``temporal.enabled`` and
     the source is a git repo; else ``None``. Lazy-imports ``temporal`` so the
     module is never loaded when the feature is off."""
@@ -73,7 +77,7 @@ def _build_recorder(repo_path: str | Path, config: str | Path | None, root: Path
     return build_recorder(str(root))
 
 
-async def _prune_temporal(repo_path: str | Path, config: str | Path | None, root: Path) -> None:
+async def _prune_temporal(repo_path: str | Path, config: ConfigSource, root: Path) -> None:
     """Retention pruning (feat-009 §4.10): drop CLOSED events older than the
     ``retention_commits`` horizon at the end of an index/refresh. No-op when
     temporal is off, no sidecar exists, or history is shorter than the horizon."""
@@ -91,7 +95,7 @@ async def _prune_temporal(repo_path: str | Path, config: str | Path | None, root
 
 
 def _framework_extractor(
-    repo_path: str | Path, config: str | Path | None, registry: PackRegistry
+    repo_path: str | Path, config: ConfigSource, registry: PackRegistry
 ) -> Any:
     """Detect the framework packs active for this repo (feat-011) and wrap them
     in a ``FrameworkExtractor``. Inactive (no framework / ``frameworks: off``)
@@ -110,7 +114,7 @@ def _framework_extractor(
 async def _ingest_knowledge(
     store: Store,
     repo_path: str | Path,
-    config: str | Path | None,
+    config: ConfigSource,
     repo: str,
     commit: str,
     registry: PackRegistry,
@@ -168,7 +172,7 @@ def _registry_for(languages: str | list[str] | None) -> PackRegistry:
 
 def _source_registry(
     repo_path: str | Path,
-    config: str | Path | None,
+    config: ConfigSource,
     languages: str | list[str] | None,
     include: list[str] | None = None,
     exclude: list[str] | None = None,
@@ -191,7 +195,7 @@ class CodeGraph:
         self,
         store: Store,
         repo_path: str | Path = ".",
-        config: str | Path | None = None,
+        config: ConfigSource = None,
         languages: str | list[str] | None = None,
         report: IndexReport | None = None,
     ) -> None:
@@ -207,7 +211,7 @@ class CodeGraph:
         cls,
         repo_path: str | Path = ".",
         languages: str | list[str] | None = None,
-        config: str | Path | None = None,
+        config: ConfigSource = None,
         include: list[str] | None = None,
         exclude: list[str] | None = None,
         embed: bool = False,
@@ -345,7 +349,7 @@ class CodeGraph:
     async def open(
         cls,
         repo_path: str | Path = ".",
-        config: str | Path | None = None,
+        config: ConfigSource = None,
         languages: str | list[str] | None = None,
     ) -> CodeGraph:
         from agentforge_graph.config import resolve_config
