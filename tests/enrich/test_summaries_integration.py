@@ -98,7 +98,11 @@ def test_cli_enrich_summaries_and_list(
     repo = tmp_path / "proj"
     repo.mkdir()
     (repo / "app.py").write_text(CODE)
-    (repo / "ckg.yaml").write_text(yaml.safe_dump({"embed": {"driver": "fake", "dim": 8}}))
+    # fake embedder + scripted enrich provider (summarizer is monkeypatched above)
+    # so the ENH-026 preflight requires neither AWS nor an embedding provider.
+    (repo / "ckg.yaml").write_text(
+        yaml.safe_dump({"embed": {"driver": "fake", "dim": 8}, "enrich": {"provider": "scripted"}})
+    )
     cfg = str(repo / "ckg.yaml")
     assert main(["index", str(repo), "--config", cfg]) == 0
     capsys.readouterr()
