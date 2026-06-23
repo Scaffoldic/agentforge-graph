@@ -138,8 +138,8 @@ see the Kuzu forward-rel-scan note in `docs/framework/`.
 
 ## 6. AI-assisted development
 
-This codebase is designed to be worked on with AI agents (Claude Code, Cursor,
-Aider, …). When you point one at the repo:
+This codebase is designed to be worked on with AI agents (Claude Code, …).
+When you point one at the repo:
 
 - It auto-reads **[`AGENTS.md`](AGENTS.md)** (the convention file) — the
   invariants and anti-patterns. Keep that file accurate.

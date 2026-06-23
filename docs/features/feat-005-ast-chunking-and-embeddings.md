@@ -27,8 +27,9 @@ cost (reported +4.3 Recall@5 on RepoEval and +2.67 Pass@1 on
 SWE-bench for AST-aware over line-based chunking — unverified in our
 sweep, but directionally uncontested across sources).
 
-Equally important is cognee's verified schema insight: chunks are
-**linked to** symbol nodes (`CodePart`/`SourceCodeChunk` as separate
+Equally important is the verified schema insight from schema-driven
+CKG designs: chunks are **linked to** symbol nodes
+(`CodePart`/`SourceCodeChunk` as separate
 node types), not conflated with them. A chunk is a retrieval
 artifact; a function is a semantic entity. Keeping them distinct is
 what lets a vector hit expand into the graph (feat-006).
@@ -180,8 +181,8 @@ n/a.
 
 ## 10. References
 
-- Research §3.1 (cAST split/merge — unverified metrics; cognee
-  chunk↔symbol separation — verified), §2.6.
+- Research §3.1 (cAST split/merge — unverified metrics; chunk↔symbol
+  separation in schema-driven CKG designs — verified), §2.6.
 - cAST paper: arxiv.org/abs/2506.15655.
 - feat-002 (FileSubgraph spans), feat-003 (VectorStore), feat-004
   (DirtySet), feat-006 (consumer).

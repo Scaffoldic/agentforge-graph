@@ -23,9 +23,10 @@ Differentiator #2. A web app's real architecture is invisible in a
 plain symbol graph: `POST /payments` → handler → service →
 `Payment` model is connected through decorators, DI containers, and
 ORM metaclasses — not through plain calls. The survey found exactly
-one tool that models frameworks (CodeQL: Spring, Django, Express,
-Rails… — unverified detail, research §2.2), and it keeps that
-knowledge locked inside query libraries for security analysis. **No
+one tool that models frameworks (a curated rule-pack analyzer: Spring,
+Django, Express, Rails… — unverified detail, research §2.2), and it
+keeps that knowledge locked inside query libraries for security
+analysis. **No
 tool exports framework semantics as graph edges an agent can
 traverse.** Yet "find the handler for this endpoint" and "what
 tables does this feature touch" are top-frequency agent questions.
@@ -38,10 +39,11 @@ tables does this feature touch" are top-frequency agent questions.
   file-isolation, same incremental hooks, same provenance).
 - Edge vocabulary (`HANDLED_BY`, `INJECTED_INTO`, `HAS_FIELD`,
   `RELATES_TO`) is locked schema (feat-001); per-agent invention
-  would fragment it — the precise drift CodeQL avoided with curated
-  per-framework models.
-- CodeQL's lesson (research §2.2): framework knowledge is **curated
-  rule packs, not inference**. Curation needs one home.
+  would fragment it — the precise drift curated rule-pack analyzers
+  avoided with curated per-framework models.
+- The curated rule-pack analyzer lesson (research §2.2): framework
+  knowledge is **curated rule packs, not inference**. Curation needs
+  one home.
 
 ## 3. How consumers benefit
 
@@ -162,23 +164,23 @@ until C++ resolution matures.
 
 | Risk / Question | Mitigation / Decision |
 |---|---|
-| Pattern coverage is a treadmill (frameworks evolve) | Versioned packs, golden fixtures pinned to framework versions, coverage gaps reported not hidden; CodeQL sustains this model — it's labor, not risk |
+| Pattern coverage is a treadmill (frameworks evolve) | Versioned packs, golden fixtures pinned to framework versions, coverage gaps reported not hidden; curated rule-pack analyzers sustain this model — it's labor, not risk |
 | Dynamic/metaprogrammed registration unparseable statically | Count + report unrecognized registrations; optional LLM assist per gap is a feat-012-style enricher, post-0.4 |
 | Edge taxonomy too web-centric (what about CLIs, queues, cron?) | `Route` generalizes to entry points (`attrs.protocol: http\|cli\|queue\|schedule`); taxonomy review before locking at 0.4 |
 | Pack quality bar for community packs | Conformance suite + fixture-app requirement for listing |
 
 ## 9. Out of scope
 
-- Security/taint semantics (CodeQL's actual job) — we model
-  topology, not data flow.
+- Security/taint semantics (the curated rule-pack analyzer's actual
+  job) — we model topology, not data flow.
 - Runtime verification of routes (no app boot, static only).
 - Infra-as-code edges (Terraform, K8s) — interesting, separate
   feature if demanded.
 
 ## 10. References
 
-- Research §2.2 (CodeQL framework models — unverified), §3.3
-  (framework-edge gap), §5 item 12.
+- Research §2.2 (curated rule-pack analyzer framework models —
+  unverified), §3.3 (framework-edge gap), §5 item 12.
 - feat-001 (edge kinds), feat-002 (pipeline ridden), feat-004
   (incremental contract), feat-008 (`ckg_routes` reserved).
 

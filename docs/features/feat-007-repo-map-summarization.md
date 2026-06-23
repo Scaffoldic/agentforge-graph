@@ -22,8 +22,9 @@
 Before an agent can ask good questions of a codebase, it needs
 orientation: what are the load-bearing modules, the central types,
 the public seams. Dumping a file tree wastes tokens on `__init__.py`
-and test fixtures; dumping everything is impossible. Aider's
-repo-map proved the effective recipe (research §2.10): rank the
+and test fixtures; dumping everything is impossible. A
+personalized-PageRank repo-map approach proved the effective recipe
+(research §2.10): rank the
 def/ref graph with personalized PageRank, then pack the top symbols'
 *signatures* — not bodies — into a fixed token budget. It is the
 single most context-efficient repo orientation technique in the
@@ -47,7 +48,7 @@ survey, and we already store the graph it needs.
   symbols with signatures and paths — orientation that otherwise
   costs dozens of exploratory file reads.
 - Passing `focus=[files in the current task]` re-ranks the map
-  around the working set — Aider's personalization trick — so the
+  around the working set — the personalization trick — so the
   map stays relevant as the task moves.
 - Deterministic and LLM-free: costs milliseconds, works offline,
   never hallucinates structure.
@@ -163,8 +164,9 @@ n/a.
 
 ## 10. References
 
-- Prior art: a tree-sitter defs/refs + PageRank + token-budget repo-map
-  approach informed the design (survey notes kept local).
+- Prior art: a personalized-PageRank repo-map approach (tree-sitter
+  defs/refs + PageRank + token budget) informed the design (survey
+  notes kept local).
 - feat-002 (signatures), feat-003 (graph), feat-004 (invalidation),
   feat-008 (exposes as tool).
 

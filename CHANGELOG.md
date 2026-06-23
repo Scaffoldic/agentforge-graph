@@ -8,6 +8,24 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-06-23
+
+Docs/packaging patch ahead of the repo going public. No code or behavior
+changes — only comments, docstrings, and prose were touched.
+
+### Changed
+
+- The prior-art / research survey (`docs/open-source-ckg-research.md`) is now
+  local-only and no longer shipped in the source distribution. The wheel never
+  contained it, so `pip install` is unaffected; this just keeps it out of the
+  sdist too.
+- Generalized third-party tool / protocol *names* out of the published docs,
+  README, guides, and source comments, keeping the technical substance (e.g.
+  "stable descriptor-based symbol IDs", "a personalized-PageRank repo-map
+  recipe"). Names of modules and backends the project actually integrates
+  (tree-sitter, Kuzu, LanceDB, Neo4j, SurrealDB, pgvector, Bedrock, OpenAI,
+  Anthropic, MCP, …) are unchanged.
+
 ## [0.6.0] — 2026-06-22
 
 The **workspace build** theme — the build/setup side of org-central knowledge.

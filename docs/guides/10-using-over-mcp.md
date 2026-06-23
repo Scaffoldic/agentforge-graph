@@ -8,7 +8,7 @@
 agentforge-graph exposes a repo's Code Knowledge Graph to **any agent or
 developer** two ways, over the **same 10 read-only tools** and the same engine:
 
-1. **MCP server** — for external clients (Claude Code, Cursor, any MCP host), over
+1. **MCP server** — for external clients (Claude Code, any MCP host), over
    **stdio** (subprocess) or **HTTP** (streamable-HTTP at a URL).
 2. **In-process AgentForge toolset** — for agents built on the framework.
 
@@ -55,7 +55,7 @@ wins.
 claude mcp add ckg -- ckg serve-mcp --repo /abs/path/to/repo
 ```
 
-**Any MCP host** (Cursor, Claude Desktop, custom) via a `command`/`args` block:
+**Any MCP host** (Claude Desktop, custom) via a `command`/`args` block:
 
 ```json
 {

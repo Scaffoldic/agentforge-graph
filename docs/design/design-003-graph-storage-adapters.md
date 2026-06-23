@@ -57,7 +57,7 @@ that gets re-indexed.
 ## 3. Non-goals
 
 - No SQLite fallback adapter in this PR (fast-follow; see §5/§8).
-- No Neo4j / FalkorDB adapters (opt-in separate packages, post-0.1 per
+- No Neo4j adapters (opt-in separate packages, post-0.1 per
   spec §4.4).
 - No embedding *production* (feat-005 owns it) — the vector store is
   exercised with synthetic vectors here.
@@ -271,7 +271,7 @@ class StoreConfig(BaseModel):
 
 # registry.py
 GRAPH_DRIVERS = {"kuzu": KuzuGraphStore}        # + entry-point group agentforge_graph.store_drivers
-VECTOR_DRIVERS = {"lancedb": LanceVectorStore}  # neo4j/falkordb/pgvector register out-of-tree
+VECTOR_DRIVERS = {"lancedb": LanceVectorStore}  # neo4j/pgvector and other backends register out-of-tree
 
 # facade.py
 class Store:
@@ -324,7 +324,7 @@ class Store:
 Greenfield — no persisted graphs exist. `meta.json.schema_version`
 starts at `1`; on mismatch the 0.x policy is **rebuild** (derivable
 data, ADR-0006). Adapters are entry-point discoverable, so neo4j /
-falkordb / sqlite land later as `pip install` + one config line with no
+other backends / sqlite land later as `pip install` + one config line with no
 core change. `store/__init__.py` is the curated public surface.
 
 ## 7. Risks
@@ -363,7 +363,7 @@ core change. `store/__init__.py` is the curated public surface.
 | 2026-06-12 | Coverage scope widened to `agentforge_graph` | New `store` package must be measured against the 90% floor |
 | 2026-06-12 | CI gains `--extra engine` | Native wheels (kuzu/lancedb) needed; storage is the first feature to need them |
 | 2026-06-12 | `Store.open` is the entry point; `CodeGraph.open` deferred to feat-002 | Avoid premature top-level facade; `CodeGraph` is introduced with `index()` |
-| 2026-06-12 | SQLite / Neo4j / FalkorDB deferred | Keep the PR reviewable; adapters are entry-point pluggable later |
+| 2026-06-12 | SQLite / Neo4j / other graph-server backends deferred | Keep the PR reviewable; adapters are entry-point pluggable later |
 
 ## 10. Chunk plan (the single feat-003 PR)
 
@@ -385,7 +385,7 @@ core change. `store/__init__.py` is the curated public surface.
   feat-002 (`IngestPipeline`/`ImportResolver` take a `GraphStore`),
   feat-004 (transactional upsert + `meta.json`), feat-006
   (`Store.expand`).
-- Prior art: cognee pluggable adapters (research §2.6); Kuzu embedded
+- Prior art: pluggable-adapter CKG designs (research §2.6); Kuzu embedded
   graph DB; agentforge-py neo4j vector store (driver conventions).
 </content>
 </invoke>

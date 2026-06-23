@@ -11,7 +11,7 @@
 | **Created** | 2026-06-11 |
 | **Target version** | 0.1.0 |
 | **Languages** | python |
-| **Module package(s)** | `agentforge_graph.store`, opt-in `agentforge-graph-neo4j`, `agentforge-graph-falkordb` |
+| **Module package(s)** | `agentforge_graph.store`, opt-in `agentforge-graph-neo4j` |
 | **Depends on** | feat-001 |
 | **Blocks** | feat-004, feat-005, feat-006, feat-007 |
 
@@ -20,17 +20,19 @@
 ## 1. Why this feature
 
 The survey showed storage choice is where CKG tools either become
-zero-ops local tools (Joern's embedded flatgraph, Codebase-Memory's
-single SQLite file) or ops-heavy services (Glean's RocksDB service,
-Potpie's Neo4j requirement). For an agent that runs on a laptop or in
-CI next to Claude Code, requiring a database server kills adoption.
-But teams sharing one graph across agents legitimately want a server
-(Neo4j/FalkorDB).
+zero-ops local tools (an embedded flatgraph, an embedded single-file
+indexer's single SQLite file) or ops-heavy services (a server-based
+fact-indexing system backed by an embedded key-value store, an
+agent-oriented code tool's Neo4j requirement). For an agent that runs
+on a laptop or in CI next to Claude Code, requiring a database server
+kills adoption. But teams sharing one graph across agents legitimately
+want a server (Neo4j and other graph-server backends).
 
-cognee resolved this tension with pluggable adapters behind one
-interface (verified: Kuzu, Neo4j, Neptune, Postgres graph adapters;
-ChromaDB, LanceDB, pgvector vector adapters). We adopt the same
-shape: **embedded by default, server by adapter**.
+Schema-driven / pluggable-adapter CKG designs resolved this tension
+with pluggable adapters behind one interface (verified: Kuzu, Neo4j,
+Neptune, Postgres graph adapters; ChromaDB, LanceDB, pgvector vector
+adapters). We adopt the same shape: **embedded by default, server by
+adapter**.
 
 ## 2. Why it must ship in the agent core
 
@@ -97,7 +99,7 @@ class Store:
 | `sqlite` | SQLite (edges as tables, WAL) | fallback where kuzu wheel unavailable |
 | `lancedb` (default) | LanceDB embedded vectors | |
 | `neo4j` | Neo4j 5.x server | opt-in package, also serves vectors (5.x vector index) |
-| `falkordb` | FalkorDB server | opt-in package, post-0.1 |
+| `<other-graph-server>` | other graph-server backend | opt-in package, post-0.1 |
 
 ### 4.3 Internal mechanics
 
@@ -118,8 +120,8 @@ class Store:
 
 - `agentforge_graph.store` with `kuzu`/`sqlite`/`lancedb` in the
   default install.
-- `agentforge-graph-neo4j`, `agentforge-graph-falkordb` as separate
-  pip packages registering via entry point
+- `agentforge-graph-neo4j` (and other graph-server adapters) as
+  separate pip packages registering via entry point
   `agentforge_graph.store_drivers`.
 
 ### 4.5 Configuration
@@ -128,7 +130,7 @@ class Store:
 store:
   path: .ckg                  # embedded root
   graph:
-    driver: kuzu              # kuzu | sqlite | neo4j | falkordb
+    driver: kuzu              # kuzu | sqlite | neo4j | <other-graph-server>
     config: {}                # driver-specific (uri, auth via ${ENV})
   vectors:
     driver: lancedb           # lancedb | neo4j | pgvector(post-0.1)
@@ -178,8 +180,8 @@ n/a.
 
 ## 10. References
 
-- Research §2.6 (cognee pluggable adapters — verified), §2.11
-  (SQLite/embedded packaging trend), §2.1 (Joern flatgraph), §5
+- Research §2.6 (pluggable-adapter CKG designs — verified), §2.11
+  (SQLite/embedded packaging trend), §2.1 (embedded flatgraph), §5
   storage recommendation.
 - feat-001 `GraphStore` ABC; feat-004 (consumes transactional
   upsert); feat-006 (consumes `Store.expand`).
@@ -213,5 +215,5 @@ fail-at-startup, and a store layering check (no `agentforge` imports).
 ≥90% coverage floor, `mypy --strict`, ruff — green in CI (`--extra engine`).
 
 **Deviations / deferrals** (logged in the design decision log): SQLite
-fallback and Neo4j/FalkorDB deferred as entry-point fast-follows;
+fallback and Neo4j (plus other graph-server backends) deferred as entry-point fast-follows;
 `CodeGraph.open` deferred to feat-002 (`Store.open` is the entry point now).

@@ -19,8 +19,9 @@
 
 ## 1. Why this feature
 
-Every surveyed CKG tool that grew organically (cognee, FalkorDB
-code-graph, the Neo4j DIY recipes) ended up with a shallow, ad-hoc
+Every surveyed CKG tool that grew organically (schema-driven /
+pluggable-adapter CKG designs, other graph-server code-graphs, the
+Neo4j DIY recipes) ended up with a shallow, ad-hoc
 schema — file/class/function nodes, a couple of edge types, no node
 identity that survives a commit, no provenance on derived facts. Once
 agents start *writing* enrichments into the graph (summaries, pattern
@@ -42,8 +43,9 @@ agentforge-py's feat-001: the contracts are the product.
 - **Stable symbol IDs are a cross-feature invariant.** Incremental
   indexing (feat-004) and the temporal layer (feat-009) only work if
   the same function gets the same node ID across commits. That cannot
-  be retrofitted — SCIP exists precisely because LSIF's opaque numeric
-  IDs made incremental indexing impossible (research doc §2.3).
+  be retrofitted — stable descriptor-based IDs exist precisely because
+  earlier opaque numeric-ID index formats made incremental indexing
+  impossible (research doc §2.3).
 - **Provenance discipline must be enforced centrally.** The
   differentiator features write LLM-derived facts. If `source` and
   `confidence` are optional, derived facts silently masquerade as
@@ -106,14 +108,14 @@ later.
 | `HANDLED_BY`, `INJECTED_INTO`, `HAS_FIELD`, `RELATES_TO` | framework edges | feat-011 |
 | `SUMMARIZES`, `TAGGED` | enrichment | feat-012 |
 
-**Symbol ID scheme (SCIP-inspired, locked):** a human-readable string
+**Symbol ID scheme (stable descriptor-based, locked):** a human-readable string
 
 ```
 ckg <lang> <repo> <path> <descriptor>
 ckg py  myrepo src/app/auth.py AuthService#login().
 ```
 
-Descriptors follow SCIP grammar (`Type#`, `method().`, `term.`).
+Descriptors follow the descriptor grammar (`Type#`, `method().`, `term.`).
 IDs are deterministic from (lang, repo, path, descriptor) — no global
 counters, no ordering constraints, so per-file extraction can run in
 any order and merge (research doc §3.2).
@@ -167,7 +169,7 @@ class Enricher(ABC):               # implemented in feat-010/011/012
 
 `FileSubgraph` is the unit of ingestion and deletion: all nodes/edges
 derived from one file, keyed by `(path, content_hash)` — the
-stack-graphs per-file-subgraph design that makes feat-004 possible.
+file-incremental per-file-subgraph design that makes feat-004 possible.
 
 ### 4.3 Internal mechanics
 
@@ -215,12 +217,12 @@ by design so a future TS port shares IDs.
 |---|---|
 | Schema too rigid for unforeseen languages/frameworks | `attrs` dict is the escape hatch; promote recurring attrs to typed fields via minor bumps |
 | Reserved higher-level kinds (Decision, Route…) wrong before their features land | They are names only; their attr shapes are specced in feat-010/011/012 and may change until those ship |
-| Symbol descriptor collisions (overloads, anonymous fns) | Adopt SCIP's disambiguator suffix `(+N)`; anonymous symbols use span-derived local descriptors |
+| Symbol descriptor collisions (overloads, anonymous fns) | Adopt the overload-disambiguator convention suffix `(+N)`; anonymous symbols use span-derived local descriptors |
 | Should provenance live per-fact or per-batch? | Per-fact. Storage overhead is small; query-time filtering is the whole point |
 
 ## 9. Out of scope
 
-- Data-flow / control-flow edges (Joern's `REACHING_DEF`, `CFG`).
+- Data-flow / control-flow edges (`REACHING_DEF`, `CFG`).
   Deliberately excluded from 0.1 — they require compiler-grade
   frontends and serve security analysis, not agent retrieval. Revisit
   post-1.0.
@@ -232,9 +234,9 @@ by design so a future TS port shares IDs.
 
 - Design: [`../design/design-001-core-contracts-module.md`](../design/design-001-core-contracts-module.md)
   — the *how* (file layout, exact types, resolved §8 questions, chunk plan).
-- Prior art: established CPG node/edge vocabularies, SCIP-style symbol
-  IDs, and incremental-graph designs informed the schema (survey notes
-  kept local).
+- Prior art: established CPG node/edge vocabularies, stable
+  descriptor-based symbol IDs, and incremental-graph designs informed
+  the schema (survey notes kept local).
 
 ---
 
@@ -246,7 +248,7 @@ Shipped in `agentforge_graph.core`:
 - `NodeKind` / `EdgeKind` — full reserved vocabulary locked at 0.1 (ADR-0005).
 - `Provenance` (+ `Source`) — validated at construction; `confidence < 1.0`
   only for `source=llm` (ADR-0004).
-- `SymbolID` + `Descriptor` — SCIP-style grammar, deterministic and
+- `SymbolID` + `Descriptor` — descriptor-grammar based, deterministic and
   round-tripping, OS-normalized paths, `(+N)` overload disambiguator,
   `local(<hash>)` for anonymous symbols (ADR-0003).
 - `Node`, `Edge`, `FileSubgraph`, `SourceFile`, `GraphQuery`, `QueryResult`.

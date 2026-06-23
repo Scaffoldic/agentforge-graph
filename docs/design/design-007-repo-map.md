@@ -23,7 +23,7 @@
 ## 1. Context
 
 Queryless orientation: rank the symbol graph by structural importance
-(personalized PageRank, Aider's recipe) and pack the top symbols'
+(a personalized-PageRank repo-map approach) and pack the top symbols'
 *signatures* — not bodies — into a token budget. Deterministic, LLM-free,
 the default first tool call of a feat-008 session.
 
@@ -170,7 +170,7 @@ format change.
 | Date | Decision | Rationale |
 |---|---|---|
 | 2026-06-12 | Add `attrs["signature"]` in the extractor | Spec assumes it; map stays pure over the store; additive |
-| 2026-06-12 | Personalized PageRank via networkx over symbol→symbol edges | Aider's proven recipe; networkx already a dep; symbol granularity for ranking |
+| 2026-06-12 | Personalized PageRank via networkx over symbol→symbol edges | A proven personalized-PageRank repo-map approach; networkx already a dep; symbol granularity for ranking |
 | 2026-06-12 | Provenance-weighted edges (reuse feat-006 weights) | Resolved calls outrank parsed (ADR-0004); consistent ranking signal |
 | 2026-06-12 | Per-call recompute, no projection cache | Cheap at 0.1; caching/invalidation is feat-004 |
 | 2026-06-12 | Whole signatures only, truncation always noted | No silent caps; pasteable orientation |
@@ -192,4 +192,4 @@ format change.
 - ADRs: 0001 (layering), 0004 (provenance)
 - feat-002 (symbols/signatures), feat-003 (`Store`/`GraphStore.adjacent`),
   feat-005 (`estimate_tokens`), feat-008 (consumer)
-- Research §2.10 (Aider repo-map)
+- Research §2.10 (personalized-PageRank repo-map approach)

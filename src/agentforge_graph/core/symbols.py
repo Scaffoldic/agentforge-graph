@@ -5,7 +5,7 @@ A symbol ID is a single string derived from
 and no ordering constraints, so per-file extraction can run in any order
 and merge, and the same symbol keeps its ID across commits — the
 property incremental indexing (feat-004) and history (feat-009) depend
-on. The descriptor grammar is SCIP-derived. See ADR-0003 and
+on. The descriptor grammar is descriptor-based, deterministic. See ADR-0003 and
 ``docs/design/design-001-core-contracts-module.md`` §4.4.
 """
 
@@ -76,7 +76,7 @@ class SymbolID:
 
 
 class Descriptor:
-    """Builders for the SCIP-derived descriptor segments.
+    """Builders for the descriptor segments.
 
     Segments compose by concatenation — a method on a class is
     ``Descriptor.type("Auth") + Descriptor.method("login")`` →

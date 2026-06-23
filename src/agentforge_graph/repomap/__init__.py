@@ -1,4 +1,4 @@
-"""agentforge_graph.repomap — Aider-style budget-aware repo map (feat-007).
+"""agentforge_graph.repomap — personalized-PageRank budget-aware repo map (feat-007).
 
 Personalized PageRank over the symbol graph → token-budgeted signature
 summary. Deterministic, LLM-free; imports nothing from ``agentforge``

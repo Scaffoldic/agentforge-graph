@@ -94,7 +94,7 @@ app:
       parsed: 0.5
       llm: 0.3
 
-  repomap:                        # feat-007 — Aider-style PageRank repo map
+  repomap:                        # feat-007 — PageRank repo map
     default_budget: 2000
     damping: 0.85
     kinds: ["Class", "Function", "Method"]

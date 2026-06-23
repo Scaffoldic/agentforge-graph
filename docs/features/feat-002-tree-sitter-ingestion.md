@@ -20,25 +20,27 @@
 ## 1. Why this feature
 
 The graph is only as good as what gets into it. The survey showed a
-hard fork in parsing strategy: compiler-grade extraction (CodeQL,
-SCIP indexers, Glean) is precise but **requires a working build
+hard fork in parsing strategy: compiler-grade extraction
+(compiler-grade analyzers, descriptor-based indexers, server-based
+fact-indexing systems) is precise but **requires a working build
 toolchain per project** — a non-starter for an agent that must index
-any repo it is pointed at. Tree-sitter extraction (stack-graphs,
-cognee, Blarify, Potpie) needs zero configuration and no build, at
-the cost of heuristic cross-file resolution.
+any repo it is pointed at. Tree-sitter extraction (file-incremental
+name-resolution designs, schema-driven CKG designs, tree-sitter-based
+indexers, agent-oriented code tools) needs zero configuration and no
+build, at the cost of heuristic cross-file resolution.
 
 We take the tree-sitter path, with the two mitigations the better
-tools use: a declarative per-language rule layer (stack-graphs'
-`tree-sitter-graph` insight: language rules written once, no
-per-project config) and a separate resolution pass that upgrades
-heuristic references to resolved edges (Blarify's tree-sitter + LSP
-two-tier model).
+tools use: a declarative per-language rule layer (the file-incremental
+name-resolution insight: language rules written once, no per-project
+config) and a separate resolution pass that upgrades heuristic
+references to resolved edges (the tree-sitter + LSP two-tier model).
 
 ## 2. Why it must ship in the agent core
 
 - **One extraction pipeline, N languages.** If each language were a
-  bespoke script, edge semantics would drift per language (cognee's
-  Python-only trap, research §2.6). A shared `Extractor` harness +
+  bespoke script, edge semantics would drift per language (the
+  Python-only trap seen in schema-driven CKG designs, research §2.6).
+  A shared `Extractor` harness +
   per-language query packs keeps `CALLS` meaning the same thing in
   Python and TypeScript.
 - **The per-file subgraph discipline lives here.** feat-004's
@@ -53,7 +55,7 @@ two-tier model).
 
 - Point the agent at any repo: `ckg index .` works with no build, no
   compile_commands.json, no language server install — the property
-  that made stack-graphs viable for every repo on GitHub.
+  that made file-incremental name-resolution viable for every repo on GitHub.
 - Adding language N+1 is one query-pack file (tree-sitter queries +
   descriptor rules), not a new pipeline.
 - Downstream features get resolution *quality labels* for free:
@@ -121,7 +123,7 @@ family, so the marginal cost of that pair is low.
 
 ### 4.3 Internal mechanics
 
-Two-pass design (stack-graphs-style):
+Two-pass design (file-incremental name-resolution style):
 
 1. **Extract (parallel, file-isolated).** Parse with tree-sitter; run
    structure queries → `File`/`Class`/`Function`… nodes with
@@ -145,7 +147,7 @@ Properties this guarantees:
 
 Optional **LSP assist** (post-0.1, behind config): for languages with
 cheap LSP servers, batch-resolve ambiguous references via
-`textDocument/definition` — Blarify's model. Off by default.
+`textDocument/definition` — the tree-sitter + LSP two-tier model. Off by default.
 
 ### 4.4 Module packaging
 
@@ -192,22 +194,23 @@ n/a (agent is Python; *indexed* languages are the pack list above).
 |---|---|
 | Call-edge precision on dynamic languages is inherently limited | Honest provenance (`parsed` vs `resolved`); LSP assist as opt-in escalation; never silently guess |
 | Tree-sitter grammar version churn breaks queries | Pin grammar versions per pack; golden files catch drift in CI |
-| Descriptor rules per language are fiddly | Steal SCIP's per-language descriptor conventions wholesale |
+| Descriptor rules per language are fiddly | Reuse established per-language descriptor conventions wholesale |
 | Monorepos with mixed build roots | Repo→Package detection via marker files (pyproject, package.json); packages are just nodes, no build semantics |
 | 10 language packs in v0.1 is large scope; quality varies sharply by language | Two-tier support (Tier A resolution vs Tier B structural-only); per-pack golden fixtures gate quality independently, so a weak pack ships honestly degraded, not blocking the others. Packs are independently mergeable units of work (see tracker) |
 
 ## 9. Out of scope
 
-- Compiler/build-based extraction (CodeQL-style). Rejected for 0.x:
-  kills the "index anything" property.
-- Binary / bytecode analysis (Joern territory).
+- Compiler/build-based extraction (curated rule-pack analyzer style).
+  Rejected for 0.x: kills the "index anything" property.
+- Binary / bytecode analysis (code-property-graph / data-flow tool territory).
 - Data-flow analysis.
 - Watch mode / daemonized re-index (feat-004 owns change detection).
 
 ## 10. References
 
-- Research §2.4 (stack-graphs: declarative rules, file-incremental),
-  §2.9 (Blarify two-tier), §2.11 (tree-sitter indexer family).
+- Research §2.4 (file-incremental name resolution: declarative rules,
+  file-incremental), §2.9 (tree-sitter + LSP two-tier), §2.11
+  (tree-sitter indexer family).
 - feat-001 (contracts), feat-004 (incremental), feat-011 (framework
   packs extend this pipeline).
 
@@ -223,7 +226,7 @@ n/a (agent is Python; *indexed* languages are the pack list above).
   `LanguagePack`/`PackRegistry` + the Python pack (`structure.scm` /
   `references.scm`).
 - `TreeSitterExtractor` (pass 1): File/Class/Function/Method nodes with
-  nested SCIP descriptors + `CONTAINS`; method promotion; `(+N)` overloads;
+  nested descriptor-grammar IDs + `CONTAINS`; method promotion; `(+N)` overloads;
   imports/refs recorded as node attrs. Passes `ExtractorConformance`.
 - `ImportResolver` (pass 2): `IMPORTS` (in-repo + external `Package` nodes)
   and unique-match `CALLS`; ambiguous/external-only calls left unresolved

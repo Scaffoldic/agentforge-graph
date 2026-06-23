@@ -273,7 +273,7 @@ max_file_kb, lsp_assist) via a new `IngestConfig` section in
 |---|---|
 | `tree_sitter_language_pack.get_parser()` | Returns ABI-incompatible `builtins.Node`; use `Parser(get_language())` (framework note 2026-06-12). |
 | Emit candidate cross-file edges in pass 1 with best-guess ids | Forces fabricated/*maybe-invalid* symbol ids and edges to absent nodes (Kuzu drops them). Storing refs as node `attrs` keeps every edge endpoint real and centralizes resolution in pass 2. |
-| One bespoke extractor per language | Edge semantics drift per language (the cognee Python-only trap). Shared harness + per-pack `.scm` keeps `CALLS` uniform. |
+| One bespoke extractor per language | Edge semantics drift per language (the single-language trap seen in schema-driven CKG designs). Shared harness + per-pack `.scm` keeps `CALLS` uniform. |
 | Ship all 10 packs in this PR | Unreviewable; spec says packs are independently mergeable. Python first, rest as follow-ups over the same harness. |
 | Compiler/LSP extraction for precision | ADR-0002 — kills the "index any repo, no build" property. |
 | Resolve calls to confident edges on ambiguity | Violates ADR-0004; we record candidates, never guess. |
@@ -344,5 +344,5 @@ fixtures catch grammar drift.
   feat-003 (`Store`/`GraphStore.upsert`/`add`)
 - Framework note:
   `docs/framework/2026-06-12-tree-sitter-language-pack-bundles-incompatible-parser.md`
-- Prior art: stack-graphs (declarative rules, file-incremental), Blarify
-  (two-tier resolution), SCIP descriptor conventions.
+- Prior art: file-incremental name-resolution designs (declarative rules),
+  tree-sitter-based indexers (two-tier resolution), established descriptor conventions.

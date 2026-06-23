@@ -1,6 +1,6 @@
 """Rank symbols by structural importance: project a provenance-weighted
 symbol→symbol digraph (CALLS/REFERENCES/INHERITS) and run (personalized)
-PageRank — Aider's recipe. Deterministic and LLM-free.
+PageRank — the proven repo-map recipe. Deterministic and LLM-free.
 
 PageRank is a small dependency-free power iteration (networkx's `pagerank`
 pulls in scipy/numpy, which we don't want in the engine for a 20-line algo).

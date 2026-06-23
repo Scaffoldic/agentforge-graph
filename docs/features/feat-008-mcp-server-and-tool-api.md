@@ -21,10 +21,11 @@
 
 A knowledge graph nobody's agent can call is a parquet file with
 opinions. The survey's clearest packaging trend (research §2.11):
-CKGs ship as **MCP servers** so any agent — Claude Code, Cursor,
-custom AgentForge agents — gets graph queries as tools with zero
-client code (Codebase-Memory, cognee's MCP server, Potpie's tool
-layer). This feature is the serving layer: an MCP server plus native
+CKGs ship as **MCP servers** so any agent — Claude Code, custom
+AgentForge agents — gets graph queries as tools with zero client code
+(embedded single-file indexers, schema-driven CKG designs' MCP
+servers, agent-oriented code tools' tool layer). This feature is the
+serving layer: an MCP server plus native
 AgentForge `Tool` wrappers, both thin over feat-006/007.
 
 ## 2. Why it must ship in the agent core
@@ -172,8 +173,8 @@ n/a (MCP is the cross-language surface).
 
 ## 10. References
 
-- Research §2.8 (Potpie tool layer), §2.11 (MCP packaging trend),
-  §5 item 8.
+- Research §2.8 (agent-oriented code tools' tool layer), §2.11
+  (MCP packaging trend), §5 item 8.
 - agentforge-py feat-004 (Tool ABC), feat-013 (MCP integration) —
   framework rails reused here.
 - feat-006, feat-007 (the wrapped engines).

@@ -17,11 +17,13 @@
 
 The graph is only as good as what we can extract from source, and the
 research survey showed a hard fork in how CKG tools parse. Compiler-
-grade tools (CodeQL, Sourcegraph SCIP indexers, Glean) get precise
+grade tools (curated rule-pack analyzers, descriptor-based indexers,
+server-based fact-indexing systems) get precise
 semantics — real type resolution, accurate call graphs — but require a
 **working build toolchain per project** (javac, a configured C/C++
-compiler, cargo). Syntactic tools (GitHub stack-graphs, cognee,
-Blarify, Potpie) parse with tree-sitter: zero configuration, no build,
+compiler, cargo). Syntactic tools (file-incremental name-resolution
+designs, schema-driven CKG designs, tree-sitter-based indexers,
+agent-oriented code tools) parse with tree-sitter: zero configuration, no build,
 at the cost of heuristic cross-file resolution. How should
 agentforge-graph parse code if it must index *any* repo an agent is
 pointed at, including ones that don't build on the indexing machine?
@@ -41,8 +43,8 @@ pointed at, including ones that don't build on the indexing machine?
 
 ## 3. Considered options
 
-1. **Compiler-grade** — per-language compiler frontends (CodeQL/SCIP
-   model).
+1. **Compiler-grade** — per-language compiler frontends (curated
+   rule-pack / descriptor-based model).
 2. **Tree-sitter only** — pure syntactic extraction.
 3. **Tree-sitter + optional LSP-assist** — syntactic by default,
    escalate ambiguous references to a language server when available.
@@ -51,8 +53,8 @@ pointed at, including ones that don't build on the indexing machine?
 
 **Chosen: Option 3 — tree-sitter by default, LSP-assist opt-in.**
 Extraction uses tree-sitter with declarative per-language query packs
-(the stack-graphs insight: language rules written once, no per-project
-config). A separate, cheap resolution pass upgrades heuristic
+(the file-incremental name-resolution insight: language rules written
+once, no per-project config). A separate, cheap resolution pass upgrades heuristic
 references to resolved edges using the import graph. For languages
 where syntax is insufficient (notably C++), an opt-in LSP-assist pass
 resolves the remainder. We never require a build to index.
@@ -60,8 +62,8 @@ resolves the remainder. We never require a build to index.
 ### Positive consequences
 
 - Any repo indexes with no build, no compile DB, no language-server
-  install — the property that made stack-graphs viable at GitHub
-  scale.
+  install — the property that made file-incremental name-resolution
+  designs viable at large scale.
 - Adding a language is one query-pack file, not a compiler
   integration.
 - Fast and naturally file-incremental (ADR-0003 builds on this).
@@ -71,8 +73,8 @@ resolves the remainder. We never require a build to index.
 - Call-edge precision on dynamic dispatch / templates / macros is
   inherently limited; mitigated by honest provenance (ADR-0004) and
   the A/B tier split (ADR-0009), never by guessing.
-- No data-flow / control-flow analysis (Joern's domain) — explicitly
-  out of scope for 0.x.
+- No data-flow / control-flow analysis (the code-property-graph /
+  data-flow tools' domain) — explicitly out of scope for 0.x.
 
 ## 5. Pros and cons of the options
 
@@ -93,7 +95,7 @@ resolves the remainder. We never require a build to index.
 ## 6. References
 
 - feat-002 (ingestion pipeline, two-pass design, A/B tiers).
-- Research §2.2 (CodeQL build requirement), §2.4 (stack-graphs
-  declarative rules), §2.9 (Blarify tree-sitter+LSP).
+- Research §2.2 (compiler-grade build requirement), §2.4
+  (file-incremental declarative rules), §2.9 (tree-sitter+LSP indexers).
 - Related: ADR-0003 (incrementality), ADR-0004 (provenance),
   ADR-0009 (language tiers).
