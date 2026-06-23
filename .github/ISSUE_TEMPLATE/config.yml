@@ -1,4 +1,5 @@
-blank_issues_enabled: true
+# Funnel consumer reports through the structured Bug / Feature forms.
+blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
     url: https://github.com/Scaffoldic/agentforge-graph/security/advisories/new

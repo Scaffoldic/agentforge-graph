@@ -1,0 +1,106 @@
+name: Bug report
+description: Report a defect in the engine, CLI, or MCP server
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug! Please search existing issues first, and do
+        **not** use this form for security vulnerabilities — see
+        [SECURITY.md](../blob/main/SECURITY.md) for private reporting.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, including what you expected instead.
+      placeholder: When I ran `ckg ...` I expected ... but instead ...
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: >-
+        The smallest command sequence that reproduces it. For an
+        extraction/resolution bug, include the smallest **source file** that
+        triggers it.
+      render: shell
+      placeholder: |
+        ckg index .
+        ckg routes        # the command that misbehaves
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / output
+      description: Paste the relevant output or stack trace (re-run with `--debug` if useful).
+      render: shell
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: agentforge-graph version
+      description: Output of `ckg --version` (or `pip show agentforge-graph`).
+      placeholder: "0.6.1"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.13.x"
+    validations:
+      required: true
+  - type: dropdown
+    id: store
+    attributes:
+      label: Store backend
+      description: Which graph/vector backend (default is embedded Kuzu + LanceDB)?
+      options:
+        - Default (Kuzu + LanceDB)
+        - Neo4j
+        - pgvector
+        - SurrealDB
+        - Other / not sure
+    validations:
+      required: false
+  - type: input
+    id: language
+    attributes:
+      label: Source language(s) involved
+      description: If it's an extraction/parsing bug, which language pack(s)?
+      placeholder: "Python / TypeScript / Go / ..."
+    validations:
+      required: false
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Embed / enrich provider
+      description: Only if embeddings or enrichment are involved.
+      options:
+        - Not involved / embed disabled
+        - Bedrock
+        - OpenAI
+        - Anthropic
+        - Voyage
+        - Other
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: "macOS 15 / Ubuntu 24.04 / Windows 11"
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: >-
+        Incremental vs full index, a specific framework pack, workspace vs
+        single-repo, relevant config (redact secrets), anything else.
+    validations:
+      required: false

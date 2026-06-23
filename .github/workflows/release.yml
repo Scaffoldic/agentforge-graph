@@ -1,0 +1,142 @@
+name: Release
+
+# Publish agentforge-graph to PyPI when a vX.Y.Z tag is pushed.
+#
+# Auth: PyPI Trusted Publishing (OIDC) via the `id-token: write`
+# permission on the `publish` job — no long-lived API token in secrets.
+#
+# ONE-TIME PREREQUISITES (configured outside this repo, see
+# docs/roadmap/release-automation.md):
+#   1. PyPI -> project `agentforge-graph` -> Manage -> Publishing ->
+#      "Add a new publisher": GitHub, Owner=Scaffoldic,
+#      Repository=agentforge-graph, Workflow=release.yml,
+#      Environment=pypi.
+#   2. GitHub -> Settings -> Environments -> "pypi", with required
+#      reviewers. That review click is the human gate between pushing
+#      a tag and PyPI accepting the upload — we never auto-publish.
+
+on:
+  push:
+    tags: ["v*"]
+  # Manual re-run on the same ref if a previous run failed mid-way.
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to build from (defaults to current branch)"
+        required: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+# Opt JS actions into Node 24 (matches ci.yml; Node 20 is force-removed
+# from runners). Drop once the actions ship Node-24-native majors.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build wheel + sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.13
+      - name: Verify tag matches pyproject version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg=$(uv run --no-project python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          echo "tag=$tag  pyproject=$pkg"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::tag v$tag does not match pyproject version $pkg"; exit 1
+          fi
+      - name: Build sdist + wheel
+        run: uv build --out-dir dist/
+      - name: twine check
+        run: uvx twine check dist/*
+      - name: Upload artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  packaged-smoke:
+    name: Packaged-wheel smoke
+    needs: [build]
+    runs-on: ubuntu-latest
+    # Install the freshly-built wheel into a clean venv and run the real
+    # CLI end-to-end (creds-free): version, import, index a tiny FastAPI
+    # sample, list routes. Catches packaging bugs (missing .scm packs,
+    # entry points, deps) BEFORE the publish job can run.
+    steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Set up Python
+        run: uv python install 3.13
+      - name: Download build artefacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Install built wheel + smoke
+        run: |
+          set -euo pipefail
+          uv venv --python 3.13 .venv
+          uv pip install --python .venv/bin/python dist/*.whl
+          .venv/bin/ckg --version
+          .venv/bin/python -c "import agentforge_graph; print('import OK', agentforge_graph.__version__)"
+          mkdir -p smoke/app
+          cat > smoke/app/main.py <<'PY'
+          from fastapi import FastAPI
+
+          app = FastAPI()
+
+          @app.get("/ping")
+          def ping() -> dict:
+              return {"ok": True}
+          PY
+          cat > smoke/ckg.yaml <<'YAML'
+          embed:
+            enabled: false
+          YAML
+          .venv/bin/ckg index smoke --config smoke/ckg.yaml
+          .venv/bin/ckg routes smoke --config smoke/ckg.yaml
+
+  publish:
+    name: Publish to PyPI
+    needs: [build, packaged-smoke]
+    runs-on: ubuntu-latest
+    # The `pypi` environment gates this job on a manual approve click
+    # (Settings -> Environments -> pypi -> required reviewers).
+    environment:
+      name: pypi
+      url: https://pypi.org/project/agentforge-graph/
+    permissions:
+      # Required for Trusted Publishing (OIDC) — replaces the API token.
+      id-token: write
+      contents: read
+    steps:
+      - name: Download build artefacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to PyPI (Trusted Publishing / OIDC)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          # Re-running on a partial-failure tag won't 400 on files that
+          # already uploaded.
+          skip-existing: true
