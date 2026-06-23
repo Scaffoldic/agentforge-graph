@@ -163,9 +163,8 @@ n/a.
 
 ## 10. References
 
-- Research §2.10 (Aider repo-map: tree-sitter defs/refs + PageRank +
-  token budget — unverified but documented at
-  aider.chat/docs/repomap.html), §5 item 7.
+- Prior art: a tree-sitter defs/refs + PageRank + token-budget repo-map
+  approach informed the design (survey notes kept local).
 - feat-002 (signatures), feat-003 (graph), feat-004 (invalidation),
   feat-008 (exposes as tool).
 

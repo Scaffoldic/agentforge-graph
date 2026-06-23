@@ -24,8 +24,6 @@
    exact types, resolved decisions, chunk plan); written and approved
    in the design stage before any code.
 7. [`../docs/adr/`](../docs/adr/) — the 9 architecture decisions.
-7. [`../docs/open-source-ckg-research.md`](../docs/open-source-ckg-research.md)
-   — the research that motivates the design.
 
 ## Project-specific notes
 
