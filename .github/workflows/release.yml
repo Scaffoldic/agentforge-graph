@@ -1,6 +1,11 @@
 name: Release
 
-# Publish agentforge-graph to PyPI when a vX.Y.Z tag is pushed.
+# Publish agentforge-graph to PyPI — ON DEMAND.
+#
+# Triggered manually from the Actions tab ("Run workflow"), not on tag
+# push. You cut + push the vX.Y.Z tag and GitHub Release as usual, then
+# trigger this workflow with that tag to build + publish when ready.
+# (Auto-publish on tag push is intentionally OFF for now.)
 #
 # Auth: PyPI Trusted Publishing (OIDC) via the `id-token: write`
 # permission on the `publish` job — no long-lived API token in secrets.
@@ -12,18 +17,18 @@ name: Release
 #      Repository=agentforge-graph, Workflow=release.yml,
 #      Environment=pypi.
 #   2. GitHub -> Settings -> Environments -> "pypi", with required
-#      reviewers. That review click is the human gate between pushing
-#      a tag and PyPI accepting the upload — we never auto-publish.
+#      reviewers. That review click is the human gate before PyPI
+#      accepts the upload — we never auto-publish.
 
 on:
-  push:
-    tags: ["v*"]
-  # Manual re-run on the same ref if a previous run failed mid-way.
+  # On-demand only: trigger from the Actions tab and enter the tag/ref to
+  # build + publish (e.g. v0.6.2). Re-runnable on the same ref.
   workflow_dispatch:
     inputs:
       ref:
-        description: "Git ref to build from (defaults to current branch)"
-        required: false
+        description: "Tag or ref to build + publish (e.g. v0.6.2)"
+        required: true
+        default: main
 
 concurrency:
   group: release-${{ github.ref }}
@@ -52,14 +57,20 @@ jobs:
       - name: Set up Python
         run: uv python install 3.13
       - name: Verify tag matches pyproject version
-        if: startsWith(github.ref, 'refs/tags/v')
         run: |
-          tag="${GITHUB_REF_NAME#v}"
+          ref="${{ inputs.ref }}"
           pkg=$(uv run --no-project python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
-          echo "tag=$tag  pyproject=$pkg"
-          if [ "$tag" != "$pkg" ]; then
-            echo "::error::tag v$tag does not match pyproject version $pkg"; exit 1
-          fi
+          echo "ref=$ref  pyproject=$pkg"
+          case "$ref" in
+            v[0-9]*)
+              tag="${ref#v}"
+              if [ "$tag" != "$pkg" ]; then
+                echo "::error::ref $ref does not match pyproject version $pkg"; exit 1
+              fi
+              echo "tag matches pyproject version ✓" ;;
+            *)
+              echo "::notice::ref '$ref' is not a vX.Y.Z tag — building pyproject version $pkg as-is" ;;
+          esac
       - name: Build sdist + wheel
         run: uv build --out-dir dist/
       - name: twine check
