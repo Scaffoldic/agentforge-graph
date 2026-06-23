@@ -413,5 +413,4 @@ docs/
   design/             design-NNN per feature (the HOW, pre-build)
   bugs/ enhancements/ known-limitations/   (triaged findings, with templates)
   framework/          local-only: AgentForge/Kuzu learnings & workarounds
-  open-source-ckg-research.md    the survey that motivates the design
 ```

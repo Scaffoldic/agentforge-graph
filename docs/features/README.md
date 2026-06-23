@@ -2,7 +2,6 @@
 
 Feature specs for the **agentforge-graph** agent: a Code Knowledge
 Graph (CKG) engine + agent toolset built on the AgentForge framework.
-Research basis: [`../open-source-ckg-research.md`](../open-source-ckg-research.md).
 
 Specs follow the workspace template
 (`.claude/templates/feature.md`) and the workspace

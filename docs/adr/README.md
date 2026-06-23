@@ -8,9 +8,9 @@ pros/cons; compatible with arc42 §9).
 > **Why ADRs.** These records preserve the *why* behind each choice so
 > a future contributor can challenge it from the original context,
 > drivers, and alternatives — and either confirm it still holds or
-> write a superseding ADR. They are derived from the research survey in
-> [`../open-source-ckg-research.md`](../open-source-ckg-research.md) and
-> realized in the specs under [`../features/`](../features/).
+> write a superseding ADR. They are derived from the prior-art survey
+> behind the design and realized in the specs under
+> [`../features/`](../features/).
 
 ## Format
 

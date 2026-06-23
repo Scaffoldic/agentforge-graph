@@ -364,7 +364,6 @@ This repo is built to be worked on **with** AI agents. Start here:
 | [`docs/adr/`](https://github.com/Scaffoldic/agentforge-graph/tree/main/docs/adr/) | 9 architecture decision records (the *why*) |
 | [`docs/features/`](https://github.com/Scaffoldic/agentforge-graph/tree/main/docs/features/) + [`TRACKER.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/features/TRACKER.md) | 12 feature specs + status board |
 | [`docs/design/`](https://github.com/Scaffoldic/agentforge-graph/tree/main/docs/design/) | Per-feature design docs (the *how*, pre-build) |
-| [`docs/open-source-ckg-research.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/open-source-ckg-research.md) | The survey that motivates the design |
 
 ## License
 

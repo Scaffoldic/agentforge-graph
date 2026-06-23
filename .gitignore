@@ -17,6 +17,9 @@ docs/framework/
 # Local-only roadmap + release/verification notes (not published)
 docs/roadmap/
 
+# Local-only prior-art survey (not published)
+docs/open-source-ckg-research.md
+
 # AI-assistant per-session working state (local-only, not published)
 .claude/state/
 
