@@ -134,7 +134,7 @@ ckg <lang> <repo> <path> <descriptor>
 ckg py myrepo src/app/auth.py `AuthService#login().`
 ```
 
-**Descriptor grammar (SCIP-derived):**
+**Descriptor grammar (stable descriptor-based):**
 
 | Symbol | Suffix | Example |
 |---|---|---|
@@ -150,7 +150,8 @@ ckg py myrepo src/app/auth.py `AuthService#login().`
 **Resolved decisions:**
 
 1. **Overloads** (spec §8): nth overload of a name (n≥1 in source
-   order) gets `(+n)`; the first gets none — matches SCIP. Source
+   order) gets `(+n)`; the first gets none — the overload-disambiguator
+   convention (`(+N)`). Source
    order within the file is deterministic (file is parsed in order),
    so the assignment is stable as long as the set of overloads is
    unchanged.
@@ -305,7 +306,7 @@ don't break importers.
 
 ## 8. Open questions
 
-1. ~~Overload disambiguator rule~~ → resolved §4.4 (SCIP `(+N)`).
+1. ~~Overload disambiguator rule~~ → resolved §4.4 (the overload-disambiguator convention, `(+N)`).
 2. ~~Minimal `GraphQuery` shape~~ → resolved §4.5.
 3. ~~`SourceFile` — carry `bytes` or decoded `text`?~~ → resolved:
    `text` + `content_hash` (decoding is the extractor's caller's job;
@@ -315,7 +316,7 @@ don't break importers.
 
 | Date | Decision | Rationale |
 |---|---|---|
-| 2026-06-11 | SCIP `(+N)` overload disambiguator; `local(<hash>)` for anon | Stable for the common case; matches a proven scheme |
+| 2026-06-11 | The overload-disambiguator convention (`(+N)`); `local(<hash>)` for anon | Stable for the common case; matches a proven scheme |
 | 2026-06-11 | `GraphQuery` = flat filter object, not an AST | Covers 0.1 consumers; extends without breaking |
 | 2026-06-11 | Pydantic frozen models, validation in ctor | The ADR-0004 enforcement point |
 | 2026-06-11 | Added `GraphStore.add(items)` | Enrichers/cross-file facts need a write path not tied to a file; conformance "enrichment survives re-upsert" requires it |
@@ -337,4 +338,4 @@ don't break importers.
 - Spec: `docs/features/feat-001-graph-schema-and-core-contracts.md`
 - ADRs: 0001 (layering), 0003 (symbol IDs), 0004 (provenance),
   0005 (reserved kinds)
-- Prior art: SCIP symbol grammar; agentforge-py `conformance` pattern
+- Prior art: established descriptor conventions for symbol grammars; agentforge-py `conformance` pattern

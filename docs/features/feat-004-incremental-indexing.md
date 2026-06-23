@@ -22,10 +22,12 @@
 A graph that costs a full re-index per commit is a graph nobody
 keeps fresh — and a stale CKG is worse than none, because agents
 trust it. The survey found incrementality is *the* operational
-dividing line: Sourcegraph's launch-time SCIP limitation was exactly
-this ("index the entire repository on every commit"), and
-stack-graphs' core contribution was making indexing file-incremental
-so GitHub could afford precise navigation at scale (both verified).
+dividing line: a large-scale code-intelligence platform's launch-time
+descriptor-index limitation was exactly this ("index the entire
+repository on every commit"), and the file-incremental
+name-resolution design's core contribution was making indexing
+file-incremental so GitHub could afford precise navigation at scale
+(both verified).
 
 For our use — an agent's working memory over a repo that changes
 many times an hour — re-index cost must be proportional to the diff,
@@ -90,8 +92,8 @@ class DirtySet:
 
 ### 4.3 Internal mechanics
 
-Pipeline per refresh (stack-graphs design + SCIP stable IDs,
-research §3.2):
+Pipeline per refresh (file-incremental name-resolution design +
+stable descriptor-based IDs, research §3.2):
 
 1. **Detect.** Prefer `git diff --name-status <indexed_commit>..HEAD`
    + working-tree status; fall back to content-hash scan for non-git
@@ -162,14 +164,15 @@ n/a.
 - Cross-commit history retention (feat-009 owns time; this feature
   keeps only the *current* graph fresh).
 - Distributed/parallel indexing across machines.
-- Glean-style stacked fact layers — over-engineering at our scale;
+- Server-based stacked fact layers — over-engineering at our scale;
   per-file swap is sufficient.
 
 ## 10. References
 
-- Research §3.2 (three incremental designs — stack-graphs verified
-  file-incremental, SCIP verified stable-ID intent, Glean stacked
-  layers unverified), §2.3, §2.4.
+- Research §3.2 (three incremental designs — file-incremental
+  name-resolution verified file-incremental, stable descriptor-based
+  IDs verified stable-ID intent, server-based stacked layers
+  unverified), §2.3, §2.4.
 - feat-001 (symbol IDs), feat-002 (file-isolated extract), feat-003
   (transactional upsert, `meta.json`), feat-009 (temporal layer
   builds on the same ChangeSet).

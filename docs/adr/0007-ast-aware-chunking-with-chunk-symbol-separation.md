@@ -22,8 +22,9 @@ decisions: (a) *how* to split code into embeddable units, and (b)
 mid-body and fuses unrelated declarations; the cAST research reports
 measurable retrieval and end-to-end gains from AST-aware chunking
 (unverified numbers, but directionally uncontested). Separately,
-cognee's verified schema keeps chunks as distinct node types linked to
-semantic entities rather than treating a chunk as the entity. How do we
+a verified schema-driven CKG design keeps chunks as distinct node types
+linked to semantic entities rather than treating a chunk as the entity.
+How do we
 chunk code for embeddings, and how do chunks sit in the graph?
 
 ## 2. Decision drivers
@@ -96,6 +97,6 @@ through the same code.
 ## 6. References
 
 - feat-005 (cAST chunker, `CHUNK_OF`), feat-006 (consumes the join).
-- Research §3.1 (cAST — unverified metrics; cognee chunk↔symbol
-  separation — verified), §2.6. cAST paper: arxiv 2506.15655.
+- Research §3.1 (cAST — unverified metrics; schema-driven CKG
+  chunk↔symbol separation — verified), §2.6. cAST paper: arxiv 2506.15655.
 - Related: ADR-0008 (retrieval), ADR-0003 (content-hash incremental).

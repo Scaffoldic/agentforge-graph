@@ -35,7 +35,7 @@ ADR references it. Template:
 |---|---|---|---|---|
 | [0001](0001-build-on-agentforge-framework.md) | Build on the AgentForge framework | Accepted | architecture, platform | all features |
 | [0002](0002-tree-sitter-over-compiler-grade-extraction.md) | Tree-sitter (no-build) over compiler-grade extraction | Accepted | parsing, ingestion | feat-002 |
-| [0003](0003-stable-symbol-ids-and-per-file-subgraphs.md) | Stable SCIP-style symbol IDs + per-file subgraphs | Accepted | identity, incrementality | feat-001, 002, 004 |
+| [0003](0003-stable-symbol-ids-and-per-file-subgraphs.md) | Stable descriptor-based symbol IDs + per-file subgraphs | Accepted | identity, incrementality | feat-001, 002, 004 |
 | [0004](0004-provenance-on-every-fact.md) | Provenance on every node and edge | Accepted | schema, trust | feat-001, 006, 010, 012 |
 | [0005](0005-reserve-higher-level-node-kinds-up-front.md) | Reserve higher-level node/edge kinds at 0.1 | Accepted | schema, versioning | feat-001 |
 | [0006](0006-embedded-first-pluggable-storage.md) | Embedded-first, pluggable graph + vector storage | Accepted | storage, packaging | feat-003 |

@@ -2,7 +2,7 @@
 
 Embedded-first (ADR-0006): the default ``Store`` writes a Kuzu graph DB
 and a LanceDB vector index under ``.ckg/`` with no server. Server adapters
-(Neo4j, FalkorDB) register out-of-tree via entry points. Imports nothing
+(Neo4j and other servers) register out-of-tree via entry points. Imports nothing
 from ``agentforge`` (ADR-0001).
 """
 

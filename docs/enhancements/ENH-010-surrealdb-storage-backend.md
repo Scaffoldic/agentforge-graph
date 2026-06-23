@@ -111,4 +111,4 @@ API + multi-statement result changes). Registry built-ins gain
 | KNN + scalar `WHERE` filter unreliable on some server versions | Use the **brute-force** `<|k,COSINE|>` form (evaluates the full WHERE as a normal predicate); over-fetch+filter fallback if needed |
 | SDK 2.x → 3.0 breaking changes | Pin `surrealdb>=2,<3`; conformance re-run on bump |
 | `signin` key naming (`username` vs `user`) varies by version | Verified at runtime against the pinned image |
-| Record-id quoting for SCIP ids (special chars) | Backtick-quote the id portion; bind values as params |
+| Record-id quoting for descriptor-based ids (special chars) | Backtick-quote the id portion; bind values as params |

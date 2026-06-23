@@ -23,7 +23,8 @@ Pure vector search answers "what looks like this question" — it
 cannot answer "who calls this", "what breaks if I change this", or
 "show me the route handler *and* its model". Pure graph traversal
 needs a starting node the user doesn't have. Every agent-facing tool
-in the survey that works well (Potpie, cognee) combines them: vector
+in the survey that works well (agent-oriented code tools,
+schema-driven CKG designs) combines them: vector
 entry, graph walk, ranked merge. This feature is that combination as
 one typed call — the single retrieval surface every agent tool
 (feat-008) and enricher (feat-010, feat-012) uses.
@@ -177,7 +178,8 @@ n/a.
 
 ## 10. References
 
-- Research §3.1, §5 Layer 1 items 6; Potpie (§2.8), cognee (§2.6).
+- Research §3.1, §5 Layer 1 items 6; agent-oriented code tools (§2.8),
+  schema-driven CKG designs (§2.6).
 - agentforge-py feat-021 (reranker), feat-022 (hybrid search), and
   feat-023 (graphrag-hybrid) — framework rails this feature rides on.
 - feat-005 (entry), feat-007 (sibling), feat-008 (consumer).

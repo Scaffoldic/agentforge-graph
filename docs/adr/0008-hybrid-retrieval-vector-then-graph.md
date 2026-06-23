@@ -20,7 +20,8 @@ An agent asks two kinds of question: "where is the code that does X"
 change it / show the handler and its model" (structural, suits graph
 traversal). Pure vector search can't answer the structural questions;
 pure graph traversal needs a starting node the user doesn't have. The
-tools that serve agents well (Potpie, cognee) combine the two. A
+tools that serve agents well (agent-oriented code tools, schema-driven
+CKG designs) combine the two. A
 secondary question: should the retrieval path itself call an LLM (query
 rewriting, HyDE), or stay deterministic? How do we shape the single
 retrieval surface that every agent tool and enricher uses?
@@ -101,5 +102,6 @@ nodes (summaries, tags) flagged `[llm]` and filterable via
 - feat-006 (Retriever, modes, ranking), feat-005 (entry), feat-008
   (wraps it as tools), feat-007 (queryless sibling).
 - agentforge-py feat-021/022/023 (reranker, hybrid search, graphrag).
-- Research §3.1, §2.8 (Potpie), §2.6 (cognee).
+- Research §3.1, §2.8 (agent-oriented code tools), §2.6 (schema-driven
+  CKG designs).
 - Related: ADR-0004, ADR-0007.

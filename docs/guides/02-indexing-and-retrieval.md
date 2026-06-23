@@ -15,7 +15,7 @@ ckg index .
 ```
 
 Builds the typed graph under `.ckg/` (embedded Kuzu + LanceDB). Files → classes,
-functions, methods with stable SCIP-style ids; `CONTAINS`/`IMPORTS`/`CALLS`/
+functions, methods with stable descriptor-based ids; `CONTAINS`/`IMPORTS`/`CALLS`/
 `INHERITS` edges; plus ADRs, routes, ORM models if present. **Incremental on every
 run after the first** — edit 3 files in a 5k-file repo and only those re-extract;
 a scoped re-resolve keeps cross-file edges correct.

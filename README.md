@@ -39,7 +39,7 @@ ckg serve-mcp --repo .              # → 10 read-only tools for your agent
 ## What you get out of the box
 
 - 🧩 **A typed code graph in one command** — `pip install` → `ckg index .` → files,
-  classes, functions, methods with stable SCIP-style ids and `CONTAINS`/`IMPORTS`/
+  classes, functions, methods with stable descriptor-based ids and `CONTAINS`/`IMPORTS`/
   `CALLS`/`INHERITS` edges. **Embedded Kuzu + LanceDB under `.ckg/` — no server, no
   cloud, no config.** 10 languages: Python, TypeScript, JavaScript, Go, Ruby, PHP,
   Java, C#, C++, Rust.
@@ -69,7 +69,7 @@ ckg serve-mcp --repo .              # → 10 read-only tools for your agent
   across services** — `ckg services-map` / `ckg trace` draw the cross-service call
   graph (HTTP client → route, matched by path or OpenAPI contract).
 
-**Status: 0.6.0 — org-scale, and now build it in one command.** 0.5 added
+**Status: 0.6.1 — org-scale, and now build it in one command.** 0.5 added
 central hosting, a federated multi-repo workspace, and cross-service tracing;
 0.6 adds the **build side** — stand up a multi-repo CKG from one
 `workspace.yaml` + one config + `ckg build --workspace` (members local or by git
@@ -208,7 +208,7 @@ agent = Agent(model="anthropic:claude-sonnet-4-6", tools=code_graph_tools("."))
 
 | Capability | What you get |
 |---|---|
-| **Typed code graph** | Files, classes, functions, methods with stable SCIP-style ids; `CONTAINS`/`IMPORTS`/`CALLS`/`INHERITS` edges. Conservative, no-guess resolution across 10 language packs. |
+| **Typed code graph** | Files, classes, functions, methods with stable descriptor-based ids; `CONTAINS`/`IMPORTS`/`CALLS`/`INHERITS` edges. Conservative, no-guess resolution across 10 language packs. |
 | **Framework awareness** *(differentiator)* | `Route → HANDLED_BY → handler`, `DataModel → HAS_FIELD`/`RELATES_TO`, `Service → INJECTED_INTO` — across 11 packs: FastAPI, Flask, SQLAlchemy, Django, Express, NestJS, Spring, Gin, ASP.NET, Laravel, Rails. `ckg routes`/`models`/`services`. |
 | **Decisions ↔ code** *(differentiator)* | ADRs/docs ingested and linked to the code they `GOVERN`; doc prose embedded + searchable. |
 | **Temporal / git evolution** | Per-symbol history, churn, authorship; `changed-since`, `as-of` reconstruction. |
@@ -264,7 +264,7 @@ Three server backends ship first-party as opt-in extras: **Neo4j** (graph),
 **Postgres/pgvector** (vectors), and **SurrealDB** — multi-model, so one server is
 *both* graph + vectors. Each passes the *same* `GraphStoreConformance` /
 `VectorStoreConformance` suite the embedded defaults do (run against live servers
-in CI). Anything else (SurrealDB aside, FalkorDB, …) is an **out-of-tree adapter**:
+in CI). Anything else (SurrealDB aside) is an **out-of-tree adapter**:
 implement the contract, pass the conformance suite, register an entry point — then
 it's `pip install + one config line`, no core change.
 → [`docs/guides/09-storage-backends.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/guides/09-storage-backends.md).
@@ -350,7 +350,7 @@ This repo is built to be worked on **with** AI agents. Start here:
 - **[`CONTRIBUTING.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/CONTRIBUTING.md)** — setup, the quality gate, the per-feature
   development pipeline, and step-by-step playbooks (add a language pack, a framework
   pack, a storage backend, a model adapter, an MCP tool, an enricher).
-- **[`AGENTS.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/AGENTS.md)** — read by Claude Code, Cursor, Aider, etc.
+- **[`AGENTS.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/AGENTS.md)** — read by Claude Code and other AGENTS.md-aware assistants.
   (the [AGENTS.md convention](https://agents.md)); the invariants an AI assistant must respect.
 - **[`docs/ARCHITECTURE.md`](https://github.com/Scaffoldic/agentforge-graph/blob/main/docs/ARCHITECTURE.md)** — the system map.
 

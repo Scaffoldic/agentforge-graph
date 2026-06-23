@@ -244,7 +244,7 @@ needs AWS.
 | Re-parse files in the chunker (full AST walk) | Duplicates feat-002's parse and re-couples chunking to tree-sitter; symbol spans already capture the AST structure we need for code. |
 | Default to fastembed (local) | User chose Bedrock Cohere v4; fake covers CI. fastembed stays a future driver. |
 | Voyage via Bedrock | Not offered on Bedrock (verified). Voyage-native would need a non-AWS key; out of scope. |
-| Conflate chunks with symbol nodes | Breaks the chunk↔symbol separation (cognee insight) that lets a vector hit expand into the graph (feat-006). |
+| Conflate chunks with symbol nodes | Breaks the chunk↔symbol separation (a schema-driven CKG insight) that lets a vector hit expand into the graph (feat-006). |
 | Real tokenizer now | Adds a dep for budgeting precision that doesn't affect correctness; heuristic is consistent. |
 | Embed inside the ingest extract loop | Couples costly/credentialed embedding to indexing; keep `EmbedPipeline` separate so `embed()` re-runs on model change. |
 

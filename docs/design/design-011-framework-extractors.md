@@ -70,7 +70,7 @@ harness** — exactly how the language packs (TS, JS) followed feat-002.
 - Methods-as-handlers inside classes (class-based views) — MVP handles
   top-level `def` handlers (the dominant FastAPI shape); class methods counted
   as unresolved for now.
-- Security/taint (CodeQL's job); runtime route verification.
+- Security/taint (curated rule-pack analyzers' job); runtime route verification.
 
 ## 4. Proposal
 
@@ -233,7 +233,7 @@ when non-zero. No silent gaps.
 | Reuse the language extractor's parse tree | Couples the language extractor to frameworks. MVP re-parses per active pack (one extra parse/Python-file when FastAPI is active); tree-reuse is a later optimization. |
 | Make FastAPI a `LanguagePack` variant | Conflates "what's in the language" with "what a framework adds"; framework packs must compose with *any* language pack and detect per-repo. Separate ABC. |
 | Pass-2 prefix composition in the MVP | Cross-file, needs the resolve pass + coupled-file tracking; deferred and *counted* so the gap is visible, not silent. |
-| LLM-infer routes | Spec/CodeQL lesson: framework knowledge is curated rule packs, not inference. Static queries, versioned. |
+| LLM-infer routes | Spec / curated rule-pack analyzers' lesson: framework knowledge is curated rule packs, not inference. Static queries, versioned. |
 
 ## 6. Migration / rollout
 
@@ -247,7 +247,7 @@ without a detected framework (negative path tested).
 
 | Risk | Mitigation |
 |---|---|
-| Pattern coverage treadmill (frameworks evolve) | Versioned pack (`@<fp>`), golden fixtures pinned to a FastAPI version, coverage gaps **counted** in `IndexReport` — labor, not silent risk (CodeQL sustains this). |
+| Pattern coverage treadmill (frameworks evolve) | Versioned pack (`@<fp>`), golden fixtures pinned to a FastAPI version, coverage gaps **counted** in `IndexReport` — labor, not silent risk (curated rule-pack analyzers sustain this). |
 | Dynamic/metaprogrammed routes unparseable | `unresolved` counter surfaced; LLM-assist per gap is a later feat-012-style enricher. |
 | `include_router` prefixes / class-based views missed at MVP | Explicitly out of scope, counted as unresolved; `resolve()` hook reserved. |
 | Route id collisions (two same method+path in a file) | Descriptor includes method+path; a genuine duplicate de-dupes to one node (correct — same endpoint). |
@@ -296,4 +296,4 @@ without a detected framework (negative path tested).
 - ADRs: 0001 (layering), 0004 (provenance), 0005 (locked kinds)
 - feat-002 (pipeline/extractor ridden), feat-004 (incremental contract —
   facts ride the `FileSubgraph`), feat-008 (`ckg_routes` reserved)
-- Research §2.2 (CodeQL framework models), §3.3 (framework-edge gap)
+- Research §2.2 (curated rule-pack analyzers' framework models), §3.3 (framework-edge gap)

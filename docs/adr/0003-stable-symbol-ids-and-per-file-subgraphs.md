@@ -1,11 +1,11 @@
-# ADR-0003: Stable SCIP-style symbol IDs + per-file subgraphs
+# ADR-0003: Stable descriptor-based symbol IDs + per-file subgraphs
 
 ## Metadata
 
 | Field | Value |
 |---|---|
 | **Number** | 0003 |
-| **Title** | Stable SCIP-style symbol IDs + per-file subgraphs as the incrementality foundation |
+| **Title** | Stable descriptor-based symbol IDs + per-file subgraphs as the incrementality foundation |
 | **Status** | Accepted |
 | **Date** | 2026-06-11 |
 | **Deciders** | kjoshi |
@@ -18,10 +18,11 @@
 An agent's working memory over a repo that changes many times an hour
 is only useful if it stays fresh, and a full re-index per commit makes
 freshness unaffordable. The research showed this is the dividing line
-between toy and production CKGs: Sourcegraph's LSIF predecessor used
-opaque numeric graph IDs with global ordering constraints that made
-incremental indexing impossible — SCIP was created specifically to fix
-this with stable string symbol IDs; stack-graphs made indexing
+between toy and production CKGs: earlier opaque numeric-ID index formats
+used opaque numeric graph IDs with global ordering constraints that made
+incremental indexing impossible — stable descriptor-based IDs were
+adopted specifically to fix this with stable string symbol IDs;
+file-incremental name-resolution designs made indexing
 file-incremental by building each file's subgraph in isolation. How do
 we identify nodes and structure extraction so that re-indexing costs
 scale with the size of a change, not the size of the repo — and so that
@@ -41,18 +42,19 @@ enrichments attached to unchanged code survive edits nearby?
 
 ## 3. Considered options
 
-1. **Opaque/auto-increment node IDs** (LSIF-style, DB primary keys).
+1. **Opaque/auto-increment node IDs** (earlier opaque numeric-ID index
+   formats, DB primary keys).
 2. **Content-hash node IDs** (hash of the symbol's source text).
-3. **Stable descriptor-based symbol IDs** (SCIP-style:
-   `ckg <lang> <repo> <path> <descriptor>`) + per-file subgraphs as
+3. **Stable descriptor-based symbol IDs**
+   (`ckg <lang> <repo> <path> <descriptor>`) + per-file subgraphs as
    the unit of ingestion/deletion.
 
 ## 4. Decision outcome
 
-**Chosen: Option 3 — SCIP-style descriptor symbol IDs + per-file
+**Chosen: Option 3 — descriptor-based symbol IDs + per-file
 subgraphs.** Every node's ID is a human-readable string derived from
-(language, repo, path, descriptor), where descriptors follow SCIP
-grammar (`Type#`, `method().`, `term.`). No global counters, no
+(language, repo, path, descriptor), where descriptors follow the
+descriptor grammar (`Type#`, `method().`, `term.`). No global counters, no
 ordering constraints. Extraction produces one `FileSubgraph` per file
 keyed by `(path, content_hash)`; cross-file resolution is a separate
 pass. Incremental re-index (feat-004) is then a thin orchestration:
@@ -72,8 +74,8 @@ re-resolve only the dirty import-graph region.
 ### Negative consequences (trade-offs)
 
 - Descriptor rules are fiddly per language (overloads, anonymous
-  functions, generics) — mitigated by adopting SCIP's conventions and
-  a disambiguator suffix.
+  functions, generics) — mitigated by adopting established descriptor
+  conventions and a disambiguator suffix.
 - A rename changes the descriptor, so it reads as delete+add and
   orphans enrichments on the renamed symbol; feat-009 may add rename
   lineage via git similarity later.
@@ -83,7 +85,8 @@ re-resolve only the dirty import-graph region.
 ### Option A: Opaque/auto-increment IDs
 - + Trivial to generate.
 - − Unstable across re-index; forces whole-repo reindex; the exact
-  trap SCIP replaced LSIF to escape.
+  trap stable descriptor-based IDs replaced earlier opaque numeric-ID
+  index formats to escape.
 
 ### Option B: Content-hash IDs
 - + Stable for *identical* text; natural change detection.
@@ -99,7 +102,9 @@ re-resolve only the dirty import-graph region.
 
 - feat-001 (symbol-ID scheme), feat-002 (per-file extraction),
   feat-004 (incremental), feat-009 (temporal).
-- Research §2.3 (SCIP vs LSIF — verified), §2.4 (stack-graphs
-  file-incremental — verified), §3.2.
-- SCIP symbol grammar; stack-graphs paper (arxiv 2211.01224).
+- Research §2.3 (descriptor-based vs earlier opaque numeric-ID index
+  formats — verified), §2.4 (file-incremental name resolution —
+  verified), §3.2.
+- The descriptor symbol grammar; file-incremental name-resolution
+  paper (arxiv 2211.01224).
 - Related: ADR-0002, ADR-0005.

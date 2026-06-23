@@ -23,8 +23,9 @@
 ## 1. Context
 
 A full re-index per commit is the operational dividing line the research
-calls out (stack-graphs went file-incremental so GitHub could afford precise
-nav; SCIP's early "index everything every commit" was the limitation). For an
+calls out (file-incremental name-resolution designs went file-incremental so
+GitHub could afford precise nav; the earlier descriptor-based indexers'
+"index everything every commit" was the limitation). For an
 agent's working memory over a repo that changes many times an hour, re-index
 cost must be proportional to the diff — seconds, not minutes.
 
@@ -82,7 +83,7 @@ file-invalidatable without breaking the full-index path.
   per agent turn; spec §8).
 - Rename *lineage* (feat-009). At 0.2 a rename = delete + add (spec risk
   table); descriptor-stable IDs preserve identity for in-place edits, not moves.
-- Distributed/parallel cross-machine indexing; Glean-style stacked fact layers.
+- Distributed/parallel cross-machine indexing; server-based fact-indexing stacked fact layers.
 
 ## 4. Proposal
 
@@ -358,4 +359,4 @@ feat-010/011/012 don't each reinvent it.
   `resolver.changed_files`), feat-003 (`upsert`/`delete_file`, `meta.json`),
   feat-005 (`EmbedPipeline` chunk-hash skip), feat-009 (temporal, builds on
   the same `ChangeSet`)
-- Research §3.2 (stack-graphs file-incremental; SCIP stable IDs), §2.3, §2.4
+- Research §3.2 (file-incremental name-resolution designs; stable descriptor-based IDs), §2.3, §2.4

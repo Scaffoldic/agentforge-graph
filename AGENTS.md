@@ -3,7 +3,7 @@
 
 This project is built on **AgentForge 0.3.1**. Use
 these rules when suggesting changes. The file is read by Claude
-Code, Cursor, Aider, and any tool following the
+Code and any tool following the
 [AGENTS.md convention](https://agents.md).
 
 ## Project shape (you must respect this)

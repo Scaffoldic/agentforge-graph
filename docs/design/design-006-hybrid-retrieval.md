@@ -288,4 +288,4 @@ one is a minor bump. `Retriever` is subclassable for custom strategies
 - ADRs: 0001 (layering), 0004 (provenance), 0008 (hybrid retrieval)
 - feat-003 (`Store`/`VectorStore`/`GraphStore`/`Edge`), feat-005 (chunks,
   `CHUNK_OF`, `Embedder`, `estimate_tokens`), feat-008 (consumer)
-- Prior art: Potpie / cognee hybrid retrieval (research §2.8/§2.6)
+- Prior art: agent-oriented code tools / schema-driven CKG designs, hybrid retrieval (research §2.8/§2.6)
