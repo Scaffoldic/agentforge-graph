@@ -81,8 +81,10 @@ pipx run agentforge-graph serve-mcp --repo .     # same, via pipx
 ```bash
 ckg setup                       # detect agents, show the plan/diff, apply on confirm
 ckg setup --print               # dry-run: print the plan, write nothing
+ckg setup --scope project       # write repo-root .mcp.json (DEFAULT; shareable)
+ckg setup --scope user          # write the user-global agent config instead (~/.claude.json)
 ckg setup --agent claude-code   # target a specific agent
-ckg setup --repo /path/to/repo  # repo the MCP entry should serve (default: cwd)
+ckg setup --repo .              # repo the MCP entry should serve (default: cwd)
 ckg setup --hooks               # also install the optional nudge hooks
 ckg setup --yes                 # skip the confirm prompt (scripts / CI)
 ckg setup --no-check            # skip the post-write connection check
@@ -94,11 +96,11 @@ Default flow (interactive, **shows the diff before writing**):
 ```
 $ ckg setup
 Detected agents:
-  ✓ Claude Code        ~/.claude.json                 (will add MCP server "ckg")
+  ✓ Claude Code        reads ./.mcp.json              (will add MCP server "ckg")
   – <agent B>          not installed                  (skipped)
 
-Plan:
-  + MCP server "ckg" → ckg serve-mcp --repo /Users/me/proj  (stdio)
+Plan (scope: project):
+  + ./.mcp.json → MCP server "ckg" = ckg serve-mcp --repo .  (stdio)
 
 Apply? [y/N]
 ```
@@ -107,6 +109,19 @@ Apply? [y/N]
 
 - **New subcommand `ckg setup`** with the flags above. **Idempotent:** running
   twice does not duplicate entries; it reconciles to the desired state.
+- **Scope (resolved):** `--scope project` (**default**) writes a **repo-root
+  `.mcp.json`** — the portable, shareable MCP standard (Claude Code and other
+  `.mcp.json`-aware clients read it; commit it and the whole team's agents are
+  wired). `--scope user` writes the **user-global** agent config
+  (`~/.claude.json`) for the solo "wire it on my machine" case. The CKG's
+  knowledge is inherently per-repo, so project scope is the natural default and
+  has the smallest blast radius (a new repo file, never the user's global
+  config). The served path is **relative** (`--repo .`) so a committed
+  `.mcp.json` is portable across machines.
+- **Consent (resolved — stateless):** the default flow **always shows the diff
+  and asks** before writing; `--yes` skips the prompt for scripts/CI. No
+  remembered-consent state is persisted (simpler, one fewer place to get
+  wrong); `--print` writes nothing.
 - **Detection registry** — a per-agent adapter describing: detection probe
   (does the config/dir exist), config path(s), config format
   (JSON/JSONC/TOML/YAML), the MCP-entry shape, and where hints live. New agents
@@ -133,13 +148,17 @@ Apply? [y/N]
   existing servers and comments survive.
 - **Connection check.** After writing, optionally spawn the configured server
   once and confirm it answers a `ckg_status` call, reporting success/failure.
-- **Hooks/hints (optional, `--hooks` — chunk 2).** Where an agent supports a
-  pre-tool or session-start hook, install a **non-blocking** hint: when the
-  agent is about to grep/glob or starts a session, surface a short reminder
-  that the CKG tools exist and are cheaper for structural questions. Hooks
-  **never block** the agent's own tools — they only add context. Where an agent
-  has no hook mechanism, fall back to a conventions/instructions file the agent
-  reads.
+- **Nudge hints (optional, `--hooks` — chunk 2, resolved).** Append a short
+  **managed block** to the repo's agent-instructions file
+  (`AGENTS.md`/`CLAUDE.md`) telling the agent to prefer the `ckg_*` tools over
+  grep/glob for structural questions. This is **repo-level** (matches the
+  `.mcp.json` default), **portable** (every `AGENTS.md`-aware agent reads it),
+  and inherently **non-blocking** — it adds context, never overrides the
+  agent's tool choices. The block is wrapped in
+  `<!-- agentforge-graph:start -->` / `<!-- agentforge-graph:end -->` markers so
+  `--undo` removes exactly it and nothing the user wrote. (An active
+  Claude-Code `PreToolUse` hook was considered and rejected for v1: Claude-only
+  and noisy on every search.)
 
 ### 4.4 Module packaging
 
@@ -153,8 +172,9 @@ a `--version` channel stamp.
 
 ```yaml
 setup:
+  scope: project            # project (default; repo .mcp.json) | user (~/.claude.json)
   transport: stdio          # stdio (default) | http
-  install_hooks: false      # opt-in nudge hooks
+  install_hooks: false      # opt-in nudge hooks (AGENTS.md/CLAUDE.md managed block)
   agents: []                # empty = auto-detect all; or an allowlist
 ```
 
@@ -224,8 +244,17 @@ behind `--hooks` (Claude Code first). Both land under feat-013.
 non-negotiables are: structural (not textual) edits, managed markers, dry-run
 visibility, and reversible `--undo`. A config generator that occasionally
 corrupts a user's setup is worse than no generator. Hence bare `ckg setup`
-defaults to **dry-run + confirm on first run**, then remembers consent so later
-runs in the same repo apply directly; `--yes`/`--print` cover script/CI use.
+**always shows the diff and confirms before writing** (stateless — no
+remembered-consent file); `--yes` skips the prompt for scripts/CI and `--print`
+writes nothing.
+
+**Resolved decisions (this feat).** (1) **Default scope = repo-level
+`.mcp.json`**, `--scope user` for the global config — the graph is per-repo, so
+project scope matches it 1:1, is shareable/committable, and only ever adds a
+file inside the repo. (2) **Stateless confirm** (always ask unless `--yes`).
+(3) **Nudge = a managed block appended to `AGENTS.md`/`CLAUDE.md`** (portable,
+non-blocking), not an active Claude-only hook. (4) **Docs are a deliverable** —
+see §12.
 
 **Registry-first, like the rest of the system.** Agent adapters mirror the
 storage (ADR-0006) and provider (ENH-003) registries. The core `setup` flow is
@@ -247,3 +276,25 @@ used" onboarding spine in one feat, while the heavy distribution work
 - ENH-003 provider registry / ADR-0006 storage registry — the registry pattern
   the agent-adapter registry mirrors.
 - `docs/guides/10-using-over-mcp.md` — the manual steps `ckg setup` automates.
+
+## 12. Documentation deliverables
+
+Docs ship **with** the feature (part of the definition of done), not after:
+
+- **Guide — `docs/guides/NN-getting-started-and-setup.md`** (consumer how-to):
+  the zero-install trial (`uvx`/`pipx run`), `ckg setup` walkthrough,
+  **project vs `--scope user`** (when to commit `.mcp.json` vs wire it
+  globally), `--print`/`--hooks`/`--undo`, the AGENTS.md nudge block, and
+  troubleshooting (agent not detected, connection check failed). Slots into the
+  existing NN-slug guide series and is linked from the README quickstart.
+- **Runbook — `docs/runbooks/agent-setup.md`** (operational): exactly what
+  `ckg setup` writes for each scope, the managed-marker format, how `--undo`
+  reverses it, how to re-run after a CKG upgrade, and the safety guarantees
+  (structural edits, dry-run, reversible). The reference an operator reads
+  before running it on a shared repo.
+- **README + `10-using-over-mcp.md` cross-links** — point the manual MCP-wiring
+  steps at `ckg setup` as the one-command path, keeping the manual steps as the
+  "what it does under the hood" reference.
+
+A docs-presence check is part of the feature's test strategy (§7): the guide
+and runbook exist and the README quickstart links the new path.
