@@ -6,7 +6,7 @@
 |---|---|
 | **ID** | feat-013 |
 | **Title** | Agent auto-configuration & frictionless first run |
-| **Status** | accepted (graduated from FA-002 + FA-001 Phase 1) |
+| **Status** | implemented (branch `feat/013-agent-auto-configuration`; validation + PR pending) |
 | **Owner** | kjoshi |
 | **Created** | 2026-06-27 |
 | **Target version** | 0.7.0 |
@@ -298,3 +298,35 @@ Docs ship **with** the feature (part of the definition of done), not after:
 
 A docs-presence check is part of the feature's test strategy (§7): the guide
 and runbook exist and the README quickstart links the new path.
+
+---
+
+## Implementation status
+
+**Implemented** on `feat/013-agent-auto-configuration` (validation + PR pending).
+Design: `docs/design/design-013-agent-auto-configuration.md` (accepted).
+`agentforge_graph.setup` (the ADR-0001 framework layer) ships:
+
+- **`ckg setup`** — detect → render plan/diff → stateless confirm → structural
+  write → connection check; `--scope project|user`, `--agent`, `--transport`,
+  `--print`, `--yes`, `--no-check`, `--undo`, `--force`, `--hooks`.
+- **Adapter registry** (`registry.py` + `adapters/{mcp_json,claude_code}.py`),
+  mirroring the ADR-0006 / ENH-003 registries; third parties via the
+  `agentforge_graph.agent_adapters` entry-point group.
+- **Structural merge** (`merge.py`) — `_managed_by` marker, idempotent writes,
+  conflict-safe (refuses a user-authored `ckg`), reversible `undo`; ENH-005
+  bind-safety on `--transport http`.
+- **Nudge hooks** (`hooks.py`) — managed `AGENTS.md`/`CLAUDE.md` block behind
+  `--hooks`, idempotent + undo-able.
+- **`--version` channel stamp** (`channel.py`, FA-001 P1) + the `uvx`/`pipx`
+  trial path (blessed in guide 11).
+- **`SetupConfig`** (`setup:` block); **connection check** (`check.py`) over the
+  `mcp` stdio client.
+
+Gate green: full suite passes, ≥90% coverage; `mypy --strict`; ruff. Docs:
+`docs/guides/11-agent-auto-configuration.md` (how-to + operational reference);
+README + guide-10 cross-link the one-command path.
+
+**Deferred (as scoped):** FA-001 Phases 2–3 (Homebrew / install scripts /
+self-contained bundle / `self-update`); FA-004 local embeddings; additional
+agent adapters beyond Claude Code (registry makes them cheap).

@@ -183,12 +183,15 @@ Read-only over MCP — **10 tools**: `ckg_repo_map`, `ckg_search`, `ckg_symbol`,
 `ckg_explain`, `ckg_history`:
 
 ```bash
-claude mcp add ckg -- ckg serve-mcp --repo .       # stdio (subprocess)
+ckg setup                                          # wire your agent for you (writes .mcp.json)
+claude mcp add ckg -- ckg serve-mcp --repo .       # or do it manually — stdio (subprocess)
 ckg serve-mcp --repo . --transport http            # or HTTP → http://127.0.0.1:8765/mcp
 ```
 
-Over HTTP, point any MCP client at the URL:
-`{"mcpServers": {"ckg": {"url": "http://127.0.0.1:8765/mcp"}}}`.
+`ckg setup` auto-writes your agent's MCP config (a committable repo `.mcp.json`
+by default), shows a diff first, and is reversible with `--undo` — see
+[guide 11](docs/guides/11-agent-auto-configuration.md). Over HTTP, point any MCP
+client at the URL: `{"mcpServers": {"ckg": {"url": "http://127.0.0.1:8765/mcp"}}}`.
 
 Or as a native AgentForge toolset:
 

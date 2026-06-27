@@ -57,7 +57,7 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 | [010](feat-010-adr-and-docs-ingestion.md) | ADR & docs ingestion | 3 diff | 0.3 | **shipped (0.3 — ADR/docs/docstrings/commits + GOVERNS/DESCRIBES)** | 005,006 | — | ✅ |
 | [011](feat-011-framework-extractors.md) | Framework-aware extractors | 3 diff | 0.4 | shipped v0.3.0 (7 packs: routes/ORM/DI) | 002 | — | 🟢 |
 | [012](feat-012-llm-enrichment.md) | LLM enrichment (summaries, tags) | 3 diff | 0.4 | shipped (tags + summaries) | 006 | — | ✅ |
-| [013](feat-013-agent-auto-configuration.md) | Agent auto-configuration & frictionless first run | 4 adoption | 0.7 | accepted (graduated FA-002 + FA-001 P1) | 008 | — | ✅ |
+| [013](feat-013-agent-auto-configuration.md) | Agent auto-configuration & frictionless first run | 4 adoption | 0.7 | implemented (branch; validation + PR pending) | 008 | — | ✅ |
 
 ---
 
