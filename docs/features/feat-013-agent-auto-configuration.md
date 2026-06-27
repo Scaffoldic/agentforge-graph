@@ -6,10 +6,10 @@
 |---|---|
 | **ID** | feat-013 |
 | **Title** | Agent auto-configuration & frictionless first run |
-| **Status** | implemented (branch `feat/013-agent-auto-configuration`; validation + PR pending) |
+| **Status** | shipped (0.6.2) |
 | **Owner** | kjoshi |
 | **Created** | 2026-06-27 |
-| **Target version** | 0.7.0 |
+| **Target version** | 0.6.2 |
 | **Languages** | n/a (operates on agent tooling, not indexed source) |
 | **Module package(s)** | `agentforge_graph.setup` (framework layer) + onboarding docs |
 | **Depends on** | feat-008 (MCP server + `ckg serve-mcp`), ENH-003 (registry pattern) |
@@ -303,8 +303,8 @@ and runbook exist and the README quickstart links the new path.
 
 ## Implementation status
 
-**Implemented** on `feat/013-agent-auto-configuration` (validation + PR pending).
-Design: `docs/design/design-013-agent-auto-configuration.md` (accepted).
+**Shipped in 0.6.2** (merged via PR #146). Design:
+`docs/design/design-013-agent-auto-configuration.md` (accepted).
 `agentforge_graph.setup` (the ADR-0001 framework layer) ships:
 
 - **`ckg setup`** — detect → render plan/diff → stateless confirm → structural
