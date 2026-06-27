@@ -147,6 +147,45 @@ async def test_project_scope_dedupes_to_single_target(tmp_path: Path) -> None:
     assert "Claude Code" in target_lines[0]
 
 
+async def test_hooks_installed_and_undone(tmp_path: Path) -> None:
+    from agentforge_graph.setup.hooks import HOOK_START
+
+    await run_setup(
+        tmp_path,
+        agents=["mcp_json"],
+        hooks=True,
+        assume_yes=True,
+        do_check=False,
+        out=lambda _s: None,
+    )
+    assert (tmp_path / ".mcp.json").exists()
+    assert HOOK_START in (tmp_path / "AGENTS.md").read_text()
+
+    # --undo reverses both the MCP entry and the nudge block, even without --hooks.
+    await run_setup(tmp_path, agents=["mcp_json"], undo=True, out=lambda _s: None)
+    assert not (tmp_path / ".mcp.json").exists()
+    assert not (tmp_path / "AGENTS.md").exists()
+
+
+async def test_hooks_only_still_acts_when_mcp_noop(tmp_path: Path) -> None:
+    # MCP already written → plan is noop, but --hooks still has work to do.
+    await run_setup(
+        tmp_path, agents=["mcp_json"], assume_yes=True, do_check=False, out=lambda _s: None
+    )
+    lines, out = _capture()
+    rc = await run_setup(
+        tmp_path,
+        agents=["mcp_json"],
+        hooks=True,
+        assume_yes=True,
+        do_check=False,
+        out=out,
+    )
+    assert rc == 0
+    assert (tmp_path / "AGENTS.md").exists()
+    assert not any("nothing to do" in ln for ln in lines)
+
+
 async def test_bind_safety_raises(tmp_path: Path) -> None:
     from agentforge_graph.setup import SetupError
 

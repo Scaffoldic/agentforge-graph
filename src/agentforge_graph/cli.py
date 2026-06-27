@@ -658,6 +658,7 @@ async def _setup(args: argparse.Namespace) -> int:
             port=args.port if args.port is not None else 8765,
             token=args.auth_token or "",
             agents=agents,
+            hooks=args.hooks or cfg.install_hooks,
             do_print=args.print_only,
             assume_yes=args.yes,
             do_check=not args.no_check,
@@ -1059,6 +1060,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     setup_p.add_argument(
         "--auth-token", default="", help="http: token to embed (ENH-005 bind-safety)"
+    )
+    setup_p.add_argument(
+        "--hooks",
+        action="store_true",
+        help="also append a managed nudge block to AGENTS.md/CLAUDE.md",
     )
     setup_p.add_argument(
         "--print",
