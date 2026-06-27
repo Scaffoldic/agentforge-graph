@@ -57,6 +57,7 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 | [010](feat-010-adr-and-docs-ingestion.md) | ADR & docs ingestion | 3 diff | 0.3 | **shipped (0.3 — ADR/docs/docstrings/commits + GOVERNS/DESCRIBES)** | 005,006 | — | ✅ |
 | [011](feat-011-framework-extractors.md) | Framework-aware extractors | 3 diff | 0.4 | shipped v0.3.0 (7 packs: routes/ORM/DI) | 002 | — | 🟢 |
 | [012](feat-012-llm-enrichment.md) | LLM enrichment (summaries, tags) | 3 diff | 0.4 | shipped (tags + summaries) | 006 | — | ✅ |
+| [013](feat-013-agent-auto-configuration.md) | Agent auto-configuration & frictionless first run | 4 adoption | 0.7 | accepted (graduated FA-002 + FA-001 P1) | 008 | — | ✅ |
 
 ---
 
@@ -137,7 +138,8 @@ ride alongside, not on, this chain.
 | **0.3** ✅ feature-complete (unreleased) | History + decisions | 009 (in 0.2), 010 | Point-in-time queries **done (0.2)**; ADRs/docs/docstrings/commits govern+describe code as graph edges **done (010)** — ready to cut |
 | **0.4** ✅ RELEASED | Framework & semantic knowledge | 011, 012 (+ ENH-010..013) | Routes/ORM/DI edges; module summaries + design-pattern tags; SurrealDB backend; cross-file resolution; 11 packs; measured rerank |
 | **0.5** ✅ RELEASED | **Org-level central knowledge** — CKG as a shared, org-wide code brain for devs + agents | ENH-018, ENH-019, ENH-020 | Knowledge hostable centrally + consumed read-only; zero-config repo discovery; **one federated MCP endpoint** across services with cross-service tracing — see [theme](../enhancements/THEME-org-central-knowledge.md) |
-| **0.6** ✅ feature-complete (cut in prep) | **Workspace build** — the build/setup side of org-central knowledge | ENH-021, ENH-022, ENH-023, ENH-024, ENH-026 | Stand up a multi-repo CKG from one `workspace.yaml` + one config + `ckg build --workspace` (members local or git URL); fail-fast `ckg doctor`; config/CLI-controlled logging/tracing |
+| **0.6** ✅ RELEASED | **Workspace build** — the build/setup side of org-central knowledge | ENH-021, ENH-022, ENH-023, ENH-024, ENH-026 | Stand up a multi-repo CKG from one `workspace.yaml` + one config + `ckg build --workspace` (members local or git URL); fail-fast `ckg doctor`; config/CLI-controlled logging/tracing |
+| **0.7** 🔨 planned | **Adoption** — shrink "installed" → "an agent is querying my repo" | feat-013 (FA-002 + FA-001 P1) | `ckg setup` auto-writes the agent's MCP config (Claude Code first) + optional `--hooks` nudges toward the graph tools; `uvx`/`pipx` zero-install trial blessed |
 
 ---
 

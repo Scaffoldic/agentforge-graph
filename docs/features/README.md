@@ -32,6 +32,7 @@ structural-only; see feat-002 support tiers).
 | [feat-010](feat-010-adr-and-docs-ingestion.md) | ADR & docs ingestion | 3 — differentiator | proposed | feat-005, feat-006 |
 | [feat-011](feat-011-framework-extractors.md) | Framework-aware extractors | 3 — differentiator | proposed | feat-002 |
 | [feat-012](feat-012-llm-enrichment.md) | LLM enrichment: summaries & pattern tags | 3 — differentiator | proposed | feat-006 |
+| [feat-013](feat-013-agent-auto-configuration.md) | Agent auto-configuration & frictionless first run | 4 — adoption | accepted | feat-008 |
 
 ## Layering (from the research doc §5)
 
