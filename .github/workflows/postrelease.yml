@@ -1,0 +1,115 @@
+name: Post-release checks
+
+# After a release is published, prove the artifact is actually installable from
+# real PyPI and runs end-to-end (creds-free) — the manual step 4 of
+# docs/roadmap/local-verification-checklist.md, automated.
+#
+# Triggers:
+#   - release: published  -> verify the just-released version.
+#   - workflow_dispatch    -> verify an explicit version on demand.
+# Polls PyPI (index lag is ~1 min after upload), then installs into a clean venv
+# from PyPI and runs the CLI smoke. On the publish trigger it then opens an issue
+# if anything fails, so a bad release is loud.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Published version to verify from PyPI (e.g. 0.6.1)"
+        required: true
+
+concurrency:
+  group: postrelease-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-pypi:
+    name: install from PyPI + smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Needed by the github-script step that opens an issue on failure.
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Resolve target version
+        id: ver
+        # release event -> the tag (strip a leading v); manual -> the input.
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            v="${{ inputs.version }}"
+          else
+            tag="${{ github.event.release.tag_name }}"
+            v="${tag#v}"
+          fi
+          case "$v" in
+            [0-9]*.[0-9]*.[0-9]*) : ;;
+            *) echo "::error::'$v' is not a X.Y.Z version"; exit 1 ;;
+          esac
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Target version: $v"
+
+      - name: Wait for PyPI to index the version
+        env:
+          V: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          url="https://pypi.org/pypi/agentforge-graph/$V/json"
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+            if [ "$code" = "200" ]; then echo "PyPI has $V ✓"; exit 0; fi
+            echo "attempt $i: PyPI returned $code for $V — waiting 20s"
+            sleep 20
+          done
+          echo "::error::agentforge-graph $V not on PyPI after ~10 min"; exit 1
+
+      - name: Install from real PyPI + smoke
+        env:
+          V: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          uv venv --python 3.13 .relpost
+          uv pip install --python .relpost/bin/python "agentforge-graph==$V"
+          got=$(.relpost/bin/ckg --version)
+          echo "ckg --version -> $got"
+          echo "$got" | grep -q "$V" || { echo "::error::ckg --version ($got) != $V"; exit 1; }
+          .relpost/bin/python -c "import agentforge_graph; print('import OK', agentforge_graph.__version__)"
+          .relpost/bin/ckg index examples/fastapi-shop
+          .relpost/bin/ckg routes examples/fastapi-shop
+
+      - name: Open an issue if the release smoke failed
+        # Only on the automatic publish path — a manual dispatch failure is
+        # visible to the person who ran it.
+        if: ${{ failure() && github.event_name == 'release' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const v = '${{ steps.ver.outputs.version }}';
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Post-release smoke failed for ${v}`,
+              body: `The post-release verification for **agentforge-graph ${v}** failed.\n\n`
+                + `Install-from-PyPI or the CLI smoke did not pass. Investigate before announcing the release.\n\n`
+                + `Run: ${run}`,
+              labels: ['ci', 'release'],
+            });
