@@ -1,0 +1,131 @@
+name: Pre-release checks
+
+# Release-readiness gate for `release/X.Y.Z` PRs. Runs the mechanical
+# consistency + packaging checks the manual checklist
+# (docs/roadmap/local-verification-checklist.md, local-only) does by hand, so a
+# release PR can't merge with version / CHANGELOG / README drift or a broken
+# build.
+#
+# The lint + type + test gate is deliberately NOT duplicated here: ci.yml already
+# runs on the same PR (it triggers on every `pull_request` to main, and release
+# branches target main), so both checks appear on the release PR and both must be
+# green to merge. This workflow only adds the release-specific checks on top.
+#
+# Also runnable on demand (workflow_dispatch) against any checked-out ref, for a
+# dry run before opening the PR.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to verify (e.g. 0.7.0)"
+        required: true
+
+concurrency:
+  group: prerelease-${{ github.ref }}
+  cancel-in-progress: true
+
+# Opt JS actions into Node 24 (matches ci.yml; Node 20 is force-removed from
+# runners). Drop once the actions ship Node-24-native majors.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+jobs:
+  prerelease:
+    name: release-ready (version + build + smoke)
+    runs-on: ubuntu-latest
+    # Only run on release/* PRs (skip ordinary feature PRs) or an explicit
+    # manual dispatch.
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'release/') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Resolve target version
+        id: ver
+        # workflow_dispatch -> the input; release/X.Y.Z PR -> the branch suffix.
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            v="${{ inputs.version }}"
+          else
+            head="${{ github.head_ref }}"
+            v="${head#release/}"
+          fi
+          case "$v" in
+            [0-9]*.[0-9]*.[0-9]*) : ;;
+            *) echo "::error::'$v' is not a X.Y.Z version (head_ref='${{ github.head_ref }}')"; exit 1 ;;
+          esac
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Target version: $v"
+
+      - name: Version / CHANGELOG / README consistency
+        env:
+          V: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          fail=0
+
+          pkg=$(uv run --no-project python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          if [ "$pkg" != "$V" ]; then
+            echo "::error::pyproject version $pkg != target $V"; fail=1
+          else
+            echo "pyproject version $pkg ✓"
+          fi
+
+          if grep -qE "^## \[$V\]" CHANGELOG.md; then
+            echo "CHANGELOG has a [$V] section ✓"
+          else
+            echo "::error::CHANGELOG.md has no '## [$V]' section (did [Unreleased] get rolled?)"; fail=1
+          fi
+
+          if grep -qE "Status: $V( |—|$)" README.md; then
+            echo "README Status: $V ✓"
+          else
+            echo "::error::README.md 'Status: $V' line not found / not bumped"; fail=1
+          fi
+
+          exit $fail
+
+      - name: Lockfile agrees with pyproject
+        run: uv lock --locked
+
+      - name: Build sdist + wheel
+        run: uv build --out-dir dist/
+
+      - name: twine check
+        run: uvx twine check dist/*
+
+      - name: Clean-room install smoke (creds-free)
+        env:
+          V: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          uv venv --python 3.13 .relcheck
+          uv pip install --python .relcheck/bin/python "dist/agentforge_graph-$V-py3-none-any.whl"
+          got=$(.relcheck/bin/ckg --version)
+          echo "ckg --version -> $got"
+          echo "$got" | grep -q "$V" || { echo "::error::ckg --version ($got) != $V"; exit 1; }
+          .relcheck/bin/python -c "import agentforge_graph; print('import OK', agentforge_graph.__version__)"
+          .relcheck/bin/ckg index examples/fastapi-shop
+          .relcheck/bin/ckg routes examples/fastapi-shop
+
+      - name: Upload dist for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ steps.ver.outputs.version }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
