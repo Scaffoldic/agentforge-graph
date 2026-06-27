@@ -13,8 +13,11 @@ def test_version_flag_prints_and_exits_zero(capsys: pytest.CaptureFixture[str]) 
     with pytest.raises(SystemExit) as exc:
         main(["--version"])
     assert exc.value.code == 0
-    out = capsys.readouterr().out
-    assert out.strip() == f"ckg {__version__}"
+    out = capsys.readouterr().out.strip()
+    # feat-013 / FA-001 P1: version now carries the best-effort install channel,
+    # e.g. "ckg 0.7.0 (uvx)".
+    assert out.startswith(f"ckg {__version__} (")
+    assert out.endswith(")")
 
 
 def test_short_version_flag(capsys: pytest.CaptureFixture[str]) -> None:

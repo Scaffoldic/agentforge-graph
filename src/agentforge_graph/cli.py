@@ -791,13 +791,34 @@ async def _doctor(args: argparse.Namespace) -> int:
     return 0
 
 
-def build_parser() -> argparse.ArgumentParser:
-    from agentforge_graph import __version__
+class _VersionAction(argparse.Action):
+    """`ckg --version` with the best-effort install channel (feat-013 / FA-001
+    Phase 1). Computed lazily so only `--version` pays the import."""
 
+    def __init__(self, option_strings: Sequence[str], dest: str, **kwargs: Any) -> None:
+        super().__init__(option_strings, dest, nargs=0, **kwargs)
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: Any,
+        values: Any,
+        option_string: str | None = None,
+    ) -> None:  # noqa: E501
+        from agentforge_graph import __version__
+        from agentforge_graph.setup.channel import detect_channel
+
+        print(f"ckg {__version__} ({detect_channel()})")
+        parser.exit()
+
+
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ckg", description="Code Knowledge Graph engine")
     # `ckg --version` / `-V` short-circuits during parsing (before the required
     # subcommand check), so it works without a subcommand.
-    parser.add_argument("--version", "-V", action="version", version=f"ckg {__version__}")
+    parser.add_argument(
+        "--version", "-V", action=_VersionAction, help="show version + install channel"
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     idx = sub.add_parser("index", help="index a repository into the graph")
