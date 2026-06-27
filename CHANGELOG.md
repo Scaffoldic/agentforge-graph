@@ -8,9 +8,11 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+## [0.6.2] — 2026-06-27
+
 ### Added
 
-- **feat-013 — agent auto-configuration & frictionless first run (0.7 adoption
+- **feat-013 — agent auto-configuration & frictionless first run (adoption
   theme).** `ckg setup` wires the CKG into your coding agent for you: it writes
   the MCP server entry — a committable repo-root `.mcp.json` by default
   (`--scope user` for the global `~/.claude.json`) — after showing a diff and
