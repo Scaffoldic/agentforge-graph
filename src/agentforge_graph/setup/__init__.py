@@ -13,6 +13,8 @@ Public surface grows by chunk; chunk 1 ships the adapter registry + detection.
 
 from __future__ import annotations
 
+from .errors import SetupError
+from .plan import SetupPlan, build_plan, render_plan
 from .registry import (
     SCOPES,
     AgentAdapter,
@@ -22,13 +24,19 @@ from .registry import (
     get_adapter,
     register_adapter,
 )
+from .runner import run_setup
 
 __all__ = [
     "SCOPES",
     "AgentAdapter",
     "AgentTarget",
     "Detection",
+    "SetupError",
+    "SetupPlan",
     "all_adapters",
+    "build_plan",
     "get_adapter",
     "register_adapter",
+    "render_plan",
+    "run_setup",
 ]
