@@ -292,10 +292,9 @@ minor). The generated `.mcp.json` is a new repo file the user chooses to commit.
 2. **Stateless confirm (no remembered consent)?** Proposed **yes** (resolved).
 3. **Nudge = `AGENTS.md`/`CLAUDE.md` managed block?** Proposed **yes** (resolved).
 4. **Docs live in `docs/guides/` not `docs/runbooks/`** (the latter is
-   framework-managed/regenerated)? Proposed **yes** — one comprehensive guide
-   carrying how-to + operational reference. *(Confirm with reviewer — the only
-   deviation from the literal "guides and runbooks" ask, forced by the managed
-   runbooks dir.)*
+   framework-managed/regenerated)? **Resolved yes** (reviewer confirmed
+   2026-06-27) — one comprehensive guide carrying how-to + operational
+   reference.
 5. **v1 adapters = `mcp_json` + `claude_code` only?** Proposed **yes**; registry
    makes more cheap.
 
