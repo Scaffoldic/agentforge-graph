@@ -308,6 +308,23 @@ class ServeConfig(_Block):
     refresh_on_call: bool = False
 
 
+class SetupConfig(_Block):
+    """The ``setup:`` block (feat-013 — agent auto-configuration).
+
+    Drives ``ckg setup``, which writes the agent's MCP entry. ``setup`` is the
+    deliberate ADR-0001 *framework* layer (like ``serve``); this block is still
+    read framework-free via the shared ``_read_block`` reader."""
+
+    KEY: ClassVar[str] = "setup"
+    # project → repo-root .mcp.json (default; shareable/committable, per-repo).
+    # user → the agent's user-global config (e.g. ~/.claude.json).
+    scope: str = "project"
+    transport: str = "stdio"  # stdio | http (mirrors ServeConfig)
+    install_hooks: bool = False  # opt-in AGENTS.md/CLAUDE.md nudge block
+    # [] → auto-detect all known agents; else an allowlist of adapter keys.
+    agents: list[str] = Field(default_factory=list)
+
+
 class FrameworksConfig(_Block):
     """The ``frameworks:`` block of ckg.yaml (feat-011)."""
 

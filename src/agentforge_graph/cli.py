@@ -1,7 +1,7 @@
 """The ``ckg`` command-line interface: ``index``, ``embed``, ``query``,
-``map``, and ``serve-mcp``. The engine commands are framework-free (embedding
-uses the configured driver: Bedrock by default, ``fake`` for tests);
-``serve-mcp`` lazily loads the framework/MCP layer.
+``map``, ``serve-mcp``, and ``setup``. The engine commands are framework-free
+(embedding uses the configured driver: Bedrock by default, ``fake`` for tests);
+``serve-mcp`` and ``setup`` lazily load the framework/MCP layer.
 """
 
 from __future__ import annotations
@@ -641,6 +641,35 @@ async def _serve_mcp(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _setup(args: argparse.Namespace) -> int:
+    # feat-013: wire the CKG into the user's agent. Framework-layer; lazy import
+    # keeps the engine commands free of it.
+    from agentforge_graph.config import SetupConfig
+    from agentforge_graph.setup import SetupError, run_setup
+
+    cfg = SetupConfig.load(args.config)
+    agents = [args.agent] if args.agent else (cfg.agents or None)
+    try:
+        return await run_setup(
+            Path(args.path),
+            scope=args.scope or cfg.scope,
+            transport=args.transport or cfg.transport,
+            host=args.host or "127.0.0.1",
+            port=args.port if args.port is not None else 8765,
+            token=args.auth_token or "",
+            agents=agents,
+            hooks=args.hooks or cfg.install_hooks,
+            do_print=args.print_only,
+            assume_yes=args.yes,
+            do_check=not args.no_check,
+            undo=args.undo,
+            force=args.force,
+        )
+    except SetupError as exc:
+        print(f"setup: {exc}", file=sys.stderr)
+        return 2
+
+
 async def _services_map(args: argparse.Namespace) -> int:
     # ENH-020: the cross-service call graph over a workspace, from the CLI.
     from agentforge_graph.serve.federation import FederatedEngine
@@ -763,13 +792,34 @@ async def _doctor(args: argparse.Namespace) -> int:
     return 0
 
 
-def build_parser() -> argparse.ArgumentParser:
-    from agentforge_graph import __version__
+class _VersionAction(argparse.Action):
+    """`ckg --version` with the best-effort install channel (feat-013 / FA-001
+    Phase 1). Computed lazily so only `--version` pays the import."""
 
+    def __init__(self, option_strings: Sequence[str], dest: str, **kwargs: Any) -> None:
+        super().__init__(option_strings, dest, nargs=0, **kwargs)
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: Any,
+        values: Any,
+        option_string: str | None = None,
+    ) -> None:  # noqa: E501
+        from agentforge_graph import __version__
+        from agentforge_graph.setup.channel import detect_channel
+
+        print(f"ckg {__version__} ({detect_channel()})")
+        parser.exit()
+
+
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ckg", description="Code Knowledge Graph engine")
     # `ckg --version` / `-V` short-circuits during parsing (before the required
     # subcommand check), so it works without a subcommand.
-    parser.add_argument("--version", "-V", action="version", version=f"ckg {__version__}")
+    parser.add_argument(
+        "--version", "-V", action=_VersionAction, help="show version + install channel"
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     idx = sub.add_parser("index", help="index a repository into the graph")
@@ -981,6 +1031,60 @@ def build_parser() -> argparse.ArgumentParser:
         help="(0.1: no-op) refresh the index on tool calls",
     )
     srv.set_defaults(func=_serve_mcp)
+
+    setup_p = sub.add_parser(
+        "setup", help="wire the CKG into your coding agent's MCP config (feat-013)"
+    )
+    _add_repo_arg(setup_p)
+    setup_p.add_argument("--config", default=None, help="path to ckg.yaml")
+    setup_p.add_argument(
+        "--scope",
+        choices=["project", "user"],
+        default=None,
+        help="project = repo-root .mcp.json (default; shareable); user = ~/.claude.json",
+    )
+    setup_p.add_argument(
+        "--agent", default=None, help="target one agent by key (e.g. claude_code); default: all"
+    )
+    setup_p.add_argument(
+        "--transport",
+        choices=["stdio", "http"],
+        default=None,
+        help="MCP transport to write (default: stdio)",
+    )
+    setup_p.add_argument(
+        "--host", default=None, help="http transport bind host (default: 127.0.0.1)"
+    )
+    setup_p.add_argument(
+        "--port", type=int, default=None, help="http transport port (default: 8765)"
+    )
+    setup_p.add_argument(
+        "--auth-token", default="", help="http: token to embed (ENH-005 bind-safety)"
+    )
+    setup_p.add_argument(
+        "--hooks",
+        action="store_true",
+        help="also append a managed nudge block to AGENTS.md/CLAUDE.md",
+    )
+    setup_p.add_argument(
+        "--print",
+        dest="print_only",
+        action="store_true",
+        help="dry-run: print the plan, write nothing",
+    )
+    setup_p.add_argument(
+        "--yes", action="store_true", help="apply without the confirm prompt (scripts/CI)"
+    )
+    setup_p.add_argument(
+        "--no-check", action="store_true", help="skip the post-write connection check"
+    )
+    setup_p.add_argument(
+        "--undo", action="store_true", help="remove the MCP entries this tool wrote"
+    )
+    setup_p.add_argument(
+        "--force", action="store_true", help="overwrite an existing 'ckg' entry you authored"
+    )
+    setup_p.set_defaults(func=_setup)
 
     smap = sub.add_parser(
         "services-map", help="cross-service call graph over a workspace (ENH-020)"

@@ -20,6 +20,9 @@ docs/roadmap/
 # Local-only prior-art survey (not published)
 docs/open-source-ckg-research.md
 
+# Local-only feature-analysis staging (proposals under review, pre-tracker)
+docs/feature-analysis/
+
 # AI-assistant per-session working state (local-only, not published)
 .claude/state/
 

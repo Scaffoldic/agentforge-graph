@@ -49,6 +49,11 @@ the working directory** to the nearest `.ckg/` / `agentforge.yaml` / `ckg.yaml` 
 directory serves *that* repo with no path wiring; an explicit `--repo` always
 wins.
 
+> **Prefer one command?** [`ckg setup`](11-agent-auto-configuration.md) writes
+> all of the below for you (a committable repo `.mcp.json` by default), with a
+> diff preview and a reversible `--undo`. The manual steps here are what it does
+> under the hood.
+
 **Claude Code**:
 
 ```bash

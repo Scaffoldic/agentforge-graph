@@ -30,6 +30,7 @@ setup. They build on each other in order.
 | 08 | [Model providers](08-model-providers.md) | Pick embedding + LLM providers (Bedrock/OpenAI/Anthropic) or bring your own. |
 | 09 | [Storage backends](09-storage-backends.md) | Embedded by default; switch to Neo4j / pgvector / SurrealDB via config. |
 | 10 | [Using over MCP](10-using-over-mcp.md) | Serve the CKG to an agent over 10 read-only tools (stdio/HTTP) or in-process. |
+| 11 | [Agent auto-configuration](11-agent-auto-configuration.md) | `ckg setup` writes your agent's MCP config (repo `.mcp.json` / `--scope user`) + `--hooks` nudge; reversible. |
 
 > New here? Start with **[Getting started → a single repo](getting-started/1-single-repo.md)**.
 > Building an agent on top? Jump to **[10 — Using over MCP](10-using-over-mcp.md)**.

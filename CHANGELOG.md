@@ -8,6 +8,22 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+### Added
+
+- **feat-013 — agent auto-configuration & frictionless first run (0.7 adoption
+  theme).** `ckg setup` wires the CKG into your coding agent for you: it writes
+  the MCP server entry — a committable repo-root `.mcp.json` by default
+  (`--scope user` for the global `~/.claude.json`) — after showing a diff and
+  asking. Edits are structural and marked (`_managed_by`), so they're idempotent,
+  conflict-safe (a `ckg` entry you authored is never clobbered without `--force`),
+  and reversible with `--undo`. A post-write connection check spawns the server
+  and confirms it answers. `--hooks` appends a non-blocking nudge block to
+  `AGENTS.md`/`CLAUDE.md` steering the agent toward the `ckg_*` tools. New agents
+  register via the `agentforge_graph.agent_adapters` entry-point group (Claude
+  Code built in). `ckg --version` now reports the install channel
+  (`uvx`/`pipx`/`pip`); the `uvx`/`pipx` zero-install trial is documented. See
+  [guide 11](docs/guides/11-agent-auto-configuration.md).
+
 ## [0.6.1] — 2026-06-23
 
 Docs/packaging patch ahead of the repo going public. No code or behavior
