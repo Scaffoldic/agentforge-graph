@@ -99,7 +99,7 @@ jobs:
         # Only on the automatic publish path — a manual dispatch failure is
         # visible to the person who ran it.
         if: ${{ failure() && github.event_name == 'release' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const v = '${{ steps.ver.outputs.version }}';
