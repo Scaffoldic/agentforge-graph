@@ -2,7 +2,7 @@
 # scaffold default. Managed-file upgrades will treat this as forked.
 [project]
 name = "agentforge-graph"
-version = "0.6.2"
+version = "0.6.3"
 description = "Code Knowledge Graph (CKG) engine + agent toolset, built on AgentForge."
 readme = "README.md"
 license = "Apache-2.0"

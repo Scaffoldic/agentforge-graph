@@ -8,6 +8,8 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+## [0.6.3] — 2026-07-07
+
 ### Added
 
 - **feat-014 — watch mode + CI-triggered central indexing (freshness / ops).**
