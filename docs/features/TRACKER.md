@@ -58,6 +58,7 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 | [011](feat-011-framework-extractors.md) | Framework-aware extractors | 3 diff | 0.4 | shipped v0.3.0 (7 packs: routes/ORM/DI) | 002 | — | 🟢 |
 | [012](feat-012-llm-enrichment.md) | LLM enrichment (summaries, tags) | 3 diff | 0.4 | shipped (tags + summaries) | 006 | — | ✅ |
 | [013](feat-013-agent-auto-configuration.md) | Agent auto-configuration & frictionless first run | 4 adoption | 0.6.2 | **shipped (0.6.2)** | 008 | — | ✅ |
+| [014](feat-014-watch-and-ci-indexing.md) | Watch mode (local) + CI-triggered central indexing | 4 adoption | 0.6.3 | **shipped (0.6.3)** | 004 | — | ✅ |
 
 ---
 
@@ -140,6 +141,7 @@ ride alongside, not on, this chain.
 | **0.5** ✅ RELEASED | **Org-level central knowledge** — CKG as a shared, org-wide code brain for devs + agents | ENH-018, ENH-019, ENH-020 | Knowledge hostable centrally + consumed read-only; zero-config repo discovery; **one federated MCP endpoint** across services with cross-service tracing — see [theme](../enhancements/THEME-org-central-knowledge.md) |
 | **0.6** ✅ RELEASED | **Workspace build** — the build/setup side of org-central knowledge | ENH-021, ENH-022, ENH-023, ENH-024, ENH-026 | Stand up a multi-repo CKG from one `workspace.yaml` + one config + `ckg build --workspace` (members local or git URL); fail-fast `ckg doctor`; config/CLI-controlled logging/tracing |
 | **0.6.2** ✅ RELEASED | **Adoption** — shrink "installed" → "an agent is querying my repo" | feat-013 (FA-002 + FA-001 P1) | `ckg setup` auto-writes the agent's MCP config (Claude Code first) + optional `--hooks` nudges toward the graph tools; `uvx`/`pipx` zero-install trial blessed |
+| **0.6.3** ✅ RELEASED | **Freshness / ops** — keep the graph current without remembering to re-index | feat-014 (FA-005) | `ckg watch` re-indexes the local working copy on a conditional trigger (commit/idle/save, structural-only by default), refusing central/read-only stores; `ckg ci init` scaffolds a single-writer CI workflow that refreshes the central index on merge |
 
 ---
 

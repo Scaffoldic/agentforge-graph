@@ -13,7 +13,7 @@ import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from agentforge_graph.embed import EmbedReport
 from agentforge_graph.ingest import CodeGraph
@@ -1086,6 +1086,74 @@ def build_parser() -> argparse.ArgumentParser:
     )
     setup_p.set_defaults(func=_setup)
 
+    wt = sub.add_parser(
+        "watch",
+        help="watch the repo and re-index on a trigger (feat-014; local store only)",
+    )
+    _add_repo_arg(wt)
+    wt.add_argument("--config", default=None, help="path to ckg.yaml")
+    wt.add_argument(
+        "--trigger",
+        choices=["on-commit", "on-idle", "on-save", "interval", "manual"],
+        default=None,
+        help="on-commit (default) | on-idle | on-save | interval | manual",
+    )
+    wt.add_argument(
+        "--idle-ms", dest="idle_ms", type=int, default=None, help="on-idle: quiet period (ms)"
+    )
+    wt.add_argument(
+        "--debounce-ms",
+        dest="debounce_ms",
+        type=int,
+        default=None,
+        help="on-save: burst-coalesce window (ms)",
+    )
+    wt.add_argument(
+        "--interval-ms",
+        dest="interval_ms",
+        type=int,
+        default=None,
+        help="interval: periodic refresh window (ms)",
+    )
+    wt.add_argument(
+        "--embed",
+        action="store_true",
+        help="also drain embeddings on each refresh (default: structural only)",
+    )
+    wt.add_argument("--once", action="store_true", help="run one refresh if dirty, then exit")
+    wt.add_argument("--status", action="store_true", help="print trigger/store/freshness and exit")
+    wt.set_defaults(func=_watch)
+
+    ci_p = sub.add_parser("ci", help="scaffold CI to keep a central index fresh (feat-014)")
+    ci_sub = ci_p.add_subparsers(dest="ci_cmd", required=True)
+    ci_init = ci_sub.add_parser("init", help="write .github/workflows/ckg-index.yml")
+    _add_repo_arg(ci_init)
+    ci_init.add_argument("--provider", choices=["github"], default="github", help="CI provider")
+    ci_init.add_argument(
+        "--mode",
+        choices=["incremental", "full"],
+        default="incremental",
+        help="incremental (default; diff-only) | full",
+    )
+    ci_init.add_argument("--no-embed", action="store_true", help="omit the ckg embed step")
+    ci_init.add_argument("--enrich", action="store_true", help="add an LLM enrichment step")
+    ci_init.add_argument(
+        "--extra",
+        action="append",
+        default=[],
+        help="PyPI extra to install (repeatable), e.g. --extra bedrock",
+    )
+    ci_init.add_argument(
+        "--force", action="store_true", help="overwrite an unmanaged workflow file"
+    )
+    ci_init.add_argument(
+        "--print",
+        dest="print_only",
+        action="store_true",
+        help="print the workflow, write nothing",
+    )
+    ci_init.set_defaults(func=_ci_init)
+
     smap = sub.add_parser(
         "services-map", help="cross-service call graph over a workspace (ENH-020)"
     )
@@ -1136,6 +1204,122 @@ def build_parser() -> argparse.ArgumentParser:
             "-v", "--verbose", action="store_true", help="shorthand for --log-level info"
         )
     return parser
+
+
+async def _watch(args: argparse.Namespace) -> int:
+    """feat-014: watch the repo and re-run the incremental refresh on a trigger.
+    Local embedded store only — refuses a central / read-only store."""
+    from agentforge_graph.config import StoreConfig, WatchConfig, resolve_config
+    from agentforge_graph.ingest.watch import (
+        WatchGuardError,
+        WatchSettings,
+        ensure_watchable,
+        run_once,
+        run_watch,
+    )
+    from agentforge_graph.ingest.watch import status as watch_status
+    from agentforge_graph.ingest.watch.source import WatchDependencyError
+
+    cfg = resolve_config(args.config, args.path)
+    wcfg = WatchConfig.load(cfg)
+    try:
+        settings = WatchSettings(
+            trigger=args.trigger or wcfg.trigger,
+            debounce_ms=args.debounce_ms or wcfg.debounce_ms,
+            idle_ms=args.idle_ms or wcfg.idle_ms,
+            interval_ms=args.interval_ms or wcfg.interval_ms,
+        )
+    except ValueError as exc:
+        print(f"ckg watch: {exc}", file=sys.stderr)
+        return 2
+
+    if args.status:
+        print(watch_status(args.path, args.config, settings).render())
+        return 0
+
+    # Load-bearing guardrail: watch may only write a local, writable, embedded
+    # index. Central / read-only stores are CI's job (ckg ci init).
+    try:
+        ensure_watchable(StoreConfig.load(cfg), _is_read_only(args))
+    except WatchGuardError as exc:
+        print(f"ckg watch: {exc}", file=sys.stderr)
+        return 2
+
+    embed_on = args.embed or wcfg.embed_on_watch
+    if args.once:
+        report = await run_once(args.path, args.config, embed=embed_on, enrich=wcfg.enrich_on_watch)
+        print(_format_report(cast(IndexReport, report)))
+        return 0
+
+    def on_refresh(report: object) -> None:
+        print(_format_report(cast(IndexReport, report)))
+
+    def on_gate(active: bool, branch: str) -> None:
+        if active:
+            print(
+                f"ckg watch: watching (trigger={settings.trigger}, "
+                f"branch={branch or 'detached'}) — Ctrl-C to stop",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                f"ckg watch: branch {branch!r} is gated out by watch.branches; "
+                "idle until you switch to a watched branch",
+                file=sys.stderr,
+            )
+
+    try:
+        await run_watch(
+            args.path,
+            args.config,
+            settings,
+            include=wcfg.branches.include,
+            exclude=wcfg.branches.exclude,
+            extra_ignore=wcfg.ignore,
+            embed_on_watch=embed_on,
+            enrich_on_watch=wcfg.enrich_on_watch,
+            on_refresh=on_refresh,
+            on_gate=on_gate,
+        )
+    except WatchDependencyError as exc:
+        print(f"ckg watch: {exc}", file=sys.stderr)
+        return 2
+    except KeyboardInterrupt:
+        print("\nckg watch: stopped", file=sys.stderr)
+    return 0
+
+
+async def _ci_init(args: argparse.Namespace) -> int:
+    """feat-014: scaffold a CI workflow that keeps the central index fresh."""
+    from agentforge_graph.ci import CiInitError, scaffold_workflow
+
+    try:
+        res = scaffold_workflow(
+            args.path,
+            provider=args.provider,
+            mode=args.mode,
+            embed=not args.no_embed,
+            enrich=args.enrich,
+            extras=args.extra or None,
+            force=args.force,
+            print_only=args.print_only,
+        )
+    except (CiInitError, ValueError) as exc:
+        print(f"ckg ci init: {exc}", file=sys.stderr)
+        return 2
+
+    if res.action == "printed":
+        print(res.content, end="")
+        return 0
+    print(f"ckg ci init: {res.action} {res.path}")
+    if res.action in ("created", "updated", "overwritten"):
+        print(
+            "  next: commit this workflow, set the CKG_CENTRAL_STORE_URL secret + "
+            "provider creds,\n"
+            "        and set store.central_root in agentforge.yaml so CI writes the "
+            "central index."
+        )
+    return 0
 
 
 def _configure_logging(args: argparse.Namespace) -> None:

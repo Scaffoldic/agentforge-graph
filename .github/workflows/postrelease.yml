@@ -1,19 +1,26 @@
 name: Post-release checks
 
-# After a release is published, prove the artifact is actually installable from
-# real PyPI and runs end-to-end (creds-free) — the manual step 4 of
-# docs/roadmap/local-verification-checklist.md, automated.
+# After a release is *published to PyPI*, prove the artifact is actually
+# installable from real PyPI and runs end-to-end (creds-free) — the manual
+# step 4 of docs/roadmap/local-verification-checklist.md, automated.
 #
 # Triggers:
-#   - release: published  -> verify the just-released version.
-#   - workflow_dispatch    -> verify an explicit version on demand.
+#   - workflow_run on "Release" (completed) -> verify the version Release just
+#     published. Keyed off the Release workflow actually FINISHING, not the
+#     GitHub `release: published` event — our publish is on-demand OIDC
+#     (release.yml is dispatched + approved AFTER the GitHub release exists), so
+#     `release: published` fires long before the artifact is on PyPI and the poll
+#     would 404 forever (issue #148). `workflow_run` runs only once the Release
+#     run (build + OIDC publish) completed successfully.
+#   - workflow_dispatch -> verify an explicit version on demand.
 # Polls PyPI (index lag is ~1 min after upload), then installs into a clean venv
-# from PyPI and runs the CLI smoke. On the publish trigger it then opens an issue
-# if anything fails, so a bad release is loud.
+# from PyPI and runs the CLI smoke. On the automatic path it opens an issue if
+# anything fails, so a bad release is loud.
 
 on:
-  release:
-    types: [published]
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -21,7 +28,7 @@ on:
         required: true
 
 concurrency:
-  group: postrelease-${{ github.ref }}
+  group: postrelease-${{ github.event.workflow_run.head_branch || inputs.version }}
   cancel-in-progress: false
 
 env:
@@ -34,6 +41,10 @@ jobs:
   verify-pypi:
     name: install from PyPI + smoke
     runs-on: ubuntu-latest
+    # Only run once Release actually succeeded (build + OIDC publish). A dispatch
+    # that was never approved leaves Release without a success conclusion, so this
+    # never fires on a publish that did not happen.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
       # Needed by the github-script step that opens an issue on failure.
@@ -51,13 +62,14 @@ jobs:
 
       - name: Resolve target version
         id: ver
-        # release event -> the tag (strip a leading v); manual -> the input.
+        # workflow_run -> the tag Release ran on (head_branch = the vX.Y.Z ref it
+        # was dispatched with; strip a leading v); manual -> the input.
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             v="${{ inputs.version }}"
           else
-            tag="${{ github.event.release.tag_name }}"
+            tag="${{ github.event.workflow_run.head_branch }}"
             v="${tag#v}"
           fi
           case "$v" in
@@ -98,7 +110,7 @@ jobs:
       - name: Open an issue if the release smoke failed
         # Only on the automatic publish path — a manual dispatch failure is
         # visible to the person who ran it.
-        if: ${{ failure() && github.event_name == 'release' }}
+        if: ${{ failure() && github.event_name == 'workflow_run' }}
         uses: actions/github-script@v7
         with:
           script: |

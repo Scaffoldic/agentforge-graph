@@ -8,6 +8,42 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+### Added
+
+- **feat-014 — watch mode + CI-triggered central indexing (freshness / ops).**
+  feat-004 made re-indexing cheap; this adds the two automatic *triggers* that
+  keep the graph fresh, one per topology, with a hard wall between them.
+  - **`ckg watch`** (opt-in, local embedded store only) re-runs the incremental
+    `refresh()` on a configurable trigger — `on-commit` (default; refreshes on a
+    commit / branch switch, ignores ordinary saves), `on-idle`, `on-save`,
+    `interval`, or `manual`. Debounced + single-flight so bursts coalesce; a
+    watch refresh is **structural-only** by default (`embed_on_watch` /
+    `enrich_on_watch` off) so it never burns embedding/LLM spend per save. Branch
+    gating (`watch.branches`) watches feature branches and skips `main` /
+    `release/*`. `ckg watch --status` reports trigger · store · freshness;
+    `ckg watch --once` runs one refresh and exits.
+  - **`ckg watch` refuses a central (`store.central_root`) or read-only store** —
+    that topology's freshness is CI's job. This local/central split is enforced
+    in the engine (a developer's watch loop must never race writes into the
+    shared, authoritative graph).
+  - **`ckg ci init`** scaffolds a self-contained
+    `.github/workflows/ckg-index.yml` (managed-marker, idempotent, `--print`,
+    `--force`) that indexes into the central store on merge-to-`main` + nightly,
+    single-writer (`concurrency` group). CI is the sole authoritative writer, so
+    read-only consumers (ENH-018) can trust it.
+  - New `[watch]` PyPI extra (`watchfiles`, lazy-loaded so the base install stays
+    lean) and a `watch:` config block. See
+    [guide 12](docs/guides/12-watch-and-ci-indexing.md).
+
+### Fixed
+
+- **Post-release verification no longer false-alarms (#148).** `postrelease.yml`
+  now runs off the **Release workflow completing successfully** (`workflow_run`),
+  not the GitHub `release: published` event. Under the on-demand OIDC publish
+  model the release is published before the artifact reaches PyPI, so the old
+  trigger polled PyPI too early, 404'd for ~10 min, and auto-opened a spurious
+  "post-release smoke failed" issue every release.
+
 ## [0.6.2] — 2026-06-27
 
 ### Added
