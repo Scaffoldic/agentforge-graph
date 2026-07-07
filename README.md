@@ -56,10 +56,14 @@ ckg serve-mcp --repo .              # → 10 read-only tools for your agent
 - 🔎 **Hybrid retrieval** — vector search **entry** → typed **graph expansion**. Ask
   in natural language, get *connected* context: the symbol, its callers, *and* its
   governing decision.
-- ⚡ **Incremental by default** — re-index only the diff. Edit 3 files in a 5k-file
-  repo → seconds, not minutes. Embeddings/enrichment recompute only what changed.
-- 🤖 **Agent-native** — served read-only over **MCP (10 tools)** or as a native
-  AgentForge toolset. Every response carries a staleness envelope.
+- ⚡ **Incremental & always-fresh** — re-index only the diff (edit 3 files in a
+  5k-file repo → seconds, not minutes; embeddings/enrichment recompute only what
+  changed). Keep it fresh automatically: **`ckg watch`** re-indexes your working
+  copy on a trigger you choose (commit / idle / save), and **`ckg ci init`**
+  scaffolds a workflow that keeps the shared central index fresh on every merge.
+- 🤖 **Agent-native, wired in one command** — served read-only over **MCP (10
+  tools)** or as a native AgentForge toolset, every response carrying a staleness
+  envelope. **`ckg setup`** writes your agent's MCP config for you.
 - 🧠 **LLM enrichment, budgeted & opt-in** — design-pattern tags (*"this class is a
   Repository,"* with confidence + rationale) and bottom-up module summaries, all
   `llm`-provenance. **CI needs no model calls or cloud creds.**
@@ -193,6 +197,19 @@ ckg serve-mcp --repo . --transport http            # or HTTP → http://127.0.0.
 by default), shows a diff first, and is reversible with `--undo` — see
 [guide 11](docs/guides/11-agent-auto-configuration.md). Over HTTP, point any MCP
 client at the URL: `{"mcpServers": {"ckg": {"url": "http://127.0.0.1:8765/mcp"}}}`.
+
+### Keep it fresh
+
+```bash
+ckg watch                              # local: re-index on a trigger (commit/idle/save)
+ckg ci init                            # central: scaffold a CI workflow that indexes on merge
+```
+
+`ckg watch` (opt-in, `pip install 'agentforge-graph[watch]'`) keeps your working
+copy's graph current — `on-commit` by default, so it won't churn on every save —
+and refuses a central / read-only store. `ckg ci init` writes a single-writer
+`.github/workflows/ckg-index.yml` so the shared index refreshes deterministically
+on merge-to-`main`. See [guide 12](docs/guides/12-watch-and-ci-indexing.md).
 
 Or as a native AgentForge toolset:
 

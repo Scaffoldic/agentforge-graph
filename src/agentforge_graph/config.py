@@ -325,6 +325,36 @@ class SetupConfig(_Block):
     agents: list[str] = Field(default_factory=list)
 
 
+class BranchGate(BaseModel):
+    """feat-014: which branches ``ckg watch`` is active on (globs, ``full_match``).
+    Default watches everything except the shared/protected branches a developer
+    should not be locally re-indexing over."""
+
+    include: list[str] = Field(default_factory=lambda: ["*"])
+    exclude: list[str] = Field(default_factory=lambda: ["main", "release/*"])
+
+
+class WatchConfig(_Block):
+    """The ``watch:`` block (feat-014 — local watch-mode freshness).
+
+    Drives ``ckg watch``, which re-runs the feat-004 incremental ``refresh()``
+    on a configurable trigger. **Local embedded store only** — the CLI refuses a
+    central (`store.central_root`) or read-only store; that path's freshness is
+    CI's job (``ckg ci init``). Framework-free (ADR-0001)."""
+
+    KEY: ClassVar[str] = "watch"
+    enabled: bool = False  # opt-in
+    # on-commit (default) | on-idle | on-save | interval | manual
+    trigger: str = "on-commit"
+    debounce_ms: int = 1000  # on-save: coalesce burst-saves
+    idle_ms: int = 3000  # on-idle: quiet period before a refresh
+    interval_ms: int = 60000  # interval: periodic refresh if dirty
+    branches: BranchGate = Field(default_factory=BranchGate)
+    ignore: list[str] = Field(default_factory=list)  # extra globs beyond the indexer excludes
+    embed_on_watch: bool = False  # keep watch cheap: defer embeddings by default
+    enrich_on_watch: bool = False  # never auto-run LLM enrichment on a trigger by default
+
+
 class FrameworksConfig(_Block):
     """The ``frameworks:`` block of ckg.yaml (feat-011)."""
 

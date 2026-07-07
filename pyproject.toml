@@ -57,6 +57,9 @@ engine = []
 # Optional cross-encoder reranker (ENH-009, OFF by default — pulls torch).
 # `uv sync --extra rerank`; lazy-loaded, so the base install / CI stay torch-free.
 rerank = ["sentence-transformers>=2.2"]
+# Local watch mode (feat-014). `ckg watch` needs a cross-platform fs-watcher;
+# lazy-loaded so the base install stays lean. `uv sync --extra watch`.
+watch = ["watchfiles>=0.24"]
 # Opt-in server graph backend: Neo4j (ENH-004 / ADR-0006). `--extra neo4j`.
 neo4j = ["neo4j>=5"]
 # Opt-in server vector backend: Postgres + pgvector (ENH-004). `--extra pgvector`.
@@ -137,6 +140,7 @@ module = [
     "pgvector.*",     # ENH-004 pgvector backend; in the `pgvector` extra
     "surrealdb.*",    # ENH-010 SurrealDB backend; in the `surrealdb` extra
     "sentence_transformers.*",  # ENH-009 cross-encoder rerank; in the `rerank` extra
+    "watchfiles.*",   # feat-014 watch mode; in the `watch` extra, lazy-loaded
     "agentforge.*",
     "agentforge_core.*",
     "agentforge_mcp.*",
