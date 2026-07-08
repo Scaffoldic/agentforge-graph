@@ -322,7 +322,8 @@ class Neo4jGraphStore(GraphStore):
             # execute_read runs a genuine READ transaction — a write would be
             # refused by the session (gate #2), on top of the AST gate (gate #1).
             async with self._driver.session(database=self._database) as session:
-                return await session.execute_read(_tx)
+                result: BoundedResult = await session.execute_read(_tx)
+                return result
 
         bounded = await run_bounded_async(pull, settings)
         return ResultTable(
