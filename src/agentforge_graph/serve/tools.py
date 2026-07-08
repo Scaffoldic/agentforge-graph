@@ -83,12 +83,23 @@ class HistoryInput(_Fed):
     symbol_id: str = Field(description="exact symbol id whose git history to report")
 
 
+class QueryInput(_Fed):
+    query: str = Field(
+        description="a read-only structural query in the Cypher subset "
+        "(MATCH … WHERE … RETURN …); see ckg_status for the language version"
+    )
+    limit: int | None = Field(default=None, description="cap rows (clamped to the server max)")
+
+
 class EmptyInput(_Fed):
     pass
 
 
 class _CkgTool(Tool):
     capabilities: ClassVar[frozenset[str]] = frozenset()
+    # Serve-level capability gates: this tool is registered only when the backend
+    # provides every marker here (feat-015 capability-driven registration).
+    requires: ClassVar[frozenset[str]] = frozenset()
 
     def __init__(self, engine: EngineProvider) -> None:
         self._engine = engine
@@ -469,8 +480,30 @@ class CkgServicesMap(_CkgTool):
         return json.dumps(await fn(), indent=2)
 
 
-# The locked v1 tool set (single-repo). ``ckg_services_map`` is federation-only
-# and appended by ``federated_tools`` (ENH-020), so a single repo is unchanged.
+class CkgQuery(_CkgTool):
+    name: ClassVar[str] = "ckg_query"
+    description: ClassVar[str] = (
+        "Escape hatch for PRECISE STRUCTURAL questions no typed verb covers — e.g. "
+        "'classes tagged Repository with no inbound CALLS', 'interfaces implemented by "
+        ">5 classes'. Read-only Cypher subset: MATCH patterns over the graph's node/edge "
+        "kinds, WHERE (comparisons, IN, STARTS/ENDS WITH, CONTAINS, pattern existence), "
+        "RETURN with count/min/max/avg, ORDER BY, LIMIT. For semantic 'find code about X' "
+        "use ckg_search instead; for 'who calls this' use ckg_impact."
+    )
+    input_schema: ClassVar[type[BaseModel]] = QueryInput
+    requires: ClassVar[frozenset[str]] = frozenset({"query"})
+
+    async def run(self, **kwargs: Any) -> str:
+        eng, err = self._resolve_one(kwargs)
+        if eng is None:
+            return err or ""
+        result = await eng.query_graph(kwargs["query"], kwargs.get("limit"))
+        return json.dumps(result, indent=2)
+
+
+# The locked v1 tool set (single-repo). ``ckg_query`` is capability-gated —
+# registered only when the backend is query-capable (feat-015). ``ckg_services_map``
+# is federation-only and appended by ``federated_tools`` (ENH-020).
 ALL_TOOLS = [
     CkgRepoMap,
     CkgSearch,
@@ -482,4 +515,5 @@ ALL_TOOLS = [
     CkgDecisions,
     CkgExplain,
     CkgHistory,
+    CkgQuery,
 ]

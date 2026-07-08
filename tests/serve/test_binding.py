@@ -23,6 +23,7 @@ _EXPECTED = {
     "ckg_decisions",
     "ckg_explain",
     "ckg_history",
+    "ckg_query",  # feat-015: present because the default (kuzu) backend is query-capable
 }
 
 

@@ -31,16 +31,38 @@ if TYPE_CHECKING:
 Transport = Literal["stdio", "http"]
 
 
-def _tools_for(engine: EngineProvider) -> list[Tool]:
+def _tools_for(engine: EngineProvider, capabilities: frozenset[str]) -> list[Tool]:
     # ALL_TOOLS holds concrete Tool subclasses; mypy joins them to the abstract
-    # base and can't see that, hence the abstract ignore.
-    return [tool_cls(engine) for tool_cls in ALL_TOOLS]  # type: ignore[abstract]
+    # base and can't see that, hence the abstract ignore. A tool is included only
+    # when the backend provides every capability it `requires` (feat-015), so a
+    # capability-gated tool is present exactly when it is actually usable — never
+    # discovered as a tool that only errors.
+    return [
+        tool_cls(engine)  # type: ignore[abstract]
+        for tool_cls in ALL_TOOLS
+        if tool_cls.requires <= capabilities
+    ]
+
+
+def _store_capabilities(config: ConfigSource, repo_path: str | Path) -> frozenset[str]:
+    """Serve-level capability markers for a store config — currently just
+    ``query`` when the resolved graph driver is query-capable (feat-015).
+    Resolved from the driver *class*, so no index is opened."""
+    from agentforge_graph.config import StoreConfig, resolve_config
+    from agentforge_graph.store.registry import graph_driver
+
+    try:
+        cfg = StoreConfig.load(resolve_config(config, repo_path))
+        driver = graph_driver(cfg.graph.driver)
+    except Exception:
+        return frozenset()
+    return frozenset({"query"}) if hasattr(driver, "query_dialect") else frozenset()
 
 
 def code_graph_tools(repo_path: str | Path = ".", config: ConfigSource = None) -> list[Tool]:
     """The CKG toolset as native AgentForge ``Tool`` instances, sharing one
     lazily-opened engine. Pass straight to ``Agent(tools=code_graph_tools("."))``."""
-    return _tools_for(_Engine(repo_path, config))
+    return _tools_for(_Engine(repo_path, config), _store_capabilities(config, repo_path))
 
 
 def federated_tools(workspace: str | Path) -> list[Tool]:
@@ -48,9 +70,16 @@ def federated_tools(workspace: str | Path) -> list[Tool]:
     fan across every member; pinpoint tools take a ``service`` to pick one; plus
     the federation-only ``ckg_services_map`` (cross-service call graph). One
     endpoint for the whole org."""
-    fed = FederatedEngine.from_workspace(WorkspaceConfig.load(workspace))
+    ws = WorkspaceConfig.load(workspace)
+    fed = FederatedEngine.from_workspace(ws)
+    # A capability holds for the federation only if every member provides it, so
+    # ckg_query is offered only when all members are query-capable.
+    # resolve_member_config returns a ResolvedConfig, which resolve_config passes
+    # through (repo_path is unused for an already-resolved config).
+    member_caps = [_store_capabilities(ws.resolve_member_config(m), ".") for m in ws.members]
+    caps = frozenset.intersection(*member_caps) if member_caps else frozenset()
     # the cross-service tools are appended only here — single-repo tool set stays v1.
-    return [*_tools_for(fed), CkgServicesMap(fed), CkgTrace(fed)]
+    return [*_tools_for(fed, caps), CkgServicesMap(fed), CkgTrace(fed)]
 
 
 def build_mcp_server(
