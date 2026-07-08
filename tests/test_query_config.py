@@ -55,8 +55,17 @@ async def indexed(tmp_path: Path) -> Path:
 def test_cli_refuses_when_disabled(indexed: Path, capsys: pytest.CaptureFixture[str]) -> None:
     cfg = indexed / "ckg.yaml"
     cfg.write_text("query:\n  enabled: false\n")
-    rc = main(["query", "--path", str(indexed), "--config", str(cfg),
-               "--graph", "MATCH (c:Class) RETURN c.name"])
+    rc = main(
+        [
+            "query",
+            "--path",
+            str(indexed),
+            "--config",
+            str(cfg),
+            "--graph",
+            "MATCH (c:Class) RETURN c.name",
+        ]
+    )
     assert rc == 2
     assert "disabled" in capsys.readouterr().err
 

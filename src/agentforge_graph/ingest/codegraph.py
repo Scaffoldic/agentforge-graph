@@ -496,9 +496,7 @@ class CodeGraph:
             allow_ids=allow_ids,
         )
 
-    async def query_graph(
-        self, text: str, settings: QuerySettings | None = None
-    ) -> ResultTable:
+    async def query_graph(self, text: str, settings: QuerySettings | None = None) -> ResultTable:
         """Execute a read-only structural query (feat-015). ``settings`` bounds
         the run (row cap / timeout / expansions); defaults are used if omitted.
         Raises ``QueryError`` on bad input, ``QueryDisabled`` on a non-query
