@@ -40,13 +40,14 @@ from .ast import (
 from .capability import (
     AGG_BASIC,
     AGG_COLLECT,
+    ATTRS_ACCESS,
     CORE_TIER,
     PATH_VARLEN,
     PATTERN_EXISTS,
     STRING_PRED,
 )
 from .errors import CapabilityError, ValidationError
-from .schema import PROPERTY_BY_NAME, is_known_property
+from .schema import PROPERTY_BY_NAME, is_attrs_ref, is_known_property
 
 _NODE_KIND_VALUES = frozenset(k.value for k in NodeKind)
 _EDGE_KIND_VALUES = frozenset(k.value for k in EdgeKind)
@@ -245,6 +246,17 @@ def _check_capabilities(ast: QueryAst, capabilities: frozenset[str]) -> None:
     for item in ast.returns:
         if isinstance(item.expr, Aggregate):
             required.add(AGG_COLLECT if item.expr.func == "collect" else AGG_BASIC)
+    for ref in _all_prop_refs(ast):
+        if is_attrs_ref(ref.path):
+            required.add(ATTRS_ACCESS)
     for cap in sorted(required):
         if cap not in capabilities:
             raise CapabilityError(cap, capabilities)
+
+
+def _all_prop_refs(ast: QueryAst) -> Iterator[PropRef]:
+    yield from _where_prop_refs(ast)
+    yield from _return_prop_refs(ast)
+    for key in ast.order_by:
+        if isinstance(key.ref, PropRef):
+            yield key.ref

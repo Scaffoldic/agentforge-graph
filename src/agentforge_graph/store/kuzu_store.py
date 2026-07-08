@@ -55,6 +55,10 @@ from ._rowmap import (
 from ._rowmap import (
     node_params as _node_params,
 )
+from .query.ast import QueryAst
+from .query.capability import AGG_COLLECT, CORE_TIER, QuerySettings, ResultTable
+from .query.compile_cypher import KuzuCypherCompiler
+from .query.execute import run_bounded
 
 SCHEMA_VERSION = 1
 
@@ -86,7 +90,18 @@ def _rows(result: Any) -> list[Any]:
 
 
 class KuzuGraphStore(GraphStore):
-    """Embedded graph store backed by a Kuzu database directory."""
+    """Embedded graph store backed by a Kuzu database directory.
+
+    Implements the optional ``QueryCapable`` protocol (feat-015): it compiles a
+    validated ``QueryAst`` to openCypher over the single-table schema and runs it
+    under the shared bounds. Read-only rests on the AST gate (no write can be
+    expressed); Kuzu embedded has no read-only session mode, so
+    ``read_only_execution`` is False."""
+
+    # --- QueryCapable (feat-015) ---
+    query_dialect = "kuzu"
+    capabilities = CORE_TIER | {AGG_COLLECT}
+    read_only_execution = False
 
     def __init__(self, db: kuzu.Database, conn: kuzu.Connection, path: Path) -> None:
         self._db = db
@@ -371,6 +386,25 @@ class KuzuGraphStore(GraphStore):
             )
             edges += [_edge_from_rel(row[0], row[1], node_id) for row in _rows(res)]
         return edges
+
+    async def run_query(self, ast: QueryAst, settings: QuerySettings) -> ResultTable:
+        compiler = KuzuCypherCompiler()
+        compiled = compiler.compile(ast, settings)
+        effective_limit = compiler.effective_limit(ast, settings)
+
+        def make_source() -> Any:
+            result: Any = self._conn.execute(compiled.text, compiled.params)
+            while result.has_next():
+                yield tuple(result.get_next())
+
+        async with self._lock:
+            bounded = await run_bounded(make_source, settings, effective_limit)
+        return ResultTable(
+            columns=compiled.columns,
+            rows=tuple(bounded.rows),
+            truncated=bounded.truncated,
+            stopped_reason=bounded.stopped_reason,
+        )
 
     async def close(self) -> None:
         async with self._lock:

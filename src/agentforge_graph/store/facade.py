@@ -17,6 +17,14 @@ from agentforge_graph.core import EdgeKind, GraphStore, Node, QueryResult, Score
 
 from .errors import SchemaVersionError, StoreError
 from .location import is_read_only, resolve_root
+from .query import (
+    QueryCapable,
+    QueryDisabled,
+    QuerySettings,
+    ResultTable,
+    parse_query,
+    validate_query,
+)
 from .registry import graph_driver, vector_driver
 
 # Store-level on-disk layout version. Bumped when the .ckg/ layout changes;
@@ -73,6 +81,28 @@ class Store:
             for nb in await self.graph.neighbors(r.ref, kinds, depth):
                 nodes[nb.id] = nb
         return QueryResult(nodes=list(nodes.values()))
+
+    @property
+    def query_enabled(self) -> bool:
+        """True if the active graph backend can execute structural queries."""
+        return isinstance(self.graph, QueryCapable)
+
+    @property
+    def query_capabilities(self) -> frozenset[str]:
+        """The capability tiers the active backend executes (empty if none)."""
+        graph = self.graph
+        return graph.capabilities if isinstance(graph, QueryCapable) else frozenset()
+
+    async def query_graph(self, text: str, settings: QuerySettings) -> ResultTable:
+        """Parse, validate (against this backend's capabilities), and execute a
+        read-only structural query. Raises ``QueryError`` on bad input or
+        ``QueryDisabled`` if the backend is not query-capable."""
+        graph = self.graph
+        if not isinstance(graph, QueryCapable):
+            raise QueryDisabled(type(graph).__name__)
+        ast = parse_query(text)
+        validate_query(ast, graph.capabilities)
+        return await graph.run_query(ast, settings)
 
     async def close(self) -> None:
         await self.graph.close()

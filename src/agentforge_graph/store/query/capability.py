@@ -30,12 +30,17 @@ PATH_VARLEN = "path.varlen"  # bounded variable-length rel, e.g. [:CALLS*1..3]
 
 # Optional (a backend MAY advertise these; not part of the mandatory core):
 AGG_COLLECT = "agg.collect"  # collect() list aggregation
+ATTRS_ACCESS = "attrs.access"  # querying free-form n.attrs.<key> (needs a real
+# map column, not a JSON string). No v1 backend advertises it: Kuzu/Neo4j store
+# attrs as a JSON string, which native Cypher can't destructure portably without
+# a workaround that breaks under aggregation — so attrs.* cleanly reports as
+# unsupported via the capability seam until a backend can back it faithfully.
 
 # Every query-capable backend MUST support these and prove identical results.
 CORE_TIER: frozenset[str] = frozenset({CORE, AGG_BASIC, PATTERN_EXISTS, STRING_PRED, PATH_VARLEN})
 
 # All capabilities the query language defines (core + optional).
-ALL_CAPABILITIES: frozenset[str] = CORE_TIER | {AGG_COLLECT}
+ALL_CAPABILITIES: frozenset[str] = CORE_TIER | {AGG_COLLECT, ATTRS_ACCESS}
 
 
 @dataclass(frozen=True)

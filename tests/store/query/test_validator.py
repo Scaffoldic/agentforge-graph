@@ -34,7 +34,6 @@ def _v(text: str, capabilities: frozenset[str] = CORE_TIER) -> None:
         'MATCH (c:Class {name: "Repo"}) RETURN c.path',
         "MATCH (a:Class)-[:IMPLEMENTS]->(i:Interface) RETURN i.name, count(a) AS n ORDER BY n DESC",
         "MATCH (f:Function) WHERE NOT (f)<-[:CALLS]-() RETURN f.name",
-        'MATCH (s:Service) WHERE s.attrs.framework = "fastapi" RETURN s.name',
         "MATCH (f:Function)-[:CALLS*1..3]->(g:Function) RETURN g.name",
         "MATCH (a:Class)-[:IMPLEMENTS]->(i:Interface), (a)-[:INHERITS]->(b:Class) RETURN a.name",
     ],
@@ -66,8 +65,23 @@ def test_unknown_property_rejected() -> None:
         _v("MATCH (f:Function) RETURN f.bogus")
 
 
-def test_attrs_property_allowed() -> None:
-    _v('MATCH (f:Function) WHERE f.attrs.anything = "x" RETURN f.name')
+def test_attrs_property_structurally_known_but_gated() -> None:
+    # attrs.* parses and is a known property shape, but needs the (optional)
+    # attrs.access capability, which the core tier does not include.
+    from agentforge_graph.store.query.capability import ATTRS_ACCESS
+
+    with pytest.raises(CapabilityError) as exc:
+        _v('MATCH (f:Function) WHERE f.attrs.anything = "x" RETURN f.name')
+    assert exc.value.capability == ATTRS_ACCESS
+
+
+def test_attrs_property_allowed_when_backend_advertises_it() -> None:
+    from agentforge_graph.store.query.capability import ATTRS_ACCESS
+
+    _v(
+        'MATCH (f:Function) WHERE f.attrs.anything = "x" RETURN f.name',
+        capabilities=CORE_TIER | {ATTRS_ACCESS},
+    )
 
 
 def test_unknown_inline_property_rejected() -> None:
