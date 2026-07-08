@@ -158,6 +158,16 @@ class _Parser:
             raise ParseError(f"expected {what}, found {found}", position=tok.pos, query=self.text)
         return self._advance()
 
+    def _name(self, what: str) -> str:
+        # A label / relationship type may be a reserved word (e.g. the CONTAINS
+        # edge kind clashes with the CONTAINS string operator), so accept an
+        # identifier *or* any keyword token in name position.
+        tok = self.toks[self.i]
+        if tok.type == "IDENT" or tok.type in _KEYWORDS:
+            return self._advance().value
+        found = "end of input" if tok.type == "EOF" else repr(tok.value)
+        raise ParseError(f"expected {what}, found {found}", position=tok.pos, query=self.text)
+
     # query := MATCH pattern (, pattern)* [WHERE expr] RETURN [DISTINCT] item (, item)*
     #          [ORDER BY key (, key)*] [SKIP int] [LIMIT int]
     def parse(self) -> QueryAst:
@@ -213,7 +223,7 @@ class _Parser:
         var = self._accept("IDENT")
         label = None
         if self._accept(":"):
-            label = self._expect("IDENT", "a node label").value
+            label = self._name("a node label")
         props: list[tuple[str, Lit]] = []
         if self._accept("{"):
             props.append(self._prop_eq())
@@ -242,7 +252,7 @@ class _Parser:
             v = self._accept("IDENT")
             var = v.value if v else None
             if self._accept(":"):
-                kind = self._expect("IDENT", "a relationship type").value
+                kind = self._name("a relationship type")
             if self._accept("*"):
                 min_hops, max_hops = self._varlen()
             self._expect("]", "']'")

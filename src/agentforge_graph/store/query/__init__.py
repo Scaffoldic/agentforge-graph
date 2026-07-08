@@ -29,6 +29,7 @@ from .errors import (
     QueryError,
     ValidationError,
 )
+from .interpret import InterpretingQueryEngine
 from .parser import parse_query
 from .schema import QUERY_LANG_VERSION, SchemaDescription, describe_schema
 from .validator import validate_query
@@ -38,6 +39,7 @@ __all__ = [
     "parse_query",
     "validate_query",
     "describe_schema",
+    "InterpretingQueryEngine",
     # types
     "QueryAst",
     "QueryCapable",

@@ -50,6 +50,7 @@ def _node(descriptor: str, kind: NodeKind, name: str, span: tuple[int, int] = (1
 def make_query_fixture() -> FileSubgraph:
     """A small graph exercising every core construct: classes implementing an
     interface, a call chain (for var-length), an orphan, and a tag."""
+    file = _node("", NodeKind.FILE, "app.py")
     repo = _node(Descriptor.type("Repo"), NodeKind.CLASS, "Repo")
     cache = _node(Descriptor.type("Cache"), NodeKind.CLASS, "Cache")
     plain = _node(Descriptor.type("Plain"), NodeKind.CLASS, "Plain")
@@ -60,8 +61,13 @@ def make_query_fixture() -> FileSubgraph:
     baz = _node(Descriptor.term("baz"), NodeKind.FUNCTION, "baz")
     qux = _node(Descriptor.term("qux"), NodeKind.FUNCTION, "qux")
     tag = _node(Descriptor.term("Repository"), NodeKind.PATTERN_TAG, "Repository")
-    nodes = [repo, cache, plain, store_if, empty_if, foo, bar, baz, qux, tag]
+    nodes = [file, repo, cache, plain, store_if, empty_if, foo, bar, baz, qux, tag]
     edges = [
+        # CONTAINS is both an EdgeKind and the CONTAINS string operator — including
+        # it proves the parser accepts a reserved word in relationship-type position.
+        Edge(src=file.id, dst=repo.id, kind=EdgeKind.CONTAINS, provenance=_PROV),
+        Edge(src=file.id, dst=cache.id, kind=EdgeKind.CONTAINS, provenance=_PROV),
+        Edge(src=file.id, dst=plain.id, kind=EdgeKind.CONTAINS, provenance=_PROV),
         Edge(src=repo.id, dst=store_if.id, kind=EdgeKind.IMPLEMENTS, provenance=_PROV),
         Edge(src=cache.id, dst=store_if.id, kind=EdgeKind.IMPLEMENTS, provenance=_PROV),
         Edge(src=foo.id, dst=bar.id, kind=EdgeKind.CALLS, provenance=_PROV),
@@ -146,6 +152,12 @@ class QueryConformance:
             'MATCH (c:Class)-[:TAGGED]->(t:PatternTag) WHERE t.name = "Repository" RETURN c.name',
         )
         assert self._col0(rt) == {"Repo"}
+
+    async def test_reserved_word_edge_kind(self, store: QueryCapable) -> None:
+        # CONTAINS is a reserved word (string operator) *and* an edge kind.
+        await self._load(store)
+        rt = await self._run(store, "MATCH (f:File)-[:CONTAINS]->(c:Class) RETURN c.name")
+        assert self._col0(rt) == {"Repo", "Cache", "Plain"}
 
     # --- 2. bounded execution ----------------------------------------------
 
