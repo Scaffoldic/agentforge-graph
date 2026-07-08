@@ -221,27 +221,20 @@ class _Engine:
         envelope. A ``QueryError`` (bad syntax / vocabulary / capability / a
         non-query backend) is returned as a structured ``error`` — never raised
         into the tool layer."""
-        from agentforge_graph.store.query import (
-            QUERY_LANG_VERSION,
-            QueryError,
-            QuerySettings,
-        )
+        from agentforge_graph.config import QueryConfig
+        from agentforge_graph.store.query import QUERY_LANG_VERSION, QueryError
 
+        qcfg = QueryConfig.load(self.config)
         cg = await self.code_graph()
-        settings = QuerySettings()
-        if limit is not None:
-            settings = QuerySettings(
-                max_rows=min(settings.max_rows, max(0, limit)),
-                timeout_ms=settings.timeout_ms,
-                max_expansions=settings.max_expansions,
-            )
         envelope = {
             **(await self.staleness()),
             "tool_api_version": TOOL_API_VERSION,
             "query_lang_version": QUERY_LANG_VERSION,
         }
+        if not qcfg.enabled:
+            return {"error": "the query surface is disabled (query.enabled=false)", **envelope}
         try:
-            rt = await cg.query_graph(query, settings)
+            rt = await cg.query_graph(query, qcfg.to_settings(limit))
         except QueryError as exc:
             return {"error": str(exc), **envelope}
         return {

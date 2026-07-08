@@ -308,6 +308,32 @@ class ServeConfig(_Block):
     refresh_on_call: bool = False
 
 
+class QueryConfig(_Block):
+    """The ``query:`` block of ckg.yaml (feat-015 — read-only structural query).
+
+    Bounds the guard-railed query surface: ``enabled`` can disable it wholesale;
+    ``max_rows``/``timeout_ms``/``max_expansions`` are the resource caps every
+    backend enforces; ``allow_in_mcp`` gates whether ``ckg_query`` is exposed as
+    an MCP tool (vs CLI-only)."""
+
+    KEY: ClassVar[str] = "query"
+    enabled: bool = True
+    max_rows: int = 1000
+    timeout_ms: int = 5000
+    max_expansions: int = 50_000
+    allow_in_mcp: bool = True
+
+    def to_settings(self, limit: int | None = None) -> Any:
+        """Build the engine-layer ``QuerySettings`` from this block. ``limit`` (a
+        caller's ``--limit`` / tool ``limit``) further lowers the row cap."""
+        from agentforge_graph.store.query import QuerySettings
+
+        max_rows = self.max_rows if limit is None else min(self.max_rows, max(0, limit))
+        return QuerySettings(
+            max_rows=max_rows, timeout_ms=self.timeout_ms, max_expansions=self.max_expansions
+        )
+
+
 class SetupConfig(_Block):
     """The ``setup:`` block (feat-013 — agent auto-configuration).
 

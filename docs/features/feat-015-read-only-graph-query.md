@@ -266,6 +266,50 @@ Accepted cost: we own a **small, read-only** Cypher-subset parser (the validatio
 trust boundary), bounded deliberately — not full Cypher — with the
 query-conformance suite keeping backends result-identical.
 
+## Implementation status
+
+**Shipped (0.6.4).** All three backends query-capable and result-identical,
+proven by a shared conformance suite (Kuzu compiled + Neo4j compiled verified
+against live servers; SurrealDB via the interpreter, verified live). Built in 7
+chunks on `feat/015-ckg-query`: (1) AST + parser + validator + schema +
+capability; (2) Cypher compiler + Kuzu execution + bounded executor + facade/
+CodeGraph wiring + conformance; (3) Neo4j execution (read-only session); (4)
+portable AST interpreter + SurrealDB; (5) CLI `--graph/--schema/--format/--limit`;
+(6) `ckg_query` tool + capability-gated registration; (7) `query:` config block +
+docs (guide 13).
+
+**Deviations from design-015 (all deliberate, documented):**
+
+- **SurrealDB uses a portable AST *interpreter* over the `GraphStore` ABC, not a
+  native SurrealQL compiler.** Discovered during implementation that SurrealDB
+  models edges as a document table (no native graph traversal), making a faithful
+  SurrealQL translator of the core tier infeasible without a fragile workaround.
+  The interpreter (`store/query/interpret.py`) is a superior universal
+  alternative — *compile where the backend has a native query language
+  (Kuzu/Neo4j), interpret elsewhere* — so **any** `GraphStore` is query-capable
+  for free, and it passes the same conformance suite. User-approved.
+- **Compiler expression visitor uses `match` statements, not
+  `functools.singledispatchmethod`** — same additive property (one arm per AST
+  node), cleaner under `mypy --strict`.
+- **`QueryConformance` lives in `store/query/`, not `core/conformance.py`** — core
+  must not import `store` (where the query types live).
+- **`attrs.*` access is an optional `attrs.access` capability that no v1 backend
+  advertises** — Kuzu/Neo4j store `attrs` as a JSON string, not destructurable in
+  native Cypher without a workaround that breaks under aggregation. The curated
+  columns cover the real use cases; the capability seam reports `attrs.*` as
+  unsupported honestly. (The interpreter *can* read `attrs`; a future backend or a
+  follow-up may advertise the capability.)
+- **`ckg_query` v1 exposes `{query, limit}` only — no `params` argument** (design
+  open-Q1 leaned yes). The grammar inlines and parameterizes literals internally
+  and has no `$placeholder` syntax, so a caller-facing params map has no binding
+  site in v1.
+- **CLI formatter is a flat `cli_format.py` module** (the repo has no `cli/`
+  package), introduced as a reusable seam wired only to `query` this PR.
+
+**Parser note:** `CONTAINS` is both the string operator and an `EdgeKind`; labels
+and relationship types accept reserved words in name position (a shared-parser fix
+locked across all three backends).
+
 ## 11. References
 
 - [FA-003](../feature-analysis/FA-003-read-only-graph-query-language.md) — source analysis.

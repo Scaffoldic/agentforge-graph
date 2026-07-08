@@ -796,18 +796,16 @@ async def _query_schema(args: argparse.Namespace) -> int:
 async def _query_graph(args: argparse.Namespace) -> int:
     """feat-015: run a read-only structural query and render the result."""
     from agentforge_graph.cli_format import render_json, render_table
-    from agentforge_graph.store.query import QueryDisabled, QueryError, QuerySettings
+    from agentforge_graph.config import QueryConfig, resolve_config
+    from agentforge_graph.store.query import QueryDisabled, QueryError
 
-    settings = QuerySettings()
-    if args.limit is not None:
-        settings = QuerySettings(
-            max_rows=min(settings.max_rows, args.limit),
-            timeout_ms=settings.timeout_ms,
-            max_expansions=settings.max_expansions,
-        )
+    qcfg = QueryConfig.load(resolve_config(args.config, args.path))
+    if not qcfg.enabled:
+        print("the query surface is disabled (query.enabled=false)", file=sys.stderr)
+        return 2
     cg = await CodeGraph.open(repo_path=args.path, config=args.config)
     try:
-        rt = await cg.query_graph(args.graph, settings)
+        rt = await cg.query_graph(args.graph, qcfg.to_settings(args.limit))
     except QueryError as exc:
         print(f"query error: {exc}", file=sys.stderr)
         return 2

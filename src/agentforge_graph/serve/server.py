@@ -45,18 +45,21 @@ def _tools_for(engine: EngineProvider, capabilities: frozenset[str]) -> list[Too
 
 
 def _store_capabilities(config: ConfigSource, repo_path: str | Path) -> frozenset[str]:
-    """Serve-level capability markers for a store config — currently just
-    ``query`` when the resolved graph driver is query-capable (feat-015).
-    Resolved from the driver *class*, so no index is opened."""
-    from agentforge_graph.config import StoreConfig, resolve_config
+    """Serve-level capability markers for a store config — ``query`` when the
+    resolved graph driver is query-capable *and* the ``query:`` block permits it
+    over MCP (``enabled`` + ``allow_in_mcp``, feat-015). Resolved from the driver
+    *class* + config, so no index is opened."""
+    from agentforge_graph.config import QueryConfig, StoreConfig, resolve_config
     from agentforge_graph.store.registry import graph_driver
 
     try:
-        cfg = StoreConfig.load(resolve_config(config, repo_path))
-        driver = graph_driver(cfg.graph.driver)
+        resolved = resolve_config(config, repo_path)
+        driver = graph_driver(StoreConfig.load(resolved).graph.driver)
+        qcfg = QueryConfig.load(resolved)
     except Exception:
         return frozenset()
-    return frozenset({"query"}) if hasattr(driver, "query_dialect") else frozenset()
+    capable = hasattr(driver, "query_dialect") and qcfg.enabled and qcfg.allow_in_mcp
+    return frozenset({"query"}) if capable else frozenset()
 
 
 def code_graph_tools(repo_path: str | Path = ".", config: ConfigSource = None) -> list[Tool]:
