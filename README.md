@@ -185,9 +185,11 @@ provenance.
 
 ### Serve it to an agent
 
-Read-only over MCP — **10 tools**: `ckg_repo_map`, `ckg_search`, `ckg_symbol`,
-`ckg_impact`, `ckg_neighbors`, `ckg_status`, `ckg_routes`, `ckg_decisions`,
-`ckg_explain`, `ckg_history`:
+Read-only over MCP — **10 typed tools**: `ckg_repo_map`, `ckg_search`,
+`ckg_symbol`, `ckg_impact`, `ckg_neighbors`, `ckg_status`, `ckg_routes`,
+`ckg_decisions`, `ckg_explain`, `ckg_history` — plus `ckg_query` (a read-only
+[structural query](docs/guides/13-graph-query.md), added when the backend is
+query-capable):
 
 ```bash
 ckg setup                                          # wire your agent for you (writes .mcp.json)

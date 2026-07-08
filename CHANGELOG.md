@@ -8,6 +8,31 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+### Added
+
+- **feat-015 — read-only graph query surface (`ckg query --graph` / `ckg_query`).**
+  An escape hatch for precise **structural** questions no typed verb covers
+  (e.g. "classes tagged `Repository` with no inbound `CALLS`", "interfaces
+  implemented by >5 classes"). A bounded, read-only **Cypher subset**:
+  - **CLI:** `ckg query --graph '<cypher>'` with `--format table|json`,
+    `--limit`, and `ckg query --schema` (the queryable vocabulary).
+  - **MCP:** a `ckg_query` tool, registered only when the backend is
+    query-capable and `query.allow_in_mcp` is on; results carry the staleness +
+    `query_lang_version` envelope.
+  - **Safety by design:** caller text is never executed — it is parsed into a
+    validated AST (the single trust boundary), then **compiled** to native
+    Cypher (Kuzu, Neo4j) or **interpreted** over the storage API (SurrealDB and
+    any backend without a native query language). All three backends return
+    identical rows (a shared conformance suite proves it). Writes/DDL, procedure
+    calls, unbounded paths, and un-joined Cartesian products are rejected with a
+    clear reason.
+  - **Bounded, no silent caps:** `query.max_rows` / `timeout_ms` /
+    `max_expansions` are enforced on every backend and reported via `truncated` +
+    `stopped_reason`. `ckg status` reports the query-language version and whether
+    the active backend is query-capable.
+  - New `query:` config block; guide 13. `NodeKind`/`EdgeKind` vocabulary
+    unchanged.
+
 ## [0.6.3] — 2026-07-07
 
 ### Added

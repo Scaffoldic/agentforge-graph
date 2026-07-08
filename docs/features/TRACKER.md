@@ -59,6 +59,7 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 | [012](feat-012-llm-enrichment.md) | LLM enrichment (summaries, tags) | 3 diff | 0.4 | shipped (tags + summaries) | 006 | — | ✅ |
 | [013](feat-013-agent-auto-configuration.md) | Agent auto-configuration & frictionless first run | 4 adoption | 0.6.2 | **shipped (0.6.2)** | 008 | — | ✅ |
 | [014](feat-014-watch-and-ci-indexing.md) | Watch mode (local) + CI-triggered central indexing | 4 adoption | 0.6.3 | **shipped (0.6.3)** | 004 | — | ✅ |
+| [015](feat-015-read-only-graph-query.md) | Read-only graph query (`ckg query --graph` / `ckg_query`) | 1 serve | 0.6.4 | **in-progress (chunk 1)** | 001,003,008 | — | ✅ |
 
 ---
 

@@ -66,6 +66,37 @@ async def test_external_base_not_guessed(tmp_path: Path) -> None:
         await store.close()
 
 
+async def test_reexported_base_via_package_init(tmp_path: Path) -> None:
+    # A base class defined in pkg/contracts.py, re-exported by pkg/__init__.py,
+    # and inherited via the *package* import `from pkg import Base` — the real
+    # `class KuzuGraphStore(GraphStore)` shape (BUG-CARRIED feat-015).
+    files = {
+        "pkg/__init__.py": "from pkg.contracts import Base\n",
+        "pkg/contracts.py": "class Base:\n    pass\n",
+        "pkg/impl.py": "from pkg import Base\n\n\nclass Impl(Base):\n    pass\n",
+    }
+    store = await _resolve(tmp_path, files)
+    try:
+        assert await _supers(store, "Impl#") == {"Base#"}  # re-exported base resolves
+    finally:
+        await store.close()
+
+
+async def test_reexported_base_relative_init(tmp_path: Path) -> None:
+    # Same, but the __init__ uses a *relative* re-export (`from .contracts …`),
+    # matching this project's own core/__init__.py.
+    files = {
+        "pkg/__init__.py": "from .contracts import Base\n",
+        "pkg/contracts.py": "class Base:\n    pass\n",
+        "pkg/impl.py": "from pkg import Base\n\n\nclass Impl(Base):\n    pass\n",
+    }
+    store = await _resolve(tmp_path, files)
+    try:
+        assert await _supers(store, "Impl#") == {"Base#"}
+    finally:
+        await store.close()
+
+
 async def test_inherits_is_idempotent(tmp_path: Path) -> None:
     store = await _resolve(tmp_path, {"m.py": "class A:\n    pass\n\n\nclass B(A):\n    pass\n"})
     try:

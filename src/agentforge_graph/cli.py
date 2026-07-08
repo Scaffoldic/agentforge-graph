@@ -734,6 +734,16 @@ async def _map(args: argparse.Namespace) -> int:
 
 
 async def _query(args: argparse.Namespace) -> int:
+    # feat-015: --schema and --graph select the structural surface; the
+    # natural-language retrieval path (below) is unchanged.
+    if args.schema:
+        return await _query_schema(args)
+    if args.graph is not None:
+        return await _query_graph(args)
+    if args.limit is not None:
+        print("--limit only applies to --graph", file=sys.stderr)
+        return 2
+
     from agentforge_graph.temporal import TemporalError
 
     cg = await CodeGraph.open(repo_path=args.path, config=args.config)
@@ -753,6 +763,68 @@ async def _query(args: argparse.Namespace) -> int:
         return 1
     finally:
         await cg.close()
+    return 0
+
+
+async def _query_schema(args: argparse.Namespace) -> int:
+    """feat-015: print the queryable vocabulary (needs no index build)."""
+    from agentforge_graph.cli_format import render_table
+
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        desc = cg.describe_schema()
+    finally:
+        await cg.close()
+    if args.format == "json":
+        import json
+
+        print(json.dumps(desc.to_dict(), indent=2))
+        return 0
+    print(f"query language v{desc.lang_version}\n")
+    print("node kinds: " + ", ".join(desc.node_kinds))
+    print("edge kinds: " + ", ".join(desc.edge_kinds) + "\n")
+    print(
+        render_table(
+            ("property", "type", "description"),
+            [(p.name, p.type, p.doc) for p in desc.node_properties],
+        )
+    )
+    print("\n" + desc.attrs_note)
+    return 0
+
+
+async def _query_graph(args: argparse.Namespace) -> int:
+    """feat-015: run a read-only structural query and render the result."""
+    from agentforge_graph.cli_format import render_json, render_table
+    from agentforge_graph.config import QueryConfig, resolve_config
+    from agentforge_graph.store.query import QueryDisabled, QueryError
+
+    qcfg = QueryConfig.load(resolve_config(args.config, args.path))
+    if not qcfg.enabled:
+        print("the query surface is disabled (query.enabled=false)", file=sys.stderr)
+        return 2
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        rt = await cg.query_graph(args.graph, qcfg.to_settings(args.limit))
+    except QueryError as exc:
+        print(f"query error: {exc}", file=sys.stderr)
+        return 2
+    except QueryDisabled as exc:
+        print(f"query unavailable: {exc}", file=sys.stderr)
+        return 2
+    finally:
+        await cg.close()
+
+    if args.format == "json":
+        print(
+            render_json(
+                rt.columns, rt.rows, truncated=rt.truncated, stopped_reason=rt.stopped_reason
+            )
+        )
+    else:
+        print(render_table(rt.columns, rt.rows))
+        if rt.truncated:
+            print(f"... result truncated ({rt.stopped_reason})", file=sys.stderr)
     return 0
 
 
@@ -925,6 +997,30 @@ def build_parser() -> argparse.ArgumentParser:
         help="reconstruct results as of a git commit (feat-009; needs temporal + backfill)",
     )
     qry.add_argument("--config", default=None, help="path to ckg.yaml")
+    # feat-015: read-only structural query surface (Cypher subset).
+    qry.add_argument(
+        "--graph",
+        metavar="CYPHER",
+        default=None,
+        help="run a read-only structural query (Cypher subset) instead of NL retrieval",
+    )
+    qry.add_argument(
+        "--schema",
+        action="store_true",
+        help="print the queryable vocabulary (node/edge kinds + properties) and exit",
+    )
+    qry.add_argument(
+        "--format",
+        default="table",
+        choices=["table", "json"],
+        help="output format for --graph/--schema (default: table)",
+    )
+    qry.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="cap rows for --graph (clamped to the server max)",
+    )
     qry.set_defaults(func=_query)
 
     mp = sub.add_parser("map", help="print a budget-aware, centrality-ranked repo map")

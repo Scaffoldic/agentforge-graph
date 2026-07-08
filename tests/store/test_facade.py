@@ -143,3 +143,56 @@ async def test_expand_skips_absent_ref(tmp_path: Path) -> None:
         assert result.nodes == []  # nothing in the graph yet
     finally:
         await store.close()
+
+
+# --- query_graph (feat-015) -------------------------------------------------
+
+
+async def test_query_enabled_and_capabilities_on_kuzu(tmp_path: Path) -> None:
+    store = await Store.open(repo_path=tmp_path)
+    try:
+        assert store.query_enabled is True
+        assert "core" in store.query_capabilities
+    finally:
+        await store.close()
+
+
+async def test_query_graph_end_to_end(tmp_path: Path) -> None:
+    from agentforge_graph.store.query import QuerySettings
+
+    store = await Store.open(repo_path=tmp_path)
+    try:
+        await store.graph.upsert(make_sample_subgraph())  # File ▸ Class ▸ Method
+        rt = await store.query_graph(
+            'MATCH (c:Class) WHERE c.name = "Auth" RETURN c.name, c.path', QuerySettings()
+        )
+        assert rt.columns == ("c.name", "c.path")
+        assert rt.rows == (("Auth", "src/app/auth.py"),)
+        assert not rt.truncated
+    finally:
+        await store.close()
+
+
+async def test_query_graph_bad_syntax_raises_parse_error(tmp_path: Path) -> None:
+    from agentforge_graph.store.query import ParseError, QuerySettings
+
+    store = await Store.open(repo_path=tmp_path)
+    try:
+        with pytest.raises(ParseError):
+            await store.query_graph("MATCH (c:Class) RETURN", QuerySettings())
+    finally:
+        await store.close()
+
+
+async def test_query_graph_attrs_needs_capability(tmp_path: Path) -> None:
+    from agentforge_graph.store.query import CapabilityError, QuerySettings
+
+    store = await Store.open(repo_path=tmp_path)
+    try:
+        # Kuzu stores attrs as a JSON string and does not advertise attrs.access.
+        with pytest.raises(CapabilityError):
+            await store.query_graph(
+                'MATCH (c:Class) WHERE c.attrs.x = "y" RETURN c.name', QuerySettings()
+            )
+    finally:
+        await store.close()

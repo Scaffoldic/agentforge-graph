@@ -216,7 +216,38 @@ class _Engine:
         )
         return {**body, **(await self.staleness()), "tool_api_version": TOOL_API_VERSION}
 
+    async def query_graph(self, query: str, limit: int | None = None) -> dict[str, Any]:
+        """feat-015: run a read-only structural query, wrapped in the staleness
+        envelope. A ``QueryError`` (bad syntax / vocabulary / capability / a
+        non-query backend) is returned as a structured ``error`` — never raised
+        into the tool layer."""
+        from agentforge_graph.config import QueryConfig
+        from agentforge_graph.store.query import QUERY_LANG_VERSION, QueryError
+
+        qcfg = QueryConfig.load(self.config)
+        cg = await self.code_graph()
+        envelope = {
+            **(await self.staleness()),
+            "tool_api_version": TOOL_API_VERSION,
+            "query_lang_version": QUERY_LANG_VERSION,
+        }
+        if not qcfg.enabled:
+            return {"error": "the query surface is disabled (query.enabled=false)", **envelope}
+        try:
+            rt = await cg.query_graph(query, qcfg.to_settings(limit))
+        except QueryError as exc:
+            return {"error": str(exc), **envelope}
+        return {
+            "columns": list(rt.columns),
+            "rows": [list(r) for r in rt.rows],
+            "truncated": rt.truncated,
+            "stopped_reason": rt.stopped_reason,
+            **envelope,
+        }
+
     async def status(self) -> dict[str, Any]:
+        from agentforge_graph.store.query import QUERY_LANG_VERSION
+
         meta = self._meta()
         cg = await self.code_graph()
         nodes = (await cg.store.graph.query(GraphQuery(limit=_ALL))).nodes
@@ -235,6 +266,11 @@ class _Engine:
             "by_kind": by_kind,
             "temporal": await cg.temporal_status(),
             "store_path": str(store_root),
+            "query": {
+                "enabled": cg.query_enabled,
+                "lang_version": QUERY_LANG_VERSION,
+                "capabilities": sorted(cg.query_capabilities),
+            },
             "tool_api_version": TOOL_API_VERSION,
         }
 

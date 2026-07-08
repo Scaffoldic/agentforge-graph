@@ -1,6 +1,8 @@
 # Using the CKG from an agent (MCP) or in-process
 
-> **TL;DR:** Serve the graph over **10 read-only tools** — an MCP server
+> **TL;DR:** Serve the graph over **10 read-only tools** (plus `ckg_query`, the
+> [structural-query](13-graph-query.md) escape hatch, when the backend supports
+> it) — an MCP server
 > (`ckg serve-mcp`, stdio or HTTP) for external clients like Claude Code, or the
 > in-process AgentForge toolset for framework agents. Every response carries a
 > staleness envelope.

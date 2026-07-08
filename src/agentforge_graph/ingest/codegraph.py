@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from agentforge_graph.repomap import RankedSymbol
     from agentforge_graph.retrieve import ContextPack
     from agentforge_graph.retrieve.retriever import Mode
+    from agentforge_graph.store.query import QuerySettings, ResultTable, SchemaDescription
 
 logger = logging.getLogger(__name__)
 
@@ -494,6 +495,32 @@ class CodeGraph:
             include_llm_facts=include_llm_facts,
             allow_ids=allow_ids,
         )
+
+    async def query_graph(self, text: str, settings: QuerySettings | None = None) -> ResultTable:
+        """Execute a read-only structural query (feat-015). ``settings`` bounds
+        the run (row cap / timeout / expansions); defaults are used if omitted.
+        Raises ``QueryError`` on bad input, ``QueryDisabled`` on a non-query
+        backend."""
+        from agentforge_graph.store.query import QuerySettings as _QuerySettings
+
+        return await self._store.query_graph(text, settings or _QuerySettings())
+
+    def describe_schema(self) -> SchemaDescription:
+        """The queryable vocabulary (node/edge kinds + properties) for
+        ``ckg query --schema`` (feat-015). Pure — needs no index."""
+        from agentforge_graph.store.query import describe_schema
+
+        return describe_schema()
+
+    @property
+    def query_enabled(self) -> bool:
+        """True if the active backend can execute structural queries (feat-015)."""
+        return self._store.query_enabled
+
+    @property
+    def query_capabilities(self) -> frozenset[str]:
+        """Capability tiers the active backend executes (feat-015)."""
+        return self._store.query_capabilities
 
     async def repo_map(
         self,

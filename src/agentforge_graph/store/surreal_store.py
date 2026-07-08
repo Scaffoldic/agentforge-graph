@@ -61,6 +61,9 @@ from ._rowmap import (
     node_from_row,
     node_params,
 )
+from .query.ast import QueryAst
+from .query.capability import AGG_COLLECT, CORE_TIER, QuerySettings, ResultTable
+from .query.interpret import InterpretingQueryEngine
 
 _VEC_FILTERABLE = ("ref", "kind", "path")
 
@@ -146,11 +149,26 @@ def _rows(result: Any) -> list[dict[str, Any]]:
 
 
 class SurrealGraphStore(GraphStore):
-    """Graph store backed by SurrealDB (document tables ``ckg_node``/``ckg_edge``)."""
+    """Graph store backed by SurrealDB (document tables ``ckg_node``/``ckg_edge``).
+
+    Query-capable (feat-015) via the portable AST *interpreter*: SurrealDB models
+    edges as a document table with no native graph traversal to compile to, so it
+    evaluates the query over the ``GraphStore`` ABC (``query``/``adjacent``/
+    ``get``) instead of a SurrealQL translation. Inherently read-only (no write
+    path through the ABC); passes the same conformance suite as the compiled
+    backends."""
+
+    # --- QueryCapable (feat-015) ---
+    query_dialect = "interpreted"
+    capabilities = CORE_TIER | {AGG_COLLECT}
+    read_only_execution = True
 
     def __init__(self, db: Any) -> None:
         self._db = db
         self._closed = False
+
+    async def run_query(self, ast: QueryAst, settings: QuerySettings) -> ResultTable:
+        return await InterpretingQueryEngine(self).run(ast, settings)
 
     @classmethod
     async def open(
