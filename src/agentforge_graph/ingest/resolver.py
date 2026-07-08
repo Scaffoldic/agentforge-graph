@@ -190,6 +190,42 @@ class ImportResolver:
         def _is_target(path: str) -> bool:
             return changed_files is None or path in changed_files
 
+        # --- package re-exports (Python): a `pkg/__init__.py` doing
+        # `from .sub import Name` makes `Name` importable as `pkg.Name` even though
+        # it is *defined* in `pkg.sub`. Resolve these so an absolute import of a
+        # re-exported symbol (e.g. a base class `class C(GraphStore)` where
+        # `GraphStore` is re-exported by the package) links to the real definition.
+        # Computed from `exports` (defs) via a fixpoint, so a re-export chained
+        # through several `__init__` files still resolves (BUG-CARRIED feat-015). ---
+        reexports: dict[str, dict[str, str]] = {}
+        init_reexports: list[tuple[str, str, list[str]]] = []
+        for f in files:
+            ps = SymbolID.parse(f.id)
+            if posixpath.basename(ps.path) not in _INIT_FILES:
+                continue
+            ipack = self.registry.for_slug(ps.lang)
+            if ipack is None:
+                continue
+            pkg_module = file_module.get(f.id, "")
+            for imp in f.attrs.get("imports", []):
+                module = imp.get("module", "")
+                names = imp.get("names", [])
+                if module and names:
+                    sub_key = ipack.resolve_import(ps.path, module, pkg_module)
+                    init_reexports.append((pkg_module, sub_key, names))
+        for _ in range(len(init_reexports) + 1):
+            changed = False
+            for pkg_module, sub_key, names in init_reexports:
+                src_ns = exports.get(sub_key, {})
+                chained = reexports.get(sub_key, {})
+                for nm in names:
+                    tgt = src_ns.get(nm) or chained.get(nm)
+                    if tgt and reexports.setdefault(pkg_module, {}).get(nm) != tgt:
+                        reexports[pkg_module][nm] = tgt
+                        changed = True
+            if not changed:
+                break
+
         # --- imports -> IMPORTS edges + per-file name bindings ---
         for f in files:
             ps = SymbolID.parse(f.id)
@@ -276,7 +312,9 @@ class ImportResolver:
                         stats.imports_resolved += 1
                     sep = "/" if pack is not None and pack.module_style != "dotted" else "."
                     for nm in names:
-                        tgt = exports.get(key, {}).get(nm)
+                        # a def of the target module, or a name it re-exports
+                        # (Python `pkg/__init__.py` re-export, BUG-CARRIED feat-015)
+                        tgt = exports.get(key, {}).get(nm) or reexports.get(key, {}).get(nm)
                         if tgt:
                             binding[nm] = tgt
                             continue
