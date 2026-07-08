@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import Callable, Iterator
+from collections.abc import Awaitable, Callable, Iterator
 from dataclasses import dataclass
 from typing import Any
 
@@ -71,6 +71,36 @@ def pull_bounded(
     return BoundedResult(rows=rows, truncated=reason is not None, stopped_reason=reason)
 
 
+async def pull_bounded_async(
+    anext_row: Callable[[], Awaitable[Row | None]],
+    settings: QuerySettings,
+    effective_limit: int,
+    now: Callable[[], float] = time.monotonic,
+) -> BoundedResult:
+    """Async twin of ``pull_bounded`` for backends whose driver is async (Neo4j,
+    SurrealDB). Same row/expansion/timeout policy; the caller supplies a hard
+    ``asyncio.wait_for`` backstop around the whole pull."""
+    deadline = now() + settings.timeout_ms / 1000
+    rows: list[Row] = []
+    reason: str | None = None
+    while True:
+        if now() >= deadline:
+            reason = "timeout"
+            break
+        if len(rows) >= settings.max_expansions:
+            reason = "expansion_cap"
+            break
+        row = await anext_row()
+        if row is None:
+            break
+        rows.append(row)
+        if len(rows) > effective_limit:
+            reason = "row_cap"
+            rows = rows[:effective_limit]
+            break
+    return BoundedResult(rows=rows, truncated=reason is not None, stopped_reason=reason)
+
+
 async def run_bounded(
     make_source: Callable[[], Iterator[Row]],
     settings: QuerySettings,
@@ -91,4 +121,19 @@ async def run_bounded(
             timeout=settings.timeout_ms / 1000 + _HARD_TIMEOUT_GRACE_S,
         )
     except TimeoutError as exc:  # a single fetch hung past the hard backstop
+        raise GuardrailError(f"query exceeded the {settings.timeout_ms}ms time budget") from exc
+
+
+async def run_bounded_async(
+    pull: Callable[[], Awaitable[BoundedResult]],
+    settings: QuerySettings,
+) -> BoundedResult:
+    """Wrap an async bounded pull (``pull_bounded_async``) with the hard
+    ``wait_for`` backstop, so a hung fetch raises ``GuardrailError`` instead of
+    hanging forever. For backends with an async driver (Neo4j, SurrealDB)."""
+    try:
+        return await asyncio.wait_for(
+            pull(), timeout=settings.timeout_ms / 1000 + _HARD_TIMEOUT_GRACE_S
+        )
+    except TimeoutError as exc:
         raise GuardrailError(f"query exceeded the {settings.timeout_ms}ms time budget") from exc

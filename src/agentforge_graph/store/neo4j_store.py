@@ -43,6 +43,10 @@ from ._rowmap import (
     node_from_row,
     node_params,
 )
+from .query.ast import QueryAst
+from .query.capability import AGG_COLLECT, CORE_TIER, QuerySettings, ResultTable
+from .query.compile_cypher import Neo4jCypherCompiler
+from .query.execute import BoundedResult, pull_bounded_async, run_bounded_async
 
 if TYPE_CHECKING:
     from neo4j import AsyncDriver, AsyncManagedTransaction
@@ -69,7 +73,17 @@ _INSERT_EDGE = (
 
 
 class Neo4jGraphStore(GraphStore):
-    """Server graph store backed by Neo4j (Bolt)."""
+    """Server graph store backed by Neo4j (Bolt).
+
+    Query-capable (feat-015): the same openCypher compiler as Kuzu (identical
+    single-table schema), executed inside a genuine **read transaction**
+    (``execute_read``) — so read-only is enforced by the session (gate #2) on top
+    of the AST gate (gate #1)."""
+
+    # --- QueryCapable (feat-015) ---
+    query_dialect = "neo4j"
+    capabilities = CORE_TIER | {AGG_COLLECT}
+    read_only_execution = True
 
     def __init__(self, driver: AsyncDriver, database: str) -> None:
         self._driver = driver
@@ -286,6 +300,37 @@ class Neo4jGraphStore(GraphStore):
         async with self._driver.session(database=self._database) as session:
             result = await session.run(cypher, params)
             return [r async for r in result]
+
+    async def run_query(self, ast: QueryAst, settings: QuerySettings) -> ResultTable:
+        compiler = Neo4jCypherCompiler()
+        compiled = compiler.compile(ast, settings)
+        effective_limit = compiler.effective_limit(ast, settings)
+
+        async def _tx(tx: AsyncManagedTransaction) -> BoundedResult:
+            result = await tx.run(compiled.text, compiled.params)
+
+            async def anext_row() -> tuple[Any, ...] | None:
+                try:
+                    record = await result.__anext__()
+                except StopAsyncIteration:
+                    return None
+                return tuple(record.values())
+
+            return await pull_bounded_async(anext_row, settings, effective_limit)
+
+        async def pull() -> BoundedResult:
+            # execute_read runs a genuine READ transaction — a write would be
+            # refused by the session (gate #2), on top of the AST gate (gate #1).
+            async with self._driver.session(database=self._database) as session:
+                return await session.execute_read(_tx)
+
+        bounded = await run_bounded_async(pull, settings)
+        return ResultTable(
+            columns=compiled.columns,
+            rows=tuple(bounded.rows),
+            truncated=bounded.truncated,
+            stopped_reason=bounded.stopped_reason,
+        )
 
     async def close(self) -> None:
         if self._closed:
