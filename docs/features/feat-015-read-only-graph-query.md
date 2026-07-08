@@ -6,7 +6,7 @@
 |---|---|
 | **ID** | feat-015 |
 | **Title** | Read-only, guard-railed graph query surface (Cypher-subset) + `ckg_query` verb/tool |
-| **Status** | in-progress |
+| **Status** | shipped (0.6.4) |
 | **Target version** | 0.6.4 |
 | **Layer** | 1 serve (retrieval & serving) — escape-hatch complement to the typed verbs |
 | **Area** | `store` (query AST, validator, per-backend compilers, execution) · `serve` (`ckg_query` tool) · CLI |
