@@ -8,6 +8,8 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+## [0.6.4] — 2026-07-08
+
 ### Added
 
 - **feat-015 — read-only graph query surface (`ckg query --graph` / `ckg_query`).**
@@ -32,6 +34,17 @@ on a schema mismatch is **rebuild** (ADR-0006).
     the active backend is query-capable.
   - New `query:` config block; guide 13. `NodeKind`/`EdgeKind` vocabulary
     unchanged.
+
+### Fixed
+
+- **Resolver: re-exported package symbols now resolve as base classes.** A base
+  class imported via an absolute path and re-exported through a package
+  `__init__.py` (e.g. `class KuzuGraphStore(GraphStore)`, where `GraphStore` is
+  defined in `core.contracts` and re-exported by `core/__init__.py`) previously
+  produced no `INHERITS` edge. The resolver now computes a package re-export
+  namespace (fixpoint) and binds through it — improving `INHERITS` and `CALLS`
+  recall for every consumer (retrieval, impact, repo-map), not just the query
+  surface.
 
 ## [0.6.3] — 2026-07-07
 

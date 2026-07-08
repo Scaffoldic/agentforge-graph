@@ -8,5 +8,6 @@ narrative.
 
 | Version | Notes | Theme |
 |---|---|---|
+| [0.6.4](0.6.4.md) | `ckg query --graph` / `ckg_query` — read-only structural query | query |
 | [0.6.3](0.6.3.md) | `ckg watch` + `ckg ci init` — keep the graph fresh | freshness / ops |
 | [0.6.2](0.6.2.md) | `ckg setup` — agent auto-configuration | adoption |
