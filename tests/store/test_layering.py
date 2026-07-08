@@ -33,7 +33,9 @@ def _offenders(path: pathlib.Path) -> list[str]:
 
 
 def test_store_does_not_import_agentforge() -> None:
-    files = sorted(pathlib.Path(store.__file__).parent.glob("*.py"))
+    store_dir = pathlib.Path(store.__file__).parent
+    # store/*.py plus the query subpackage (feat-015) — both are engine code.
+    files = sorted(store_dir.glob("*.py")) + sorted(store_dir.glob("query/*.py"))
     files.append(pathlib.Path(config.__file__))
     offenders = [o for path in files for o in _offenders(path)]
     assert not offenders, offenders
