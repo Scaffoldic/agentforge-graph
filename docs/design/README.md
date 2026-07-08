@@ -31,5 +31,6 @@ history. Supersede with a new doc; never delete.
 |---|---|---|
 | [design-001-core-contracts-module](design-001-core-contracts-module.md) | feat-001 | accepted |
 | [design-009-temporal-evolution-layer](design-009-temporal-evolution-layer.md) | feat-009 | accepted |
+| [design-015-read-only-graph-query](design-015-read-only-graph-query.md) | feat-015 | accepted |
 
 _(Add a row per feature as its design is written.)_
