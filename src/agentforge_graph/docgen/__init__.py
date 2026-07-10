@@ -14,6 +14,7 @@ built over the deterministic engine — it adds no coupling back into ``core`` /
 
 from __future__ import annotations
 
+from .citations import VerifiedDoc, verify_citations
 from .errors import (
     BadCitationError,
     DocDisabled,
@@ -22,6 +23,7 @@ from .errors import (
     UngroundedError,
 )
 from .manifest import Manifest, content_sha
+from .recipes import RECIPES, Recipe, get_recipe, register
 from .staleness import DOCS_CONSUMER, is_stale, stale_docs
 from .types import (
     DOC_LANG_VERSION,
@@ -53,6 +55,14 @@ __all__ = [
     # persistence
     "Manifest",
     "content_sha",
+    # recipes
+    "Recipe",
+    "RECIPES",
+    "get_recipe",
+    "register",
+    # citations
+    "verify_citations",
+    "VerifiedDoc",
     # staleness
     "DOCS_CONSUMER",
     "is_stale",
