@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from .citations import verify_citations
-from .errors import DocgenError
+from .errors import DocgenError, PromoteRequired
 from .manifest import Manifest, content_sha
 from .recipes import get_recipe
 from .runner import AgentDocRunner
@@ -139,6 +139,106 @@ class DocGenerator:
         if manifest.get(path) is None:
             raise DocgenError(f"no generated doc recorded at {path!r}")
         return manifest.promote(path)
+
+    # --- opt-in flywheel -----------------------------------------------------
+
+    async def sync(self) -> int:
+        """Re-ingest **accepted** docs into the graph as ``llm``-sourced
+        ``DocChunk`` nodes that ``DESCRIBES`` their cited symbols (and, when embed
+        is enabled, are embedded for search). Opt-in (``round_trip``) and gated on
+        promotion. Tagging them ``Source.LLM`` is the anti-echo-chamber guarantee:
+        recipes/tools floor at ``>= parsed``, so a synced doc can inform search but
+        is never a citable ground-truth fact."""
+        if not self._cfg.round_trip:
+            raise DocgenError(
+                "docgen.round_trip is off; enable it to feed generated docs back into the graph"
+            )
+        all_docs = self._manifest().all()
+        accepted = [a for a in all_docs if a.accepted]
+        if not accepted:
+            if all_docs:
+                raise PromoteRequired("no accepted docs to sync — promote reviewed drafts first")
+            return 0
+
+        repo = self._repo_path.resolve().name
+        commit = self._git_commit()
+        store = self._cg.store
+        embedder = self._embedder()
+        for art in accepted:
+            sg = await self._doc_subgraph(art, repo, commit)
+            await store.graph.upsert(sg)
+            if embedder is not None:
+                await self._embed_doc(embedder, art, sg)
+        return len(accepted)
+
+    async def _doc_subgraph(self, art: DocArtifact, repo: str, commit: str):  # type: ignore[no-untyped-def]
+        from agentforge_graph.core import (
+            Edge,
+            EdgeKind,
+            FileSubgraph,
+            Node,
+            NodeKind,
+            Provenance,
+            SymbolID,
+        )
+
+        abs_path = self._repo_path / art.path
+        text = abs_path.read_text() if abs_path.exists() else ""
+        chunk_id = SymbolID.for_symbol("docgen", repo, art.path, "generated.")
+        prov = Provenance.llm(f"docgen@{DOC_LANG_VERSION}", 1.0, commit)
+        node = Node(
+            id=chunk_id,
+            kind=NodeKind.DOC_CHUNK,
+            name=f"generated:{art.path}",
+            attrs={
+                "path": art.path,
+                "text": text,
+                "doc_source": "generated",  # distinguishes docgen output from ingested docs
+                "doc_type": art.type.value,
+            },
+            provenance=prov,
+        )
+        edges: list[Edge] = []
+        seen: set[str] = set()
+        for f in art.footnotes:
+            if f.ref.id in seen or await self._cg.store.graph.get(f.ref.id) is None:
+                continue
+            seen.add(f.ref.id)
+            edges.append(Edge(src=chunk_id, dst=f.ref.id, kind=EdgeKind.DESCRIBES, provenance=prov))
+        return FileSubgraph(path=art.path, content_hash=art.content_sha, nodes=[node], edges=edges)
+
+    def _embedder(self) -> object | None:
+        from agentforge_graph.config import EmbedConfig
+        from agentforge_graph.embed import embedder_from_config
+
+        cfg = EmbedConfig.load(self._config)
+        if not cfg.enabled:
+            return None
+        return embedder_from_config(cfg)
+
+    async def _embed_doc(self, embedder: object, art: DocArtifact, sg: object) -> None:
+        from agentforge_graph.core import Embedded, NodeKind
+        from agentforge_graph.embed import Embedder
+
+        if not isinstance(embedder, Embedder):
+            return
+        node = sg.nodes[0]  # type: ignore[attr-defined]
+        vectors = await embedder.embed([str(node.attrs.get("text", ""))], "document")
+        await self._cg.store.vectors.delete_where({"ref": node.id})
+        await self._cg.store.vectors.upsert(
+            [
+                Embedded(
+                    ref=node.id,
+                    vector=vectors[0],
+                    kind=NodeKind.DOC_CHUNK,
+                    attrs={
+                        "path": art.path,
+                        "source_type": "generated-doc",
+                        "model": embedder.name,
+                    },
+                )
+            ]
+        )
 
     # --- internals -----------------------------------------------------------
 

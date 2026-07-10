@@ -665,6 +665,25 @@ async def _docs_promote(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _docs_sync(args: argparse.Namespace) -> int:
+    """feat-016: re-ingest accepted docs into the graph (opt-in flywheel)."""
+    from agentforge_graph.docgen import DocgenError
+
+    if _refuse_write_if_read_only(args):  # sync writes the graph
+        return 2
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        try:
+            n = await cg.docs_sync()
+        except DocgenError as exc:
+            print(f"ckg docs sync: {exc}", file=sys.stderr)
+            return 2
+    finally:
+        await cg.close()
+    print(f"synced {n} accepted doc(s) into the graph")
+    return 0
+
+
 async def _build(args: argparse.Namespace) -> int:
     """ENH-021: the one command — index, then embed (where enabled), then enrich
     (with --enrich), for a whole workspace (--workspace) or a single repo."""
@@ -1390,6 +1409,11 @@ def build_parser() -> argparse.ArgumentParser:
     dp.add_argument("doc", help="the generated doc path (repo-relative)")
     dp.add_argument("--config", default=None, help="path to ckg.yaml")
     dp.set_defaults(func=_docs_promote)
+
+    ds = docs_sub.add_parser("sync", help="re-ingest accepted docs into the graph (opt-in)")
+    _add_repo_arg(ds)
+    ds.add_argument("--config", default=None, help="path to ckg.yaml")
+    ds.set_defaults(func=_docs_sync)
 
     smap = sub.add_parser(
         "services-map", help="cross-service call graph over a workspace (ENH-020)"

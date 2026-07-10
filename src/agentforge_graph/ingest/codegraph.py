@@ -1003,6 +1003,13 @@ class CodeGraph:
         _, gen = self._docgen()
         return gen.promote(path)
 
+    async def docs_sync(self) -> int:
+        """Opt-in flywheel: re-ingest accepted docs into the graph, llm-tagged
+        (feat-016). Refuses when round_trip is off / docs are unpromoted."""
+        _, gen = self._docgen()
+        result: int = await gen.sync()
+        return result
+
     @property
     def store(self) -> Store:
         return self._store
