@@ -22,9 +22,13 @@ from .errors import (
     PromoteRequired,
     UngroundedError,
 )
+from .generator import DocGenerator
 from .manifest import Manifest, content_sha
 from .recipes import RECIPES, Recipe, get_recipe, register
+from .runner import AgentDocRunner
 from .staleness import DOCS_CONSUMER, is_stale, stale_docs
+from .templates.base import SYSTEM_PROMPT, Template, get_template
+from .toolset import capture_refs, grounded_tools
 from .types import (
     DOC_LANG_VERSION,
     STATUS_ACCEPTED,
@@ -63,6 +67,15 @@ __all__ = [
     # citations
     "verify_citations",
     "VerifiedDoc",
+    # templates
+    "Template",
+    "get_template",
+    "SYSTEM_PROMPT",
+    # generation (Agent loop)
+    "DocGenerator",
+    "AgentDocRunner",
+    "grounded_tools",
+    "capture_refs",
     # staleness
     "DOCS_CONSUMER",
     "is_stale",

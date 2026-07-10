@@ -357,13 +357,15 @@ class DocGenConfig(_Block):
     budget_usd: float = 5.0  # per-run cap (agentforge.Agent BudgetPolicy)
     max_iterations: int = 24  # Agent tool-call loop bound per doc
     regenerate_on_ci: bool = False  # feat-014 CI can flip this on (commit the diff in a PR)
-    # Provider selection — reuses the enrich builders / framework provider.
-    provider: str = "bedrock"  # scripted | bedrock | anthropic
-    model: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
-    region: str | None = None
-    assume_role_arn: str | None = None
-    base_url: str | None = None
-    api_key_env: str | None = None
+    # Provider selection — resolved to the framework Agent's `model` string,
+    # "<provider>:<model>" (agentforge's registered provider is `anthropic`).
+    # Tests inject a scripted LLMClient instead (hermetic, no creds).
+    provider: str = "anthropic"  # anthropic | <any registered agentforge provider>
+    model: str = "claude-haiku-4-5"
+
+    def model_ref(self) -> str:
+        """The framework Agent ``model=`` string for this config."""
+        return f"{self.provider}:{self.model}"
 
     @field_validator("component_granularity")
     @classmethod

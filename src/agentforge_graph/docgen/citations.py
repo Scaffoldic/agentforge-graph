@@ -79,7 +79,9 @@ def verify_citations(body: str, prov: ProvenanceSet, *, require_citations: bool)
     defined: dict[str, SymbolRef] = {}
     for m in _REF_DEF.finditer(refs):
         marker = m.group(1)
-        symbol_id = m.group(2).split()[0] if m.group(2).split() else ""
+        # A symbol id is 5 space-joined fields, so the whole remainder of the
+        # line IS the id — the contract is `[^fN]: <symbol_id>`, nothing after.
+        symbol_id = m.group(2).strip()
         if not prov.contains(symbol_id):
             raise BadCitationError(
                 f"footnote [^{marker}] cites {symbol_id!r}, which no tool returned "

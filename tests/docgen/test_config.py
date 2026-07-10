@@ -21,7 +21,8 @@ def test_defaults() -> None:
     assert c.promote_required is True
     assert c.budget_usd == 5.0
     assert c.max_iterations == 24
-    assert c.provider == "bedrock"
+    assert c.provider == "anthropic"
+    assert c.model_ref() == "anthropic:claude-haiku-4-5"
 
 
 def test_parses_block(tmp_path: Path) -> None:

@@ -34,7 +34,7 @@ The `Repo` class owns persistence [^f1].
 
 ## References
 
-[^f1]: s1 the repo
+[^f1]: s1
 [^f2]: s2
 """
 
@@ -52,7 +52,7 @@ def test_valid_doc_builds_footnotes_and_rewrites() -> None:
 
 
 def test_bad_citation_symbol_not_in_provenance() -> None:
-    body = _GOOD.replace("[^f1]: s1 the repo", "[^f1]: s99")
+    body = _GOOD.replace("[^f1]: s1", "[^f1]: s99")
     with pytest.raises(BadCitationError, match="s99"):
         verify_citations(body, _prov(), require_citations=True)
 
