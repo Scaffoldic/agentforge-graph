@@ -334,6 +334,50 @@ class QueryConfig(_Block):
         )
 
 
+class DocGenConfig(_Block):
+    """The ``docgen:`` block of ckg.yaml (feat-016 — grounded doc generation).
+
+    Drives ``ckg docs …``. ``docgen`` is the ADR-0001 *framework* layer (like
+    ``serve``/``setup`` — it runs an ``agentforge.Agent`` loop), but this block is
+    still read framework-free via the shared ``_read_block`` reader. Generated
+    drafts land under ``output_root`` and never overwrite human docs; a doc is a
+    draft until ``ckg docs promote`` (``promote_required``)."""
+
+    KEY: ClassVar[str] = "docgen"
+    output_root: str = "docs/_generated"
+    types: list[str] = Field(
+        default_factory=lambda: ["ai-context", "architecture", "component", "design"]
+    )
+    ai_context_targets: list[str] = Field(default_factory=lambda: ["CLAUDE.md", "AGENTS.md"])
+    component_granularity: str = "package"  # package | file | hybrid
+    hybrid_min_symbols: int = 20
+    require_citations: bool = True  # a section with no citable fact fails generation
+    round_trip: bool = False  # opt-in flywheel; `ckg docs sync` honors this
+    promote_required: bool = True  # docs are drafts until `ckg docs promote`
+    budget_usd: float = 5.0  # per-run cap (agentforge.Agent BudgetPolicy)
+    max_iterations: int = 24  # Agent tool-call loop bound per doc
+    regenerate_on_ci: bool = False  # feat-014 CI can flip this on (commit the diff in a PR)
+    # Provider selection — reuses the enrich builders / framework provider.
+    provider: str = "bedrock"  # scripted | bedrock | anthropic
+    model: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+    region: str | None = None
+    assume_role_arn: str | None = None
+    base_url: str | None = None
+    api_key_env: str | None = None
+
+    @field_validator("component_granularity")
+    @classmethod
+    def _check_granularity(cls, v: str) -> str:
+        allowed = {"package", "file", "hybrid"}
+        if v not in allowed:
+            raise ValueError(f"component_granularity must be one of {sorted(allowed)}, got {v!r}")
+        return v
+
+    def enabled_types(self) -> list[str]:
+        """The configured doc types, order preserved."""
+        return list(self.types)
+
+
 class SetupConfig(_Block):
     """The ``setup:`` block (feat-013 — agent auto-configuration).
 

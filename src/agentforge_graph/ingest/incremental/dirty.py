@@ -18,8 +18,9 @@ _DIRTY = "dirty.json"
 
 
 class DirtySet:
-    # Known enrichment consumers: embeddings (feat-005), patterns + summaries (feat-012).
-    DEFAULT_CONSUMERS = ["embeddings", "patterns", "summaries"]
+    # Known enrichment consumers: embeddings (feat-005), patterns + summaries
+    # (feat-012), docs (feat-016 — generated docs go stale like summaries do).
+    DEFAULT_CONSUMERS = ["embeddings", "patterns", "summaries", "docs"]
 
     def __init__(self, root: str | Path, consumers: list[str] | None = None) -> None:
         self._path = Path(root) / _DIRTY
