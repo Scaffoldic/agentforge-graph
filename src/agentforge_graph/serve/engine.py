@@ -246,7 +246,11 @@ class _Engine:
         }
 
     async def status(self) -> dict[str, Any]:
+        from agentforge_graph.config import DocGenConfig
+        from agentforge_graph.docgen import DOC_LANG_VERSION
         from agentforge_graph.store.query import QUERY_LANG_VERSION
+
+        dcfg = DocGenConfig.load(self.config)
 
         meta = self._meta()
         cg = await self.code_graph()
@@ -270,6 +274,11 @@ class _Engine:
                 "enabled": cg.query_enabled,
                 "lang_version": QUERY_LANG_VERSION,
                 "capabilities": sorted(cg.query_capabilities),
+            },
+            "docgen": {
+                "enabled": dcfg.enabled,
+                "types": list(dcfg.types),
+                "doc_lang_version": DOC_LANG_VERSION,
             },
             "tool_api_version": TOOL_API_VERSION,
         }

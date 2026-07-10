@@ -290,7 +290,51 @@ per-run `--scope` override.
 
 ## Implementation status
 
-_Not started. Design doc: `design-016-grounded-doc-generation.md` (next)._
+**Implemented on `feat/016-grounded-doc-generation` (targeting 0.7.0).** All four
+descriptive doc types generate grounded, cited drafts via a real `agentforge.Agent`
+loop over the read-only ckg tools, verified hermetically (the framework's
+`agentforge.testing.MockLLMClient` drives the loop with no creds). Built in 8
+chunks: (1) types/manifest/config/staleness seam; (2) recipe seam + architecture
+recipe + citation verifier; (3) grounded toolset + Agent runner + `generate`
+(first e2e slice); (4) remaining recipes + templates; (5) dirty-aware `update` +
+list/diff/promote; (6) `ckg docs` CLI + facade; (7) opt-in `sync` flywheel;
+(8) status/docs/polish.
+
+**Approved design decisions (design-016):** writer is a multi-turn
+`agentforge.Agent` loop over a read-only, provenance-floored toolset (grounding at
+the **tool boundary**, not a fixed pack); citations are a structured footnote
+block verified against the captured provenance set; `ai-context` is draft-only to
+`output_root`; a `doc_lang_version` stamps the template/citation contract.
+
+**Deviations from design-016 (all deliberate, documented):**
+
+- **Provenance capture is from the tool-observation JSON in `RunResult.steps`, not
+  a wrapping `_CaptureProxy`.** Fact-bearing ckg tools return
+  `ContextPack.to_dict()` JSON carrying `id` + `provenance` per item, so capture
+  walks the observations and applies the `≥ parsed` floor directly — tool-agnostic
+  and with **no second store handle** (avoids a double-open of the embedded store).
+- **Templates are Python `Template` objects, not `.md.tmpl` files** — same
+  "data, not core" property, no packaging of template artifacts.
+- **`sync` builds the `DocChunk` in `docgen` directly rather than calling
+  `KnowledgeIngestor.ingest`** — the latter's doc pass GCs doc chunks repo-wide
+  (would wipe real ingested docs). The targeted path reuses the citation graph:
+  `DESCRIBES` edges come from the doc's **footnotes** (already-validated real
+  symbols). Embedding of synced docs is gated on `embed.enabled`.
+- **`docgen.provider` defaults to `anthropic`** (the framework Agent's registered
+  provider), not `bedrock` — `model_ref()` builds the `Agent` `model=` string.
+  Bedrock-backed Agent composition is a follow-up (the framework provider registry
+  ships `anthropic`).
+- **The facade `docs_*` methods expose an optional `model` seam** (bring-your-own
+  `LLMClient`) for hermetic tests and advanced callers.
+
+**[BUG-CARRIED, same branch]** the citation parser initially took `split()[0]` of a
+footnote definition, but symbol ids are **5 space-joined fields** — so it captured
+only `"ckg"`. Fixed: the whole remainder of a `[^fN]: <id>` line is the id (the
+contract is one id per line, nothing after).
+
+**Deferred (Phase 2/3, out of feat-016 scope):** ADR-draft generation +
+ratification (Phase 3); the CI-hardened flywheel that opens a docs PR on merge
+(Phase 2); bedrock-backed Agent composition.
 
 ## 12. References
 

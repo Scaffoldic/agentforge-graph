@@ -33,6 +33,7 @@ setup. They build on each other in order.
 | 11 | [Agent auto-configuration](11-agent-auto-configuration.md) | `ckg setup` writes your agent's MCP config (repo `.mcp.json` / `--scope user`) + `--hooks` nudge; reversible. |
 | 12 | [Watch mode & CI indexing](12-watch-and-ci-indexing.md) | Keep the graph fresh: `ckg watch` (local, conditional triggers) + `ckg ci init` (central, CI-as-sole-writer). |
 | 13 | [Ad-hoc structural queries](13-graph-query.md) | Escape hatch for structural questions no verb covers: a read-only Cypher subset via `ckg query --graph` / the `ckg_query` tool. |
+| 14 | [Grounded doc generation](14-grounded-doc-generation.md) | Generate docs as a **cited projection of the graph**: `ckg docs generate/update/promote/sync`. Every claim attributed to a real symbol; drafts never overwrite human docs. |
 
 > New here? Start with **[Getting started → a single repo](getting-started/1-single-repo.md)**.
 > Building an agent on top? Jump to **[10 — Using over MCP](10-using-over-mcp.md)**.

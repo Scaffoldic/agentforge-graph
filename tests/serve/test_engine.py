@@ -28,6 +28,10 @@ async def test_status_reports_counts_and_version(tmp_path: Path) -> None:
         assert status["by_kind"].get("Class") == 1
         assert status["tool_api_version"] == TOOL_API_VERSION
         assert "dirty" in status
+        # feat-016: docgen surface reported in status
+        assert status["docgen"]["enabled"] is True
+        assert status["docgen"]["doc_lang_version"] == "1.0"
+        assert "architecture" in status["docgen"]["types"]
     finally:
         await engine.close()
 
