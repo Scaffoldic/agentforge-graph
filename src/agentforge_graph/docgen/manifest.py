@@ -69,6 +69,7 @@ def _artifact_to_record(a: DocArtifact) -> dict[str, Any]:
         "synced_commit": a.synced_commit,
         "doc_lang_version": a.doc_lang_version,
         "source_ids": list(a.source_ids),
+        "scope": a.scope,
         "footnotes": [{"marker": f.marker, "ref": _ref_to_dict(f.ref)} for f in a.footnotes],
         "content_sha": a.content_sha,
     }
@@ -82,6 +83,7 @@ def _artifact_from_record(path: str, r: dict[str, Any]) -> DocArtifact:
         synced_commit=r.get("synced_commit", ""),
         doc_lang_version=r.get("doc_lang_version", ""),
         source_ids=tuple(r.get("source_ids", [])),
+        scope=r.get("scope"),
         footnotes=tuple(
             Footnote(marker=f["marker"], ref=_ref_from_dict(f["ref"]))
             for f in r.get("footnotes", [])
@@ -147,6 +149,7 @@ class Manifest:
             synced_commit=current.synced_commit,
             doc_lang_version=current.doc_lang_version,
             source_ids=current.source_ids,
+            scope=current.scope,
             footnotes=current.footnotes,
             content_sha=current.content_sha,
         )
