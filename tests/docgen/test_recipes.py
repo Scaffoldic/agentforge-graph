@@ -36,8 +36,16 @@ def test_registry_lookup() -> None:
     assert isinstance(recipe, ArchitectureRecipe)
 
 
-def test_unregistered_doc_type_raises() -> None:
-    # DESIGN has no recipe registered until chunk 4.
+def test_all_four_types_registered() -> None:
+    from agentforge_graph.docgen.recipes import RECIPES
+
+    assert set(RECIPES) == set(DocType)  # architecture + ai-context + component + design
+
+
+def test_unregistered_doc_type_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    from agentforge_graph.docgen.recipes import RECIPES
+
+    monkeypatch.delitem(RECIPES, DocType.DESIGN)
     with pytest.raises(DocDisabled, match="design"):
         get_recipe(DocType.DESIGN)
 
@@ -62,3 +70,32 @@ async def test_architecture_seed_has_no_llm_notes_without_enrichment(cg: CodeGra
     pack = await get_recipe(DocType.ARCHITECTURE).seed(cg, DocTarget(type=DocType.ARCHITECTURE))
     assert pack.notes == ()
     assert all(f.source != "llm" for f in pack.facts)
+
+
+async def test_ai_context_seed_grounds_on_central_symbols(cg: CodeGraph) -> None:
+    pack = await get_recipe(DocType.AI_CONTEXT).seed(cg, DocTarget(type=DocType.AI_CONTEXT))
+    assert pack.facts
+    assert {f.ref.name for f in pack.facts} & {"Repo", "save", "validate"}
+    assert all(f.source != "llm" for f in pack.facts)
+
+
+async def test_component_seed_scoped_to_path(cg: CodeGraph) -> None:
+    pack = await get_recipe(DocType.COMPONENT).seed(
+        cg, DocTarget(type=DocType.COMPONENT, scope="app.py")
+    )
+    assert pack.facts
+    assert all(f.ref.path == "app.py" for f in pack.facts)
+    assert {f.ref.name for f in pack.facts} >= {"Repo", "validate"}
+
+
+async def test_component_seed_empty_for_unknown_scope(cg: CodeGraph) -> None:
+    pack = await get_recipe(DocType.COMPONENT).seed(
+        cg, DocTarget(type=DocType.COMPONENT, scope="nonexistent/")
+    )
+    assert pack.facts == ()
+
+
+async def test_design_seed_grounds_on_scope(cg: CodeGraph) -> None:
+    pack = await get_recipe(DocType.DESIGN).seed(cg, DocTarget(type=DocType.DESIGN, scope="app.py"))
+    assert pack.facts
+    assert all(f.source in {"parsed", "resolved"} for f in pack.facts)
