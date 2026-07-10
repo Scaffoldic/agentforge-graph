@@ -60,6 +60,7 @@ Legend: `proposed` → `accepted` → `in-progress` → `shipped` (also
 | [013](feat-013-agent-auto-configuration.md) | Agent auto-configuration & frictionless first run | 4 adoption | 0.6.2 | **shipped (0.6.2)** | 008 | — | ✅ |
 | [014](feat-014-watch-and-ci-indexing.md) | Watch mode (local) + CI-triggered central indexing | 4 adoption | 0.6.3 | **shipped (0.6.3)** | 004 | — | ✅ |
 | [015](feat-015-read-only-graph-query.md) | Read-only graph query (`ckg query --graph` / `ckg_query`) | 1 serve | 0.6.4 | **shipped (0.6.4)** | 001,003,008 | — | ✅ |
+| [016](feat-016-grounded-doc-generation.md) | Grounded documentation generation (`ckg docs …`) | 3 diff | 0.7.0 | **accepted** | 006,007,010,012,004 | — | ✅ |
 
 ---
 
@@ -143,6 +144,8 @@ ride alongside, not on, this chain.
 | **0.6** ✅ RELEASED | **Workspace build** — the build/setup side of org-central knowledge | ENH-021, ENH-022, ENH-023, ENH-024, ENH-026 | Stand up a multi-repo CKG from one `workspace.yaml` + one config + `ckg build --workspace` (members local or git URL); fail-fast `ckg doctor`; config/CLI-controlled logging/tracing |
 | **0.6.2** ✅ RELEASED | **Adoption** — shrink "installed" → "an agent is querying my repo" | feat-013 (FA-002 + FA-001 P1) | `ckg setup` auto-writes the agent's MCP config (Claude Code first) + optional `--hooks` nudges toward the graph tools; `uvx`/`pipx` zero-install trial blessed |
 | **0.6.3** ✅ RELEASED | **Freshness / ops** — keep the graph current without remembering to re-index | feat-014 (FA-005) | `ckg watch` re-indexes the local working copy on a conditional trigger (commit/idle/save, structural-only by default), refusing central/read-only stores; `ckg ci init` scaffolds a single-writer CI workflow that refreshes the central index on merge |
+| **0.6.4** ✅ RELEASED | **Query** — an escape hatch past the fixed typed verbs | feat-015 (FA-003) | Read-only Cypher-subset query surface (`ckg query --graph` / `ckg_query`), validated AST → compiled to native Cypher (Kuzu/Neo4j) or interpreted over the GraphStore ABC (SurrealDB); identical rows across backends, bounded + read-only, capability-gated MCP tool |
+| **0.7.0** 🔨 in progress | **Grounded docs** — turn the graph outward into the standard dev docs | feat-016 (FA-006) | `ckg docs generate/update/promote/sync` produces AI-context + architecture + component + design docs as a cited projection of the graph; every claim traces to a real symbol/edge; drafts land under `output_root` behind a human promote gate; dirty-aware `update` reuses feat-004; opt-in flywheel |
 
 ---
 
