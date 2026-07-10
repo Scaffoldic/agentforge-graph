@@ -344,6 +344,7 @@ class DocGenConfig(_Block):
     draft until ``ckg docs promote`` (``promote_required``)."""
 
     KEY: ClassVar[str] = "docgen"
+    enabled: bool = True  # disable the docgen surface wholesale
     output_root: str = "docs/_generated"
     types: list[str] = Field(
         default_factory=lambda: ["ai-context", "architecture", "component", "design"]

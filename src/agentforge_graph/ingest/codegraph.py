@@ -22,6 +22,8 @@ from .report import IndexReport, ModelInfo, RouteInfo, ServiceCallInfo, ServiceI
 from .source import RepoSource
 
 if TYPE_CHECKING:
+    from agentforge_core.contracts.llm import LLMClient  # feat-016 docgen model type
+
     from agentforge_graph.config import ConfigSource
 
     # embed/retrieve import ingest, so reference their types under TYPE_CHECKING.
@@ -937,6 +939,69 @@ class CodeGraph:
             )
         out.sort(key=lambda s: (s.level, s.path))
         return out
+
+    # --- grounded documentation generation (feat-016) --------------------
+
+    def _docgen(
+        self, *, budget_usd: float | None = None, model: str | LLMClient | None = None
+    ) -> Any:
+        """Build a ``DocGenerator`` for this graph (framework layer, ADR-0001)."""
+        from agentforge_graph.config import DocGenConfig
+        from agentforge_graph.docgen import DocGenerator
+
+        cfg = DocGenConfig.load(self._config)
+        if budget_usd is not None:
+            cfg = cfg.model_copy(update={"budget_usd": budget_usd})
+        return cfg, DocGenerator(
+            self, cfg, repo_path=self._repo_path, config=self._config, model=model
+        )
+
+    async def docs_generate(
+        self,
+        doc_type: str,
+        scope: str | None = None,
+        *,
+        budget_usd: float | None = None,
+        model: str | LLMClient | None = None,
+    ) -> Any:
+        """Generate one grounded doc draft (feat-016)."""
+        from agentforge_graph.docgen import DocDisabled, DocTarget, DocType
+
+        cfg, gen = self._docgen(budget_usd=budget_usd, model=model)
+        if not cfg.enabled:
+            raise DocDisabled("docgen is disabled (docgen.enabled: false)")
+        try:
+            dt = DocType(doc_type)
+        except ValueError as exc:
+            raise DocDisabled(f"unknown doc type {doc_type!r}") from exc
+        return await gen.generate(DocTarget(type=dt, scope=scope))
+
+    async def docs_update(
+        self, *, budget_usd: float | None = None, model: str | LLMClient | None = None
+    ) -> Any:
+        """Regenerate only the docs whose source symbols changed (feat-016)."""
+        from agentforge_graph.docgen import DocDisabled
+
+        cfg, gen = self._docgen(budget_usd=budget_usd, model=model)
+        if not cfg.enabled:
+            raise DocDisabled("docgen is disabled (docgen.enabled: false)")
+        return await gen.update()
+
+    async def docs_list(self) -> Any:
+        """Every generated doc with its staleness flag (feat-016)."""
+        _, gen = self._docgen()
+        return await gen.list_docs()
+
+    async def docs_diff(self, path: str, *, model: str | LLMClient | None = None) -> str:
+        """Unified diff of a doc vs a fresh regeneration (feat-016)."""
+        _, gen = self._docgen(model=model)
+        result: str = await gen.diff(path)
+        return result
+
+    def docs_promote(self, path: str) -> Any:
+        """Flip a generated draft to accepted — the human gate (feat-016)."""
+        _, gen = self._docgen()
+        return gen.promote(path)
 
     @property
     def store(self) -> Store:

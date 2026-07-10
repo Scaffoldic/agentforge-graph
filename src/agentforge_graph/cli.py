@@ -562,6 +562,109 @@ async def _enrich(args: argparse.Namespace) -> int:
     return 0
 
 
+def _resolve_doc_types(args: argparse.Namespace) -> list[str]:
+    if getattr(args, "all", False):
+        from agentforge_graph.config import DocGenConfig
+
+        return list(DocGenConfig.load(args.config).types)
+    return [args.type] if args.type else []
+
+
+async def _docs_generate(args: argparse.Namespace) -> int:
+    """feat-016: generate grounded doc draft(s)."""
+    from agentforge_graph.docgen import DocgenError
+
+    types = _resolve_doc_types(args)
+    if not types:
+        print("ckg docs generate: specify --type or --all", file=sys.stderr)
+        return 2
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        for t in types:
+            try:
+                art = await cg.docs_generate(t, scope=args.scope, budget_usd=args.budget_usd)
+            except DocgenError as exc:
+                print(f"ckg docs generate: {exc}", file=sys.stderr)
+                return 2
+            cites = f" · {len(art.footnotes)} citation(s)" if art.footnotes else ""
+            print(f"generated {art.path} [{art.status}]{cites}")
+    finally:
+        await cg.close()
+    return 0
+
+
+async def _docs_update(args: argparse.Namespace) -> int:
+    """feat-016: regenerate only docs whose code changed."""
+    from agentforge_graph.docgen import DocgenError
+
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        try:
+            docs = await cg.docs_update(budget_usd=args.budget_usd)
+        except DocgenError as exc:
+            print(f"ckg docs update: {exc}", file=sys.stderr)
+            return 2
+        if not docs:
+            print("ckg docs update: nothing stale")
+        for art in docs:
+            print(f"regenerated {art.path}")
+    finally:
+        await cg.close()
+    return 0
+
+
+async def _docs_list(args: argparse.Namespace) -> int:
+    """feat-016: list generated docs + staleness."""
+    from agentforge_graph.cli_format import render_json, render_table
+
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        docs = await cg.docs_list()
+    finally:
+        await cg.close()
+    cols = ["path", "type", "status", "stale", "citations", "synced"]
+    rows = [
+        [d.path, d.type.value, d.status, d.stale, len(d.footnotes), (d.synced_commit or "")[:8]]
+        for d in docs
+    ]
+    print(render_json(cols, rows) if args.format == "json" else render_table(cols, rows))
+    return 0
+
+
+async def _docs_diff(args: argparse.Namespace) -> int:
+    """feat-016: diff a doc vs a fresh regeneration."""
+    from agentforge_graph.docgen import DocgenError
+
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        try:
+            out = await cg.docs_diff(args.doc)
+        except DocgenError as exc:
+            print(f"ckg docs diff: {exc}", file=sys.stderr)
+            return 2
+    finally:
+        await cg.close()
+    print(out if out else "(no differences)")
+    return 0
+
+
+async def _docs_promote(args: argparse.Namespace) -> int:
+    """feat-016: mark a reviewed draft as accepted."""
+    from agentforge_graph.docgen import DocgenError
+
+    cg = await CodeGraph.open(repo_path=args.path, config=args.config)
+    try:
+        try:
+            art = cg.docs_promote(args.doc)
+        except DocgenError as exc:
+            print(f"ckg docs promote: {exc}", file=sys.stderr)
+            return 2
+    finally:
+        await cg.close()
+    print(f"promoted {art.path} → {art.status}")
+    return 0
+
+
 async def _build(args: argparse.Namespace) -> int:
     """ENH-021: the one command — index, then embed (where enabled), then enrich
     (with --enrich), for a whole workspace (--workspace) or a single repo."""
@@ -1249,6 +1352,44 @@ def build_parser() -> argparse.ArgumentParser:
         help="print the workflow, write nothing",
     )
     ci_init.set_defaults(func=_ci_init)
+
+    # feat-016: grounded documentation generation (nested verbs, like `ci`).
+    docs_p = sub.add_parser("docs", help="grounded documentation generation (feat-016)")
+    docs_sub = docs_p.add_subparsers(dest="docs_cmd", required=True)
+    _doc_types = ["ai-context", "architecture", "component", "design"]
+
+    dg = docs_sub.add_parser("generate", help="generate a grounded doc draft")
+    _add_repo_arg(dg)
+    dg.add_argument("--type", choices=_doc_types, help="doc type to generate")
+    dg.add_argument("--scope", default=None, help="package/path or subsystem to scope the doc")
+    dg.add_argument("--all", action="store_true", help="generate every configured type")
+    dg.add_argument("--budget-usd", type=float, default=None, help="per-run USD cap override")
+    dg.add_argument("--config", default=None, help="path to ckg.yaml")
+    dg.set_defaults(func=_docs_generate)
+
+    du = docs_sub.add_parser("update", help="regenerate only docs whose code changed")
+    _add_repo_arg(du)
+    du.add_argument("--budget-usd", type=float, default=None, help="per-run USD cap override")
+    du.add_argument("--config", default=None, help="path to ckg.yaml")
+    du.set_defaults(func=_docs_update)
+
+    dl = docs_sub.add_parser("list", help="list generated docs + staleness")
+    _add_repo_arg(dl)
+    dl.add_argument("--format", choices=["table", "json"], default="table")
+    dl.add_argument("--config", default=None, help="path to ckg.yaml")
+    dl.set_defaults(func=_docs_list)
+
+    dd = docs_sub.add_parser("diff", help="diff a doc vs a fresh regeneration")
+    _add_repo_arg(dd, positional=False)
+    dd.add_argument("doc", help="the generated doc path (repo-relative)")
+    dd.add_argument("--config", default=None, help="path to ckg.yaml")
+    dd.set_defaults(func=_docs_diff)
+
+    dp = docs_sub.add_parser("promote", help="mark a reviewed draft as accepted")
+    _add_repo_arg(dp, positional=False)
+    dp.add_argument("doc", help="the generated doc path (repo-relative)")
+    dp.add_argument("--config", default=None, help="path to ckg.yaml")
+    dp.set_defaults(func=_docs_promote)
 
     smap = sub.add_parser(
         "services-map", help="cross-service call graph over a workspace (ENH-020)"
