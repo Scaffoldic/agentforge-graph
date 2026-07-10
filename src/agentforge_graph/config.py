@@ -356,7 +356,11 @@ class DocGenConfig(_Block):
     round_trip: bool = False  # opt-in flywheel; `ckg docs sync` honors this
     promote_required: bool = True  # docs are drafts until `ckg docs promote`
     budget_usd: float = 5.0  # per-run cap (agentforge.Agent BudgetPolicy)
-    max_iterations: int = 24  # Agent tool-call loop bound per doc
+    # Agent tool-call loop bound per doc. Kept modest: the seed is already rich, so
+    # a few targeted tool calls suffice — and the framework Agent caps total tokens
+    # (~200k, not constructor-overridable), which a long loop of large tool
+    # observations otherwise exhausts on a big repo. Economy is guided in the prompt.
+    max_iterations: int = 12
     regenerate_on_ci: bool = False  # feat-014 CI can flip this on (commit the diff in a PR)
     # Provider selection — resolved to the framework Agent's `model` string,
     # "<provider>:<model>" (agentforge's registered provider is `anthropic`).

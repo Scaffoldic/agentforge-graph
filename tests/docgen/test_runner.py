@@ -16,7 +16,7 @@ from agentforge.testing import MockLLMClient
 
 from agentforge_graph.config import DocGenConfig
 from agentforge_graph.docgen import DocGenerator, get_recipe
-from agentforge_graph.docgen.errors import BadCitationError, DocgenError
+from agentforge_graph.docgen.errors import DocgenError, UngroundedError
 from agentforge_graph.docgen.types import STATUS_DRAFT, DocTarget, DocType
 from agentforge_graph.ingest import CodeGraph
 
@@ -90,10 +90,11 @@ async def test_generate_writes_grounded_draft(indexed: tuple[CodeGraph, Path]) -
 
 async def test_generate_rejects_fabricated_citation(indexed: tuple[CodeGraph, Path]) -> None:
     cg, repo = indexed
-    # cite an id the seed/tools never produced → BadCitationError
+    # cite an id the seed/tools never produced → pruned; the sole section is then
+    # ungrounded under require_citations → UngroundedError
     bad = "## Overview\n\nClaim [^f1].\n\n## References\n\n[^f1]: ckg py repo ghost.py Ghost#\n"
     gen = DocGenerator(cg, DocGenConfig(), repo_path=repo, model=_script(bad))
-    with pytest.raises(BadCitationError):
+    with pytest.raises(UngroundedError):
         await gen.generate(DocTarget(type=DocType.ARCHITECTURE))
 
 

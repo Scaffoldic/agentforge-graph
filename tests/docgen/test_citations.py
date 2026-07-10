@@ -6,7 +6,6 @@ import pytest
 
 from agentforge_graph.core import NodeKind
 from agentforge_graph.docgen import (
-    BadCitationError,
     ProvenanceSet,
     SymbolRef,
     UngroundedError,
@@ -51,15 +50,38 @@ def test_valid_doc_builds_footnotes_and_rewrites() -> None:
     assert "[^f1]" in v.body and "[^f2]" in v.body
 
 
-def test_bad_citation_symbol_not_in_provenance() -> None:
+def test_fabricated_citation_is_pruned_not_fatal() -> None:
+    # [^f1] cites a symbol not in the provenance set → pruned. f2 stays valid, so
+    # the doc is grounded overall (doc-level) and does NOT fail; the Overview
+    # section is reported as a gap for the reviewer.
     body = _GOOD.replace("[^f1]: s1", "[^f1]: s99")
-    with pytest.raises(BadCitationError, match="s99"):
-        verify_citations(body, _prov(), require_citations=True)
+    v = verify_citations(body, _prov(), require_citations=True)
+    assert {f.marker for f in v.footnotes} == {"f2"}
+    assert "f1" in v.dropped
+    assert "[^f1]" not in v.body  # fabricated marker stripped from the prose
+    assert "Overview" in v.ungrounded_sections
 
 
-def test_dangling_inline_marker_without_definition() -> None:
-    body = _GOOD.replace("[^f2]", "[^f9]", 1)  # used in body, but only [^f2] defined
-    with pytest.raises(BadCitationError, match=r"f9"):
+def test_dangling_inline_marker_is_stripped() -> None:
+    body = _GOOD.replace("[^f2]", "[^f9]", 1)  # inline [^f2] -> [^f9]; f9 has no def
+    v = verify_citations(body, _prov(), require_citations=True)
+    assert "[^f9]" not in v.body  # dangling marker stripped
+    assert "f9" in v.dropped
+    assert {f.marker for f in v.footnotes} == {"f1"}  # f2 def now unused -> dropped too
+    assert "Behaviour" in v.ungrounded_sections
+
+
+def test_preamble_before_first_heading_is_stripped() -> None:
+    body = "Perfect. Let me compile the document:\n\n" + _GOOD
+    v = verify_citations(body, _prov(), require_citations=True)
+    assert "Let me compile" not in v.body
+    assert v.body.lstrip().startswith("## Overview")
+
+
+def test_no_valid_citation_fails_when_required() -> None:
+    # every citation fabricated → zero grounding → refuse to publish
+    body = _GOOD.replace("[^f1]: s1", "[^f1]: s98").replace("[^f2]: s2", "[^f2]: s99")
+    with pytest.raises(UngroundedError, match="no valid citation"):
         verify_citations(body, _prov(), require_citations=True)
 
 
@@ -78,9 +100,12 @@ No citation here at all.
 """
 
 
-def test_ungrounded_section_raises_when_required() -> None:
-    with pytest.raises(UngroundedError, match="Speculative"):
-        verify_citations(_UNGROUNDED, _prov(), require_citations=True)
+def test_partial_grounding_passes_and_reports_gaps() -> None:
+    # one grounded section + one uncited section → doc is grounded overall, so it
+    # passes even under require_citations; the gap is reported for the reviewer.
+    v = verify_citations(_UNGROUNDED, _prov(), require_citations=True)
+    assert v.ungrounded_sections == ("Speculative",)
+    assert {f.marker for f in v.footnotes} == {"f1"}
 
 
 def test_ungrounded_section_reported_when_not_required() -> None:
@@ -90,8 +115,8 @@ def test_ungrounded_section_reported_when_not_required() -> None:
 
 
 def test_references_block_markers_do_not_count_as_content_citations() -> None:
-    # A doc whose only [^..] usage is inside the References block → the single
-    # content section is ungrounded (the split must exclude the refs block).
+    # A doc whose only [^..] usage is inside the References block has NO inline
+    # citation → zero grounding → refused (the split must exclude the refs block).
     body = "## Lonely\n\nProse with no marker.\n\n## References\n\n[^f1]: s1\n"
-    with pytest.raises(UngroundedError, match="Lonely"):
+    with pytest.raises(UngroundedError, match="no valid citation"):
         verify_citations(body, _prov(), require_citations=True)

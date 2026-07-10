@@ -20,7 +20,7 @@ def test_defaults() -> None:
     assert c.round_trip is False
     assert c.promote_required is True
     assert c.budget_usd == 5.0
-    assert c.max_iterations == 24
+    assert c.max_iterations == 12
     assert c.provider == "anthropic"
     assert c.model_ref() == "anthropic:claude-haiku-4-5"
 

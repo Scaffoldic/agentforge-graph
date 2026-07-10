@@ -8,6 +8,7 @@ plus the freshness/review surface: dirty-aware ``update``, ``list_docs``,
 from __future__ import annotations
 
 import difflib
+import logging
 import re
 from dataclasses import replace
 from pathlib import Path
@@ -35,6 +36,9 @@ if TYPE_CHECKING:
     from agentforge_graph.config import ConfigSource, DocGenConfig
     from agentforge_graph.ingest import CodeGraph
     from agentforge_graph.ingest.incremental import DirtySet
+
+
+logger = logging.getLogger(__name__)
 
 
 def _slug(scope: str) -> str:
@@ -250,6 +254,12 @@ class DocGenerator:
         template = get_template(target.type)
         body, prov = await self._runner.compose(pack, template)
         verified = verify_citations(body, prov, require_citations=self._cfg.require_citations)
+        if verified.dropped:
+            logger.info(
+                "docgen %s: pruned %d fabricated/dangling citation(s)",
+                target.type.value,
+                len(verified.dropped),
+            )
         commit = self._git_commit()
         full = self._stamp(verified.body, target, commit)
         return full, prov.source_ids(), verified.footnotes, commit

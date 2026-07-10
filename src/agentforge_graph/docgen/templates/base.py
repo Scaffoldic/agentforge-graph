@@ -29,6 +29,9 @@ Workflow:
   ckg_impact, ckg_repo_map, ckg_routes, ckg_decisions) to gather the facts you
   need before writing. The seed facts you are given are a starting point, not the
   whole picture — expand with the tools.
+- Be economical. The seed facts are usually enough to write most sections; make
+  only a FEW targeted tool calls to fill specific gaps, then write. Do not explore
+  exhaustively — a focused, well-cited doc beats a sprawling one.
 
 Grounding rules (STRICT):
 - Every substantive claim MUST cite a real fact with a footnote marker like

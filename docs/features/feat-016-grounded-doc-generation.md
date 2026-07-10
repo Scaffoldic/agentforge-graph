@@ -332,9 +332,35 @@ footnote definition, but symbol ids are **5 space-joined fields** — so it capt
 only `"ckg"`. Fixed: the whole remainder of a `[^fN]: <id>` line is the id (the
 contract is one id per line, nothing after).
 
+**Live-dogfood calibrations (validated end-to-end on this repo — a 192-file /
+2210-node index, generating its own architecture doc with a real Anthropic model,
+28 real citations).** Three refinements the hermetic tests could not surface:
+
+- **Economy over exhaustion.** The framework `Agent` caps total tokens (~200k,
+  not constructor-overridable), and a long ReAct loop of large tool observations
+  exhausts it on a big repo. `max_iterations` lowered to **12** and the system
+  prompt now instructs the model to lean on the rich seed and make only a few
+  targeted tool calls. (Follow-up: a smaller per-tool `response_token_cap` for the
+  docgen toolset would let the loop run longer within budget.)
+- **Citations are pruned, not fatal; grounding is doc-level.** A real model
+  occasionally mis-cites. A citation is *valid* only if used inline **and**
+  resolving into the provenance set; anything else (fabricated id, dangling
+  marker, unused def) is **pruned** (marker stripped, def dropped) — never fatal.
+  `require_citations` is then a **doc-level** gate: the doc must retain ≥1 valid
+  citation (refuse pure-hallucination), and per-section gaps are *reported*
+  (`ungrounded_sections`) for the reviewer rather than failing the doc — real docs
+  have legitimate overview/connective prose. The strict per-section-must-cite rule
+  in design-016 proved impractical against a live model; the integrity guarantee
+  (every *published* citation is real) is preserved, and the human promote gate
+  carries per-section adequacy. (`BadCitationError` is retained but no longer
+  raised — fabrications are pruned.)
+- **Preamble stripped.** Text before the first Markdown heading (a model's
+  "Let me compile the document:" meta-commentary) is dropped.
+
 **Deferred (Phase 2/3, out of feat-016 scope):** ADR-draft generation +
 ratification (Phase 3); the CI-hardened flywheel that opens a docs PR on merge
-(Phase 2); bedrock-backed Agent composition.
+(Phase 2); bedrock-backed Agent composition; a docgen-specific tool
+`response_token_cap` to extend the loop budget on large repos.
 
 ## 12. References
 
