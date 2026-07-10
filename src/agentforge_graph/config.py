@@ -334,6 +334,57 @@ class QueryConfig(_Block):
         )
 
 
+class DocGenConfig(_Block):
+    """The ``docgen:`` block of ckg.yaml (feat-016 — grounded doc generation).
+
+    Drives ``ckg docs …``. ``docgen`` is the ADR-0001 *framework* layer (like
+    ``serve``/``setup`` — it runs an ``agentforge.Agent`` loop), but this block is
+    still read framework-free via the shared ``_read_block`` reader. Generated
+    drafts land under ``output_root`` and never overwrite human docs; a doc is a
+    draft until ``ckg docs promote`` (``promote_required``)."""
+
+    KEY: ClassVar[str] = "docgen"
+    enabled: bool = True  # disable the docgen surface wholesale
+    output_root: str = "docs/_generated"
+    types: list[str] = Field(
+        default_factory=lambda: ["ai-context", "architecture", "component", "design"]
+    )
+    ai_context_targets: list[str] = Field(default_factory=lambda: ["CLAUDE.md", "AGENTS.md"])
+    component_granularity: str = "package"  # package | file | hybrid
+    hybrid_min_symbols: int = 20
+    require_citations: bool = True  # a section with no citable fact fails generation
+    round_trip: bool = False  # opt-in flywheel; `ckg docs sync` honors this
+    promote_required: bool = True  # docs are drafts until `ckg docs promote`
+    budget_usd: float = 5.0  # per-run cap (agentforge.Agent BudgetPolicy)
+    # Agent tool-call loop bound per doc. Kept modest: the seed is already rich, so
+    # a few targeted tool calls suffice — and the framework Agent caps total tokens
+    # (~200k, not constructor-overridable), which a long loop of large tool
+    # observations otherwise exhausts on a big repo. Economy is guided in the prompt.
+    max_iterations: int = 12
+    regenerate_on_ci: bool = False  # feat-014 CI can flip this on (commit the diff in a PR)
+    # Provider selection — resolved to the framework Agent's `model` string,
+    # "<provider>:<model>" (agentforge's registered provider is `anthropic`).
+    # Tests inject a scripted LLMClient instead (hermetic, no creds).
+    provider: str = "anthropic"  # anthropic | <any registered agentforge provider>
+    model: str = "claude-haiku-4-5"
+
+    def model_ref(self) -> str:
+        """The framework Agent ``model=`` string for this config."""
+        return f"{self.provider}:{self.model}"
+
+    @field_validator("component_granularity")
+    @classmethod
+    def _check_granularity(cls, v: str) -> str:
+        allowed = {"package", "file", "hybrid"}
+        if v not in allowed:
+            raise ValueError(f"component_granularity must be one of {sorted(allowed)}, got {v!r}")
+        return v
+
+    def enabled_types(self) -> list[str]:
+        """The configured doc types, order preserved."""
+        return list(self.types)
+
+
 class SetupConfig(_Block):
     """The ``setup:`` block (feat-013 — agent auto-configuration).
 

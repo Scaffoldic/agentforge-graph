@@ -8,6 +8,31 @@ on a schema mismatch is **rebuild** (ADR-0006).
 
 ## [Unreleased]
 
+### Added
+
+- **feat-016 — grounded documentation generation (`ckg docs …`).** Documentation
+  as a *cited projection of the graph*: a doc-type **recipe** seeds a context
+  pack, an `agentforge.Agent` composes the doc while expanding that pack through
+  the read-only ckg tools, and **every claim is attributed to a real symbol** —
+  verified against the run's provenance set (the tool boundary). Phase 1 ships the
+  four descriptive types: **ai-context** (CLAUDE.md/AGENTS.md), **architecture**,
+  **component**, and **design**.
+  - **CLI:** `ckg docs generate --type <t> [--scope P] [--all]`,
+    `ckg docs update` (regenerate only docs whose code changed — reuses the
+    feat-004 `DirtySet`), `ckg docs list`, `ckg docs diff <doc>`,
+    `ckg docs promote <doc>`, and the opt-in `ckg docs sync`.
+  - **Grounded + reviewable:** drafts land under `docgen.output_root` and **never
+    overwrite human docs**; each section must cite a real fact (`require_citations`)
+    or generation fails; a doc is a **draft** until `ckg docs promote` (the human
+    gate). Budgeted + resumable via the framework Agent's `BudgetPolicy`.
+  - **Opt-in flywheel:** `ckg docs sync` (default off, `docgen.round_trip`)
+    re-ingests **accepted** docs as `llm`-sourced `DocChunk` nodes that `DESCRIBES`
+    their cited symbols. Anti-echo-chamber by provenance: recipes/tools ground at
+    `≥ parsed`, so a synced doc can inform search but is never a citable
+    ground-truth fact.
+  - `docgen:` config block; `ckg_status` reports `docgen.{enabled, types,
+    doc_lang_version}`. Guide 14.
+
 ## [0.6.4] — 2026-07-08
 
 ### Added
